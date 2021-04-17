@@ -142,7 +142,7 @@ auto "*" _ =(vint, i 2)
 auto "/" _ =(vint, i 2) -- would like it to be head
 auto "%" _ =(vint, i 2) -- would like it to be tail
 auto "^" _ =(vint, i 2)
-auto _ _ = (vauto, undefined) -- for using in a more custom way
+-- auto _ _ = (vauto, undefined) -- for using in a more custom way
 --auto "?" _ =(vint, i 2) --would like it to be ||
 
 getValue :: (Code, [VT], Int, String, [VT]) -> Expr
