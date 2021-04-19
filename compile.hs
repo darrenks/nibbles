@@ -175,20 +175,31 @@ getValueF :: InputCode ic => (ic, [VT], Int, VT, String) -> (ic, Expr)
 getValueF(code, vt, depth, argT, caller) = (s2f, Expr rt2f b2f nb2f $ ("(\\"++argLhs depth argT++"->"++hs2f++")"))
 	where (s2f, Expr rt2f b2f nb2f hs2f) = getValue(code, argT:vt, depth+argsize argT, caller, [])
 
-auto "+" _ =(vint, i 1)
-auto "-" [] =(vint, i 0) --todo would like it to be 2 if slice step
-auto "-" [_] =(vint, i 1)
-auto "*" _ =(vint, i 2)
-auto "/" _ =(vint, i 2) -- would like it to be head
-auto "%" _ =(vint, i 2) -- would like it to be tail
-auto "^" _ =(vint, i 2)
+intExpr n = (vint, i n)
+e2 = intExpr 2
+en1 = intExpr (-1)
+e1 = intExpr 1
+e0 = intExpr 0
+
+auto "+" _ _ = e1
+auto "-" [] (VList _) =  e2
+auto "-" _ _ = e1
+auto "*" [_] _ = e2
+auto "*" _ _ = en1
+auto "/" _ (VList _) = e1
+auto "/" _ _ = e2
+auto "%" _ (VList _) = e1
+auto "%" _ _ = e2
+auto "^" [] _ = intExpr 10
+auto "^" [VInt _] _ = e2
+auto "^" [VList _] _ = e1
 -- auto _ _ = (vauto, undefined) -- for using in a more custom way
 --auto "?" _ =(vint, i 2) --would like it to be ||
 
 getValue :: InputCode ic => (ic, [VT], Int, String, [VT]) -> (ic, Expr)
 getValue(scode, vt, depth, caller, lhsTs) = toExpr $ case (cch, rt1, rt2) of
 -- 	(c, VMaybe m, _) -> "\acase a of (Just b) -> op b rhs; Nothing -> rhs"
-	('~', _, _) -> makeConst $ auto caller lhsTs
+	('~', _, _) -> makeConst $ auto caller lhsTs rt1
 	('0', _, _) -> toNilary $ intToExpr $ parseInt code
 	('"', _, _) -> toNilary $ strToExpr $ parseStr code
 -- 	('$', _, _) -> nilary 0 $ argn vt 0
