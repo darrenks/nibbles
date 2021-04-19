@@ -2,8 +2,9 @@ module Compile where
 
 import Data.List
 import Data.Char
-import Stdlib
 import Numeric (showOct, readDec)
+import Stdlib
+import Polylib
 
 compile :: InputCode ic => ic -> Expr
 compile input=snd $ getValue(input, [], 0, "", [])

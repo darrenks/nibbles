@@ -7,6 +7,7 @@ import System.FilePath
 import Numeric (showOct, readDec)
 import Compile
 import Stdlib
+import Polylib -- todo remove
 
 usage = "\
 \Usage: nibbles [-c|-e|-v] [filename]\n\
