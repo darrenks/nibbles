@@ -1,3 +1,4 @@
+-- Polymorphic functions for conversion at compile time
 module Polylib where
 
 import Data.Char

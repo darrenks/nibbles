@@ -3,7 +3,7 @@ module Compile where
 import Data.List
 import Data.Char
 import Numeric (showOct, readDec)
-import Stdlib
+import Header
 import Polylib
 
 compile :: InputCode ic => ic -> Expr

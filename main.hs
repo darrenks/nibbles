@@ -1,4 +1,3 @@
-import Data.Char
 import Data.List
 import System.Environment
 import System.IO
@@ -6,8 +5,8 @@ import GHC.IO.Encoding
 import System.FilePath
 import Numeric (showOct, readDec)
 import Compile
-import Stdlib
-import Polylib -- todo remove
+import Header
+import Polylib
 
 usage = "\
 \Usage: nibbles [-c|-e|-v] [filename]\n\
@@ -47,13 +46,9 @@ main=do
  		[] -> do
  			putStrLn $ (show t) ++ ", size = " ++ (show $ length b) ++ ", unused = " ++ (show $ "length rest") 
  			putStrLn $ lit ++ "\n" ++ hs
- 			writeFile "out.hs" $ "\
- 				\import Data.List\n\
-				\import Data.Char\n\
-				\import Data.Maybe\n\
-				\import Data.List.Split -- needs install\n\
-				\import Stdlib\n\
-				\main=putStrLn$"++finish t++hs
+ 			headerSource <- readFile "header.hs"
+ 			let header = unlines $ tail $ lines $ headerSource
+ 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++hs
 		["-c"] -> do
 			let bytes = toBytes b
 			let outname = (basename ++ ".nbb")

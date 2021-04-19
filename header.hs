@@ -2,11 +2,13 @@ module Header where
 
 import Data.List
 import Data.Char
+import Data.Maybe
+import Data.List.Split -- needs cabal install -lib split
+
 
 sToA = map$toInteger.ord
 aToS = map$chr.fromInteger
 
---- STDLIB
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
 reshape n [] = []
 reshape n a = row : (reshape n rest) where (row, rest) = splitAt n a
