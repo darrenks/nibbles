@@ -82,6 +82,16 @@ instance InputCode NibLit where
 		| isSpace c = next $ NibLit s
 		| otherwise = (cpind c, NibLit s)
 
+takeInput :: InputCode ic => Int -> ic -> [Nibble]
+takeInput 0 code = []
+takeInput n code = (ch: takeInput (n-1) rest)
+	where (ch, rest) = next code
+
+dropInput :: InputCode ic => Int -> ic -> ic
+dropInput 0 code = code
+dropInput n code = dropInput (n-1) rest
+	where (ch, rest) = next code
+
 
 retT (Expr t _ _ _) = t
 nbOf (Expr _ _ n _) = n
@@ -123,13 +133,17 @@ coercez (c, (E b0 nb hs (Binary (Expr rt1 b1 nb1 hs1) (Expr rt2 b2 nb2 hs2) rtf)
 	(c, E b0 nb hs (Binary (Expr crt b1 nb1 (app1 chs1 hs1)) (Expr crt b2 nb2 (app1 chs2 hs2)) rtf))
 		where (chs1, chs2, crt) = coerce(rt1, rt2)
 
+-- data Expr = Expr VT [Nibble] OldNibLit HsCode
+-- data E = E [Nibble] OldNibLit HsCode Op
+
+-- so bad, need tap fns
 m1 f (E b0 nb hs (Binary (Expr rt1 b1 nb1 hs1) (Expr rt2 b2 nb2 hs2) rtf)) =
 	E b0 nb hs (Binary (Expr mrt b1 nb1 (app1 mhs hs1)) (Expr rt2 b2 nb2 hs2) rtf)
 		where (mhs, mrt) = f rt1
 m2 f (E b0 nb hs (Binary (Expr rt1 b1 nb1 hs1) (Expr rt2 b2 nb2 hs2) rtf)) =
 	E b0 nb hs (Binary (Expr rt1 b1 nb1 hs1) (Expr mrt b2 nb2 (app1 mhs hs2)) rtf)
 		where (mhs, mrt) = f rt2
-mboth f x = (m1 f).(m2 f)
+mboth f = (m1 f).(m2 f)
 
 -- todo these aren't used yet
 dim (VList e) = 1 + dim e
@@ -202,11 +216,11 @@ getValue(scode, vt, depth, caller, lhsTs) = toExpr $ case (cch, rt1, rt2) of
 	('~', _, _) -> makeConst $ auto caller lhsTs rt1
 	('0', _, _) -> toNilary $ intToExpr $ parseInt code
 	('"', _, _) -> toNilary $ strToExpr $ parseStr code
--- 	('$', _, _) -> nilary 0 $ argn vt 0
--- 	('@', _, _) -> nilary 0 $ argn vt 1
--- 	('`', _, _) -> nilary 1 $ argn vt (head code +2)
+	('$', _, _) -> nilary 0 $ argn vt 0
+	('@', _, _) -> nilary 0 $ argn vt 1
+	('`', _, _) -> nilary 1 $ argn vt (nextCh +2)
 	(';', t, _) -> unaryf t "flip id" id
--- 	(':', _, _) -> mboth list1 $ coercez $ binary "(++)" fst
+	(':', _, _) -> (let (cz,e) = coercez $ binary "(++)" fst in (cz,mboth list1 e))
 -- :~ = list1, ~: = to_s
 	('+', VInt _, VInt _) -> coercez $ binary "(+)" fst
 	('+', VInt _, VList et) -> vectorize $ binary "(+)" snd
@@ -261,6 +275,7 @@ getValue(scode, vt, depth, caller, lhsTs) = toExpr $ case (cch, rt1, rt2) of
 	-}
 	where
 		(ch, code) = next scode
+		(nextCh, _) = next code
 		cch = codepage !! ch
 		(c1,e1) = getValue(code, vt, depth, [cch], [])
 		(c2,e2) = getValue(c1, vt, depth, [cch], [rt1])
@@ -271,5 +286,7 @@ getValue(scode, vt, depth, caller, lhsTs) = toExpr $ case (cch, rt1, rt2) of
 		unary op rt = (c1, E [ch] [cch] op (Unary e1 rt))
 		unaryf et op rt = (c2f, E [ch] [cch] op (Binary e1 e2f (rt.snd)))
 			where (c2f, e2f) = getValueF(c1, vt, depth, et, [cch])
--- 		nilary extra (rt, rhs) =  toNilary $ Expr (drop extra code) rt (cch:map (codepage!!) (take extra code)) rhs
+		nilary extra (rt, rhs) =  toNilary $ (dropInput extra code, Expr rt (ch:takeInput extra code) (cch:map (codepage!!) (takeInput extra code)) rhs)
 		makeConst(t, val) = toNilary (code, Expr t [ch] [cch] $ val)
+
+-- Expr VT [Nibble] OldNibLit HsCode
