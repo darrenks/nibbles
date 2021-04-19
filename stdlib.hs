@@ -26,8 +26,8 @@ vint = VInt False
 vchr = VInt True
 vstr = VList vchr
 
-sToA = (map$toInteger.ord)
-aToS = (map$chr.fromInteger)
+sToA = map$toInteger.ord
+aToS = map$chr.fromInteger
 
 inspect (VInt False) = "(sToA.show)"
 inspect (VInt True) = "(sToA.show.chr.fromInteger)"
@@ -46,6 +46,9 @@ finish (VList (VInt True)) = finish'' vstr
 finish (VList e) = "(unlines . (map " ++ finish' e ++ "))"
 finish e = finish'' e
 
-join (VInt False) = ("(\\a b->intercalate a $map "++inspect vint++" b)", const $ vstr)
+-- finish t
+-- 	| sdim t > 2 = app1 (finish (lt t)) (join 
+
+join (VInt False) = ("(\\a->intercalate a $map "++inspect vint++")", const $ vstr)
 join (VList (VInt True)) = ("intercalate", const $ vstr)
 join (VList e) = ("(map."++ej++")", const $ VList (rt undefined)) where (ej,rt)=join e
