@@ -1,5 +1,5 @@
 module Stdlib where
--- // test
+
 import Data.List
 import Data.Char
 
