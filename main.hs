@@ -3,10 +3,12 @@ import System.Environment
 import System.IO
 import GHC.IO.Encoding
 import System.FilePath
-import Numeric (showOct, readDec)
+
 import Compile
 import Header
 import Polylib
+import Expr
+import Parse (toByte, fromByte)
 
 usage = "\
 \Usage: nibbles [-c|-e|-v] [filename]\n\
@@ -46,8 +48,7 @@ main=do
  		[] -> do
  			putStrLn $ (show t) ++ ", size = " ++ (show $ length b) ++ ", unused = " ++ (show $ "length rest") 
  			putStrLn $ lit ++ "\n" ++ hs
- 			headerSource <- readFile "header.hs"
- 			let header = unlines $ tail $ lines $ headerSource
+ 			header <- readFile "header.hs"
  			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++hs
 		["-c"] -> do
 			let bytes = toBytes b
@@ -58,6 +59,6 @@ main=do
 		["-v"] -> putStrLn "nibbles alpha"
 		e -> error $ "invalid option " ++ (show e) ++ "\n" ++ usage
 	where isOpt = isPrefixOf "-"
-	      toBytes s = map toByte $ init $ reshape 2 (s ++ [cpind '~', undefined])
+	      toBytes s = map toByte $ init $ reshape 2 (s ++ [0, undefined])
 
 --   hSetBuffering stdout NoBuffering
