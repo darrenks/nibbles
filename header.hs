@@ -11,8 +11,7 @@ aToS = map$chr.fromIntegral
 
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
 -- todo unused, use split lib
-reshape n [] = []
-reshape n a = row : (reshape n rest) where (row, rest) = splitAt n a
+reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a
 
 iff :: Bool -> a -> a -> a
 iff c b1 b2 = if c then b1 else b2
