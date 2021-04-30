@@ -2,6 +2,7 @@
 -- clean up parse
 -- more coercers
 -- multiletter commands
+-- allow flipped ops if diff type
 
 module Compile(compile) where
 
@@ -21,15 +22,6 @@ import Args
 
 compile :: InputCode ic => ic -> Expr
 compile input=snd $ getValue $ Thunk input[]
-
-autoNibVal = 0
-
-list1 (VList t) = ("", VList t)
-list1 t = ("(:[])", VList t)
-
-coerce2(VAuto, b) = coerce2(VInt False, b)
-coerce2(b, VAuto) = coerce2(b, VInt False)
-
 
 coerce2(NoType, b) = b
 
@@ -60,12 +52,6 @@ dim _ = 0
 sdim (VList (VInt True)) = 0
 sdim (VList e) = 1 + sdim e
 sdim _ = 0
-
--- todo remove cz, V, l1
--- rename n num, l list, lof listOf
--- fn of fn for fold?
--- could unify with VT, but then could make mistakes?
--- remove Str, make it str = listOf Chr
 
 type ArgType = VT
 
@@ -124,9 +110,6 @@ promoteList (Expr t b l hs) = Expr (VList t) b l ("["++hs++"]")
 
 applyHs :: String -> Expr -> Expr
 applyHs s (Expr t b l hs) = Expr t b l $ app1 s hs
-
--- vectorizeApp1 (V v) (VList t) op hs = vectorizeApp1 (V v) t (app1 "map" op) hs
--- vectorizeApp1 _ _ op hs = app1 op hs
 
 applyExpr :: Expr -> Expr -> Expr
 applyExpr e1 (Expr (Vec t2) b2 l2 hs2) = appT unVec $ applyExpr (applyHs "map" e1) (Expr t2 b2 l2 hs2)

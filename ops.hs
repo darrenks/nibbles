@@ -81,9 +81,8 @@ getOps _ = [
 	op("-", [9], [int, list], "step" ~> a2, [2]),
 -- 		op("-", [9], [Chr, l], (todo::VT, todo::String), []), -- not sure yet, chr list
 	-- Desc: Filter
--- Example: -,5%$2 -> [1,3,5]
--- 	op("-", [9], [list, Fn (elemT.a1)], "flip$filter.(truthy.)" ~> a1, []),
-	op("-", [9], [list, Fn (elemT.a1)], truthy2"flip$filter".a2 ~> a1, []),
+	-- Example: -,5%$2 -> [1,3,5]
+	op("-", [9], [list, Fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, []),
 	-- Desc: Multiply
 	-- Example: *7 6 -> 42
 	op("*", [10], [Coerce num, Vec $ Coerce num], "*" ~> a1, [-1, 2]),
@@ -151,7 +150,7 @@ getOps _ = [
 	-- Desc: if/else
 	-- Example: ? 0 "T" "F" -> "F"
 	-- Test: ? 1 1 "F" -> "1"
-	op("?", [15], [num, Coerce anyT, Coerce anyT], truthy"iff".a1 ~> a2, []),
+	op("?", [15], [num, Coerce anyT, Coerce anyT], ("iff."++).(truthy.a1) ~> a2, []),
 	-- Desc: Index
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test: ? ,3 4 -> 0

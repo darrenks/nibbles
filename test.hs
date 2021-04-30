@@ -12,8 +12,6 @@ import Data.List
 import Data.Char (isSpace)
 import Data.List.Split -- needs cabal install -lib split
 
---todo remove spaces from lit == test
-
 testCases = [
 	(" 0", "0", 2),
 	(" 1", "1", 2),
@@ -95,3 +93,5 @@ main=do
 -- test main
 -- test multiples output values
 -- test output of different types
+
+-- test finish

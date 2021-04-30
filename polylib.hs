@@ -4,10 +4,8 @@ module Polylib where
 import Data.Char
 import Types
 
-truthy f (VInt _) = "("++f++"."++"(>0)"++")"
-
-
-truthy2 f (VInt _) = "("++f++"."++"((>0).)"++")"
+truthy (VInt _) = "(>0)"
+truthy (VList _) = "(not null)"
 
 inspect (VInt False) = "(sToA.show)"
 inspect (VInt True) = "(sToA.show.chr.fromIntegral)"
@@ -29,7 +27,6 @@ finish e = finish'' e
 -- finish t
 -- 	| sdim t > 2 = app1 (finish (lt t)) (join 
 
--- join (VInt False) = ("(\\a->intercalate a $map "++inspect [int]++")", str)
 join (VInt False) = (str, "(\\a b->intercalate a (map "++inspect int++" b))")
 join (VList (VInt True)) = (str, "intercalate")
 join (VList e) = (VList rt, "(map."++ej++")") where (rt, ej)=join e
