@@ -8,27 +8,24 @@ table, th, td {
 }
 
 .code { 
-    font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
-    font-size: 12px; 
-    color: var(--color-text-primary); 
-    word-wrap: normal; 
-/*     white-space: pre;  */
+	font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
+	font-size: 12px; 
+	color: var(--color-text-primary); 
+	word-wrap: normal; 
 }
 
 .stretch{
-/* 	width: 5rem; */
 	height: 1rem;
 	text-align: justify;
 	text-justify: inter-word;
 }
 
 .stretch:after{
-  width:100%;
-  content: '';
-  display:inline-block;
+	width:100%;
+	content: '';
+	display:inline-block;
 }
 
 .center{
-/* 	width: 5rem; */
 	text-align: center;
 }
