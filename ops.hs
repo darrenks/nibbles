@@ -141,6 +141,7 @@ getOps _ = [
 	-- Desc: value at index
 	-- Example: ^"asdf" 2 -> 's'
 	-- Test: ^"asdf" 0 -> 'f'
+	-- Test: ^"asdf"~ -> 'a'
 	op("^", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 -- 		-- todo ^ chr !!
 

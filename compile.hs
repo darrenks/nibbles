@@ -120,6 +120,7 @@ convertAutoType VAuto = int
 convertAutoType t = t
 convertAuto (Expr VAuto b l _) auto = Expr int b l (show auto)
 convertAuto e auto = e
+-- todo only step through if arg could be an auto (int like)
 convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ repeat undefined)
 
 getValue :: InputCode ic => Thunk ic -> (ic, Expr)
