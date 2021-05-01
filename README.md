@@ -41,7 +41,7 @@ The final result is a list of strings, which by default are implicitly unlined a
 
 There are lots of pain points in this solution still.
 
-Programs are written is "literate form" (.nbl) files. You can convert them to bytes (.nbb) files by using the `-c` option (and you can convert back to literate form with `-e`). In the binary form instruction ops are heavily overloaded by type, allowing for more than 16 possible instructions. Each character in literate form corresponds to half a byte, with the exception of numbers and strings. Numbers require 1 nibble (half byte) to initiate number mode and 1 nibble per octal digit of the number in question. So 7 is 1 byte and 8 is 1.5 bytes. Strings are 1 nibble to initiate string mode and then 1 byte per character of the string. So "hi" is 2.5 bytes. Space and newline each require only 1 nibble.
+Programs are written in "literate form" (.nbl) files. You can convert them to bytes (.nbb) files by using the `-c` option (and you can convert back to literate form with `-e`). In the binary form instruction ops are heavily overloaded by type, allowing for more than 16 possible instructions. Each character in literate form corresponds to half a byte, with the exception of numbers and strings. Numbers require 1 nibble (half byte) to initiate number mode and 1 nibble per octal digit of the number in question. So 7 is 1 byte and 8 is 1.5 bytes. Strings are 1 nibble to initiate string mode and then 1 byte per character of the string. So "hi" is 2.5 bytes. Space and newline each require only 1 nibble. Empty string is 2 bytes.
 
 Bugs, suggestions, and code reviews are appreciated (I'm new to Haskell), email me at nibbles at golfscript com. For suggestions please be familiar with the philosophy.
 
