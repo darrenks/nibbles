@@ -2,7 +2,7 @@
 
 Nibbles is a minimal codegolf language. It is also functional, prefix based, statically typed, and lazy. Each instruction is half a byte.
 
-It is in Alpha, meaning things will be drastically changed. There is also minimal documentation (but there is a full [quick reference](http://nibbles.golf/quickref.html)).
+It is in Alpha, meaning things will be drastically changed. There is also minimal documentation (but there is a full [quick reference](https://nibbles.golf/quickref.html)).
 
 If you post answers please designate them as Nibbles Alpha so as not to be confusing later when 1.0 is released.
 
@@ -13,7 +13,7 @@ Compile main.hs for command line use (it will compile nibbles code to out.hs whi
 ## Basics:
 Each op is one nibble (half a byte). You code in regular ascii (where each op is 1 character) and can automatically compile to bytes (since most competitions measure bytes).
 
-Syntax is `Expr :: op Expr Expr ... Expr`. The number of args depends on the arity of the op. This is also called prefix notation. So for example ```+ 1 2``` gives ```3```. See [quick reference](http://nibbles.golf/quickref.html) for the full list of ops and examples. In this example `+` takes 2 arguments and the numbers each take 0 arguments.
+Syntax is `Expr :: op Expr Expr ... Expr`. The number of args depends on the arity of the op. This is also called prefix notation. So for example ```+ 1 2``` gives ```3```. See [quick reference](https://nibbles.golf/quickref.html) for the full list of ops and examples. In this example `+` takes 2 arguments and the numbers each take 0 arguments.
 
 Functions are implicitly created for ops that require functions (i.e. map). Arguments to functions are referenced using DeBruijn indicies. `$` = 1st, `@` = 2nd, `\2`-`\f` for 3rd-16th. So for example `%,3 +1$` maps through the list `[1,2,3]` and adds 1 to the argument which is the element of the list.
 

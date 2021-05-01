@@ -17,6 +17,8 @@ import Data.List
 import Data.Char
 import Data.Maybe
 
+-- todo javascript show examples/source if hover over
+
 main=do
 	descs <- getDescs
 	examples <- getExamples

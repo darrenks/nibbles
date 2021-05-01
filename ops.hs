@@ -25,6 +25,7 @@ getOps _ = [
 	op("~", [0], [], ("undefined"::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example: 3 -> 3
+	-- todo show 0-9 as lit form
 	atom("0", [1], const $ const parseIntExpr), 
 	-- Desc: string
 	-- Example: "hi\n" -> "hi\n"
@@ -38,7 +39,7 @@ getOps _ = [
 	atom("@", [4], getArg 1),
 	-- Desc: nth arg
 	-- Example: ;1;2;3 \2 -> 1
-	atom("\\", [5], getArgN),
+	atom("\\", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
 	-- Example: ;3 +$$ -> 6
 	op(";", [6], [anyT, Fn a1], "flip id" ~> a2, []),
