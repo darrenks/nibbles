@@ -2,8 +2,8 @@ module Args(getArg, getArgN, addLambda) where
 
 import Expr
 import Types
-import InputCode
 import Numeric (showHex)
+import Parse
 
 argStr n = "arg" ++ show n
 argLen = sum . (map argsize)
@@ -31,6 +31,7 @@ addLambda context argT (Expr t b l hs) =
 
 getArg n vt e code = (code, setTAndHs e argT argHs) where (argT, argHs) = argn vt n
 
+getArgN :: [VT] -> Expr -> Code -> (Code, Expr)
 getArgN vt (Expr _ nib lit _) code = (afterSlashCode, Expr argT (nib++[v]) (lit++showHex v "") argHs) 
 	where 
 		(argT, argHs) = argn vt v

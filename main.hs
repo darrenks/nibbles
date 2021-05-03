@@ -41,8 +41,8 @@ main=do
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
 	let Expr t b lit hs = case parseMode of
-		FromLit -> compile $ NibLit contents
-		FromBytes -> compile $  Nibbles $ concatMap fromByte contents
+		FromLit -> compile $ Lit contents 0
+		FromBytes -> compile $  Nib (concatMap fromByte contents) 0
 	-- todo for adding args, need to add types, depth, and hs setters
 	case filter isOpt args of
  		[] -> do

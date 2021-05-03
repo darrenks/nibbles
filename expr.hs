@@ -4,12 +4,11 @@ import Types
 
 type HsCode = String
 type OldNibLit = String
-newtype NibLit = NibLit String deriving (Show, Eq)
 type Nibble = Int
-newtype Nibbles = Nibbles [Int] deriving Show
 --todo put InputCode into Expr
 data Expr = Expr VT [Nibble] OldNibLit HsCode deriving Show
-data Thunk ic = Thunk ic [VT]
+data Thunk = Thunk Code [VT]
+data Code = Lit String Int | Nib [Int] Int deriving Show
 
 app1 op hs1 = "(" ++ op ++ " " ++ hs1 ++ ")"
 -- vectorizeApp1 (V v) (VList t) op hs = vectorizeApp1 (V v) t (app1 "map" op) hs

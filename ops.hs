@@ -6,11 +6,12 @@ import Types
 import Polylib
 import Expr
 import Parse
-import InputCode
 import Args
+import Parse
 
-data Operation ic = Op [VT] ([VT]->(VT, String)) [Int] | Atom ([VT] -> Expr -> ic -> (ic, Expr)) deriving Show
+data Operation = Op [VT] ([VT]->(VT, String)) [Int] | Atom ([VT] -> Expr -> Code -> (Code, Expr)) deriving Show
 
+-- todo don't need thunk here now that input code isn't a class
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
 
@@ -18,7 +19,7 @@ todo = error "todo"
 autoTodo = 0
 impossibleAuto = 0
 
-getOps :: InputCode ic => Thunk ic -> [(String, [Int], Operation ic)]
+getOps :: Thunk -> [(String, [Int], Operation)]
 getOps _ = [
 	-- Desc: auto int
 	-- Example: +4~ -> 5
@@ -97,6 +98,9 @@ getOps _ = [
 	-- Example: *,3+$@ -> 6
 	-- todo make/test empty
 	op("*", [10], [list, Fn (\[VList e]->VPair e e)], "flip$foldr1.curry" ~> a2, []),
+	-- Desc: sort
+	-- Example: //"asdf" -> "adfs"
+	op("//", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: reverse
 	-- Example: /,3 -> [3,2,1]
 	op("/", [11], [list], "reverse" ~> a1, []),

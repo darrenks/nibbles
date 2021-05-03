@@ -14,7 +14,7 @@ inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++
 
 -- todo this could be cleaner with join?
 finish'' (VInt False) = "(aToS."++inspect int++")"
-finish'' (VInt True) = "((:[]).chr.fromInteger)"
+finish'' (VInt True) = "((:[]).chr.fromIntegral)"
 finish'' (VList (VInt True)) = "aToS"
 finish'' (VList e) = "(concatMap " ++ finish'' e ++ ")"
 finish' (VList (VInt True)) = finish'' str
