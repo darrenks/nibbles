@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), getOps) where
+module Ops (Operation(..), ops) where
 
 import Types
 import Polylib
@@ -19,15 +19,15 @@ todo = error "todo"
 autoTodo = 0
 impossibleAuto = 0
 
-getOps :: Thunk -> [(String, [Int], Operation)]
-getOps _ = [
+ops :: [(String, [Int], Operation)]
+ops = [
 	-- Desc: auto int
 	-- Example: +4~ -> 5
 	op("~", [0], [], ("undefined"::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example: 3 -> 3
 	-- todo show 0-9 as lit form
-	atom("0", [1], const $ const parseIntExpr), 
+	atom("0-9", [1], const $ const parseIntExpr), 
 	-- Desc: string
 	-- Example: "hi\n" -> "hi\n"
 	-- (size 6)

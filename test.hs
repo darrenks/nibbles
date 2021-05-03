@@ -73,7 +73,7 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 
 main=do
 	additionalTests <- getTestsFromAnnotations
-	let tests = map toTest $ (testCases ++ additionalTests)
+	let tests = map toTest $ take 100 $ (testCases ++ additionalTests)
 	header <- readFile "header.hs"
 	let prog = header ++ "\nmain=do;" ++ concatMap fst tests
 	result <- runHs prog

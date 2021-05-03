@@ -46,8 +46,9 @@ main=do
 	-- todo for adding args, need to add types, depth, and hs setters
 	case filter isOpt args of
  		[] -> do
- 			putStrLn $ (show t) ++ ", size = " ++ (show $ length b) ++ ", unused = " ++ (show $ "length rest") 
- 			putStrLn $ lit ++ "\n" ++ hs
+--  			putStrLn $ (show t)
+ 			hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
+--  			putStrLn $ lit ++ "\n" ++ hs
  			header <- readFile "header.hs"
  			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++hs
 		["-c"] -> do
@@ -59,6 +60,6 @@ main=do
 		["-v"] -> putStrLn "nibbles alpha"
 		e -> error $ "invalid option " ++ (show e) ++ "\n" ++ usage
 	where isOpt = isPrefixOf "-"
-	      toBytes s = map toByte $ init $ reshape 2 (s ++ [0, undefined])
+	      toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
 
 --   hSetBuffering stdout NoBuffering

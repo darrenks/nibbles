@@ -4,7 +4,7 @@
 -- multiletter commands
 -- allow flipped ops if diff type
 
-module Compile(compile) where
+module Compile(compile,uselessOp) where
 
 import Data.List
 import Data.Char
@@ -21,7 +21,8 @@ import Args
 import Parse
 
 compile :: Code -> Expr
-compile input=snd $ head $ toExprList $ Thunk input[]
+compile input = if empty rest then e else error $ "unused code (todo make do something useful)\n"++(show rest)
+	where (rest, e) =  head $ toExprList $ Thunk (consumeWhitespace input) []
 
 coerce2(NoType, b) = b
 
@@ -131,7 +132,7 @@ convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ rep
 
 getValue :: Thunk -> [[(Code,Expr)]] -> [(Code, Expr)]
 getValue thunk offsetExprs = (after,expr):getValue (Thunk after contextTs) (drop (cp after-cp code) offsetExprs) where
-	(after,expr) = fromMaybe fail $ msum (map tryOp (getOps thunk))
+	(after,expr) = fromMaybe fail $ msum $ map tryOp ops
 	fail = parseError "no matching op" thunk
 	Thunk code contextTs = thunk
 	tryOp (lit, nib, op) = match code (lit, nib) >>=

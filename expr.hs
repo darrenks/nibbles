@@ -5,15 +5,12 @@ import Types
 type HsCode = String
 type OldNibLit = String
 type Nibble = Int
---todo put InputCode into Expr
 data Expr = Expr VT [Nibble] OldNibLit HsCode deriving Show
 data Thunk = Thunk Code [VT]
 data Code = Lit String Int | Nib [Int] Int deriving Show
+uselessOp = 7 :: Int
 
 app1 op hs1 = "(" ++ op ++ " " ++ hs1 ++ ")"
--- vectorizeApp1 (V v) (VList t) op hs = vectorizeApp1 (V v) t (app1 "map" op) hs
--- vectorizeApp1 _ _ op hs = app1 op hs
-
 
 retT (Expr t _ _ _) = t
 setT t (Expr _ b l hs) = Expr t b l hs
