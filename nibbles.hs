@@ -46,7 +46,7 @@ main=do
 	-- todo for adding args, need to add types, depth, and hs setters
 	case filter isOpt args of
  		[] -> do
---  			putStrLn $ (show t)
+ 			putStrLn $ show t
  			hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
 --  			putStrLn $ lit ++ "\n" ++ hs
  			header <- readFile "header.hs"

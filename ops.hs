@@ -94,7 +94,7 @@ ops = [
 	op("-", [9], [list, Fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, []),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
-	op("*", [10], [Coerce num, Vec $ Coerce num], "*" ~> a1, [-1, 2]),
+	op("*", [10], [Coerce num, Vec $ Coerce num], "*" ~> a2, [-1, 2]),
 -- 			-- 	-- todo * for either one being a char...
 -- 		op("*", [10], [N, Str], (a1, todo::String), []), -- not sure yet, str int/chr (atoi+, ~ = 0, so it does atoi
 -- 		op("*", [10], [N, V l], (a2, "*"), [-1, 2]),

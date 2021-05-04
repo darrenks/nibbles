@@ -66,9 +66,6 @@ main=do
 	putStrLn $ "Ran " ++ show (length tests) ++ " tests."
 
 -- todo
--- check that consume all and only 1 expr
--- 
--- ---
 -- 
 -- check that literate form is non overlapping
 -- check that binary form is non overlapping
