@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings, ExtendedDefaultRules #-}
 
--- runhaskell web/quickref.hs > web/quickref.html
+-- runhaskell web/quickref.hs > web/site/quickref.html
 
 -- needs cabal install --lib blaze-html
 import Text.Blaze.Html5 as H hiding (main, map)
@@ -66,7 +66,7 @@ toQuickRef (Atom _) = [toHtml "",toHtml ""]
 toQuickRef (Op types impl autos) = [
 	H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
 		toHtml $ unwords $ zipWith typeToStr types ['a'..],
-	H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map show autos)]
+	H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map show usableAutos)]
 	where usableAutos = filter (/= impossibleAuto) autos
 	
 

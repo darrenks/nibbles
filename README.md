@@ -8,7 +8,7 @@ If you post answers please designate them as Nibbles Alpha so as not to be confu
 
 I am using 8.10 of GHC (but it isn't doing anything fancy), along with the split library (cabal install --lib split).
 
-Compile main.hs for command line use (it will compile nibbles code to out.hs which you then need to compile/run).
+Compile nibbles.hs for command line use (it will compile nibbles code to out.hs which you then need to compile/run).
 
 ## Basics:
 Each op is one nibble (half a byte). You code in regular ascii (where each op is 1 character) and can automatically compile to bytes (since most competitions measure bytes).
