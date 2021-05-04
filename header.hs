@@ -5,7 +5,6 @@ import Data.Char
 import Data.Maybe
 import Data.List.Split -- needs cabal install -lib split
 
-
 sToA = map ord
 aToS = map$chr.fromIntegral
 

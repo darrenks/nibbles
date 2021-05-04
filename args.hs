@@ -3,7 +3,7 @@ module Args(getArg, getArgN, addLambda) where
 import Expr
 import Types
 import Numeric (showHex)
-import Parse
+import Parse (nextHex)
 
 argStr n = "arg" ++ show n
 argLen = sum . (map argsize)
@@ -29,10 +29,10 @@ addLambda context argT (Expr t b l hs) =
 	Expr t b l ("(\\"++ argLhs (getDepth context) argT ++" ->" ++ hs ++")")
 
 
-getArg n vt e code = (code, setTAndHs e argT argHs) where (argT, argHs) = argn vt n
+getArg n e (Thunk code vt) = (code, setTAndHs e argT argHs) where (argT, argHs) = argn vt n
 
-getArgN :: [VT] -> Expr -> Code -> (Code, Expr)
-getArgN vt (Expr _ nib lit _) code = (afterSlashCode, Expr argT (nib++[v]) (lit++showHex v "") argHs) 
+getArgN :: Expr -> Thunk -> (Code, Expr)
+getArgN (Expr _ nib lit _) (Thunk code vt) = (afterSlashCode, Expr argT (nib++[v]) (lit++showHex v "") argHs) 
 	where 
 		(argT, argHs) = argn vt v
 		(v, afterSlashCode) = nextHex code

@@ -1,4 +1,17 @@
-module Parse where
+-- Todo hide Lit to enforce whitespace always consumed
+-- convention is parse consumes up until next non ignorable code
+module Parse(
+	parseIntExpr,
+	parseStrExpr,
+	cp,
+	match,
+	parseError,
+	nextOffset,
+	consumeWhitespace,
+	nextHex,
+	empty,
+	fromByte,
+	toByte) where
 
 import Expr
 import Types
@@ -10,12 +23,6 @@ import Text.ParserCombinators.ReadP (gather, readP_to_S)
 import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String))
 
 import Data.List
-
--- The Int is the number of characters consumed so far
--- convention cp (code pointer) = this number
-
-zeroNibVal = 1
-quoteNibVal = 2
 
 toByte :: [Int] -> Char
 toByte [a,b]=chr $ 16 * a + b
@@ -91,23 +98,24 @@ consumeWhitespace (Lit (c:s) cp)
 	| otherwise = Lit (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
---todo can stop them from hardcoding their nib/lit to (by making default expr)
-parseIntExpr :: Code -> (Code, Expr)
-parseIntExpr code = (rest, Expr int (intToNib n) (' ':show n) (i n))
-	where (n, rest) = parseInt code
+parseIntExpr :: Expr -> Thunk -> (Code, Expr)
+parseIntExpr (Expr _ b _ _) (Thunk code _) =
+	(rest, Expr int (b ++ intToNib n) (' ':show n) (i n))
+		where (n, rest) = parseInt code
 
-parseStrExpr :: Code -> (Code, Expr)
-parseStrExpr code = (rest, Expr str (strToNib s) (show s) (app1 "sToA" (show s)))
-	where (s, rest) = parseStr $ code
+parseStrExpr :: Expr -> Thunk -> (Code, Expr)
+parseStrExpr (Expr _ b _ _) (Thunk code _) =
+	(rest, Expr str (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
+		where (s, rest) = parseStr $ code
 
 intToNib :: Integer -> [Nibble]
-intToNib (-1)=[zeroNibVal, 0]
-intToNib n=zeroNibVal:(init digits ++ [last digits + 8])
+intToNib (-1)=[0]
+intToNib n=init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 strToNib :: String -> [Nibble]
-strToNib "" = [quoteNibVal,2,0]
-strToNib s = quoteNibVal: (concatMap (\(c,last)->let oc = ord c in case c of
+strToNib "" = [2,0]
+strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	'\n' -> [last]
 	' ' -> [1+last]
 	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]

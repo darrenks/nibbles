@@ -74,12 +74,14 @@ todo = error "todo"
 toExprList :: Thunk -> [(Code, Expr)]
 toExprList = head . exprsByOffset
 
--- 	(rest, e) : toExprList (Thunk rest vt) where
--- 		(rest, e) = getValue (Thunk code vt)
+getValueL thunk offsetExprs = (after,expr) : getValueL (Thunk after context) offsetAfterExprs where
+	(after,expr) = getValue thunk offsetExprs
+	Thunk code context = thunk
+	offsetAfterExprs = drop (cp after-cp code) offsetExprs
 
 exprsByOffset :: Thunk -> [[(Code, Expr)]]
 exprsByOffset (Thunk code vt) =
-	getValue (Thunk code vt) rest : rest where
+	getValueL (Thunk code vt) rest : rest where
 		rest = exprsByOffset (Thunk (nextOffset code) vt)
 
 type Accum = (Thunk, [VT], VT)
@@ -130,25 +132,21 @@ convertAuto e auto = e
 -- todo only step through if arg could be an auto (int like)
 convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ repeat undefined)
 
-getValue :: Thunk -> [[(Code,Expr)]] -> [(Code, Expr)]
-getValue thunk offsetExprs = (after,expr):getValue (Thunk after contextTs) (drop (cp after-cp code) offsetExprs) where
-	(after,expr) = fromMaybe fail $ msum $ map tryOp ops
-	fail = parseError "no matching op" thunk
-	Thunk code contextTs = thunk
-	tryOp (lit, nib, op) = match code (lit, nib) >>=
-		\afterOpCode -> let
-			afterOpThunk = (Thunk afterOpCode contextTs)
-			valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
-			valTypes = map (convertAutoType.retT.snd) valList
-			partialExpr = (Expr undefined nib lit undefined)	
-			convertOp (Op ats impl autos) =
-				if typeMatch then Just $ makeExpr else Nothing where
-					typeMatch = and $ zipWith3 argMatch ats valTypes (init $ inits valTypes)
-					(nextCode, argList) =  massageArgs afterOpThunk $ zip ats (convertAutos (valList) autos)
-					makeExpr = (nextCode, foldl applyExpr initExpr argList)
-					initExpr = setTAndHs partialExpr rt ("("++hs++")")
-					(rt, hs) = impl $ map retT argList
-			convertOp (Atom impl) = 
-				Just $ impl contextTs partialExpr afterOpCode
-			in convertOp op
+getValue :: Thunk -> [[(Code,Expr)]] -> (Code, Expr)
+getValue (Thunk code contextTs) offsetExprs = fromMaybe fail $ msum $ map tryOp ops where
+	fail = parseError "no matching op" $ Thunk code contextTs
+	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
+		afterOpThunk = (Thunk afterOpCode contextTs)
+		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
+		valTypes = map (convertAutoType.retT.snd) valList
+		partialExpr = (Expr undefined nib lit undefined)	
+		convertOp (Op ats impl autos) =
+			if typeMatch then Just $ makeExpr else Nothing where
+				typeMatch = and $ zipWith3 argMatch ats valTypes (init $ inits valTypes)
+				(nextCode, argList) =  massageArgs afterOpThunk $ zip ats (convertAutos (valList) autos)
+				makeExpr = (nextCode, foldl applyExpr initExpr argList)
+				initExpr = setTAndHs partialExpr rt ("("++hs++")")
+				(rt, hs) = impl $ map retT argList
+		convertOp (Atom impl) = Just $ impl partialExpr afterOpThunk
+		in convertOp op
 

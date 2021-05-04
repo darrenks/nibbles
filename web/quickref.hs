@@ -66,7 +66,8 @@ toQuickRef (Atom _) = [toHtml "",toHtml ""]
 toQuickRef (Op types impl autos) = [
 	H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
 		toHtml $ unwords $ zipWith typeToStr types ['a'..],
-	H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toHtml (unwords $ map show autos)]
+	H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map show autos)]
+	where usableAutos = filter (/= impossibleAuto) autos
 	
 
 typeToStr (Cond "list" _) n = "[" ++ [n] ++ "]"

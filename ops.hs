@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), ops) where
+module Ops (Operation(..), ops, impossibleAuto) where
 
 import Types
 import Polylib
@@ -9,15 +9,14 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [VT] ([VT]->(VT, String)) [Int] | Atom ([VT] -> Expr -> Code -> (Code, Expr)) deriving Show
+data Operation = Op [VT] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Code, Expr)) deriving Show
 
--- todo don't need thunk here now that input code isn't a class
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
 
 todo = error "todo"
 autoTodo = 0
-impossibleAuto = 0
+impossibleAuto = -77 -- suppress displaying in quickref
 
 ops :: [(String, [Int], Operation)]
 ops = [
@@ -27,11 +26,11 @@ ops = [
 	-- Desc: integer
 	-- Example: 3 -> 3
 	-- todo show 0-9 as lit form
-	atom("0-9", [1], const $ const parseIntExpr), 
+	atom("0-9", [1], parseIntExpr), 
 	-- Desc: string
 	-- Example: "hi\n" -> "hi\n"
 	-- (size 6)
-	atom("\"", [2], const $ const parseStrExpr),
+	atom("\"", [2], parseStrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 3
 	atom("$", [3], getArg 0),
@@ -160,13 +159,13 @@ ops = [
 	-- Desc: index
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test: ? ,3 4 -> 0
-	op("?", [15], [list, elemOfA1], (int, "\\a e->1+(fromMaybe (-1) $ elemIndex e a)"), []), 
+	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> int, []), 
 -- 			--todo if not eq then subarray index?
 	-- Desc: diff
 	-- Example: ?"abcd""bd" -> "ac"
 	-- Test: ?"abc""de" -> "abc"
 	-- Test: ?"aa""a" -> "a"
-	op("?", [15], [list, sameAsA1], (a1, "\\\\"), []), -- todo e==e2
+	op("?", [15], [list, sameAsA1], "\\\\" ~> a1, []), -- todo e==e2
 	-- Desc: show
 	-- untested example: p"a" -> "\"a\""
 	op("p", onlyLit, [anyT], inspect.a1 ~> str, [])]
