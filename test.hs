@@ -12,37 +12,21 @@ import Data.List
 import Data.Char (isSpace)
 import Data.List.Split -- needs cabal install -lib split
 
-testCases = [
-	(" 0", "0", 2),
-	(" 1", "1", 2),
-	(" -1", "-1", 2),
-	(" 7", "7", 2),
-	(" 8", "8", 3),
-	(" 100", "100", 4),
-	
-	("\"abc\"", "\"abc\"", 7),
-	("\"\\n\"", "\"\\n\"", 2),
-	("\" \"", "\" \"", 2),
-	("\"\"", "\"\"", 3),
-	("\"\\200\"", "\"\\200\"", 5),
-	
-	("+ 1 2", "3", 5),
-	("+\" - a -  - b - c - \"\" - \"", "[\"a\",\"b\",\"c\"]",33),
-	(" 1","1",2)]
-
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example: " s || isPrefixOf "-- Test: " s = Just (
+getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (
 	case elemIndex ':' s of
-		Just i -> splitOn " -> " (drop (i + 2) s)
+		Just i -> (input, output, size) where
+			[input,output] = splitOn " -> " (drop (i + 2) s)
+			size = case splitOn "(size" (take i s) of
+				[pre,post] -> read (head $ splitOn ")" post)
+				otherwise -> 0
 	)
 getExample _ = Nothing
 
-toTestFromEx [input, output] = (input, output, 0)
 
 getTestsFromAnnotations = do
 	ops <- readFile "ops.hs"
-	let tests = catMaybes $ map getExample (lines ops)
-	return $ map toTestFromEx tests
+	return $ catMaybes $ map getExample (lines ops)
 
 runHs prog = do
 	writeFile "out.hs" prog
@@ -72,8 +56,8 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 		else putStrLn $ "Test failed: " ++ origLit ++ "\nReason: " ++ reason ++ "\nExpected: " ++ expected ++ "\nActual  : " ++ actual
 
 main=do
-	additionalTests <- getTestsFromAnnotations
-	let tests = map toTest $ take 100 $ (testCases ++ additionalTests)
+	testCases <- getTestsFromAnnotations
+	let tests = map toTest testCases
 	header <- readFile "header.hs"
 	let prog = header ++ "\nmain=do;" ++ concatMap fst tests
 	result <- runHs prog

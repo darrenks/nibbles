@@ -82,7 +82,7 @@ typeToStr (VInt True) _ = "chr"
 typeToStr (Fn f) _ = "fn"
 
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example: " s || isPrefixOf "-- untested example: " s = Just (
+getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- untested example: " s = Just (
 	case elemIndex ':' s of
 		Just i -> splitOn " -> " (drop (i + 2) s)
 	)
@@ -92,7 +92,7 @@ getExample _ = Nothing
 getDesc (c:s) | isSpace c = getDesc s
 getDesc s | isPrefixOf "-- Desc: " s = Just (
 	case elemIndex ':' s of
-		Just i -> drop (i + 2) s
+		Just i -> Data.List.head $ splitOn "." (drop (i + 2) s)
 	)
 getDesc _ = Nothing
 

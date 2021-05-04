@@ -21,15 +21,21 @@ impossibleAuto = -77 -- suppress displaying in quickref
 ops :: [(String, [Int], Operation)]
 ops = [
 	-- Desc: auto int
-	-- Example: +4~ -> 5
+	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], ("undefined"::String)~>VAuto, []),
 	-- Desc: integer
-	-- Example: 3 -> 3
+	-- Example (size 2): 3 -> 3
+	-- Test (size 3): 8 -> 8
+	-- Test (size 4): 100 -> 100
+	-- Test negative one (special case) (size 2): -1 -> -1
 	-- todo show 0-9 as lit form
 	atom("0-9", [1], parseIntExpr), 
 	-- Desc: string
-	-- Example: "hi\n" -> "hi\n"
-	-- (size 6)
+	-- Example (size 6): "hi\n" -> "hi\n"
+	-- Test space (size 2): " " -> " "
+	-- Test empty (size 3): "" -> ""
+	-- Test escapes: "\"" -> "\""
+	-- Test binary (size 5): "\200" -> "\200"
 	atom("\"", [2], parseStrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 3
@@ -45,32 +51,32 @@ ops = [
 	op(";", [6], [anyT, Fn a1], "flip id" ~> a2, []),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
-	-- Test: :"abc"1 -> "abc1"
-	-- Test: :1"abc" -> "1abc"
-	-- Test: :1 2 -> [1,2]
+	-- Test coerce: :"abc"1 -> "abc1"
+	-- Test coerce: :1"abc" -> "1abc"
+	-- Test promoting to list: :1 2 -> [1,2]
 	op(":", [7], [PromoteList (Coerce anyT), PromoteList (Coerce anyT)], "++" ~> a1, []),
 	-- Desc: add
 	-- Example: +1 2 -> 3
-	-- Test: +2 ^"a"1 -> 'c'
-	-- Test: +^"a"1 2 -> 'c'
-	-- Test: +1,3 -> [2,3,4]
-	-- Test: +1 %,2 ,2 -> [[2,3],[2,3]]
-	-- Test: +1"abc" -> "bcd"
-	-- Test: +^"a"1 :1 2 -> "bc"
+	-- Test coerce: +2 ^"a"1 -> 'c'
+	-- Test coerce: +^"a"1 2 -> 'c'
+	-- Test vectorized: +1,3 -> [2,3,4]
+	-- Test 2d vectorized: +1 %,2 ,2 -> [[2,3],[2,3]]
+	-- Test string vectorized: +1"abc" -> "bcd"
+	-- Test char: +^"a"1 :1 2 -> "bc"
 	op("+", [8], [Coerce num, Vec $ Coerce num], "+" ~> a2, [1,1]),
 -- 		--todo delete one this v ^ but need to coerce in vector
 -- 		op("+", [8], [N, V N], (a2, "+"), [todo]),
-	-- Desc: split
+	-- Desc: split. Removing empties.
 	-- Example: +"a b c"" " -> ["a","b","c"]
-	-- Test: +" a  b "" " -> ["a","b"]
+	-- Test empties: +" a  b "" " -> ["a","b"]
 	op("+", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> listOf.a1, []),
 	-- Desc: join
 	-- Example: +" ",3 -> "1 2 3"
-	-- Test: +" "%,2,3 -> ["1 2 3","1 2 3"]
+	-- Test 2d: +" "%,2,3 -> ["1 2 3","1 2 3"]
 	op("+", [8], [str, list], join.elemT.a2, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
-	-- Test: +,0 -> 0
+	-- Test empty: +,0 -> 0
 	op("+", [8], [listOf int], "sum" ~> int, []),
 	-- Desc: concat
 	-- Example: +%,3,$ -> [1,1,2,1,2,3]
@@ -117,7 +123,7 @@ ops = [
 	op("%", [12], [list, Fn (elemT.a1)], "flip map" ~> listOf.a2, []),
 	-- Desc: drop
 	-- Example: %3,5 -> [4,5]
-	-- Test: %5,3 -> []
+	-- Test more than size: %5,3 -> []
 	-- todo test/make negative
 	op("%", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
 -- 			--  	-- todo ^ chr drop
@@ -142,10 +148,10 @@ ops = [
 	-- todo test/make negative
 	-- Example: ^3 "ab" -> "ababab"
 	op("^", [14], [num, list], "(concat.).(replicate.fromIntegral)" ~> a2, [1]),
-	-- Desc: value at index
+	-- Desc: value at index. Wrapped.
 	-- Example: ^"asdf" 2 -> 's'
-	-- Test: ^"asdf" 0 -> 'f'
-	-- Test: ^"asdf"~ -> 'a'
+	-- Test 0 (wrapped): ^"asdf" 0 -> 'f'
+	-- Test auto: ^"asdf"~ -> 'a'
 	op("^", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 -- 		-- todo ^ chr !!
 
@@ -154,17 +160,17 @@ ops = [
 	op("^", [14], [list, list], "zip" ~>  listOf.pairOf.(both elemT), []),
 	-- Desc: if/else
 	-- Example: ? 0 "T" "F" -> "F"
-	-- Test: ? 1 1 "F" -> "1"
+	-- Test coerce: ? 1 1 "F" -> "1"
 	op("?", [15], [num, Coerce anyT, Coerce anyT], ("iff."++).(truthy.a1) ~> a2, []),
-	-- Desc: index
+	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
-	-- Test: ? ,3 4 -> 0
+	-- Test not found: ? ,3 4 -> 0
 	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> int, []), 
 -- 			--todo if not eq then subarray index?
 	-- Desc: diff
 	-- Example: ?"abcd""bd" -> "ac"
-	-- Test: ?"abc""de" -> "abc"
-	-- Test: ?"aa""a" -> "a"
+	-- Test non existant elements: ?"abc""de" -> "abc"
+	-- Test doesn't drop all: ?"aa""a" -> "a"
 	op("?", [15], [list, sameAsA1], "\\\\" ~> a1, []), -- todo e==e2
 	-- Desc: show
 	-- untested example: p"a" -> "\"a\""
