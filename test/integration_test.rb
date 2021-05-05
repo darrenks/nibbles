@@ -1,11 +1,11 @@
 # test nibbles on a program which computes all primes < 400 then prints 62nd
-test_program = "^; 20?,*$$+%~%,$%~*$,/*@@$ 63\n"
+test_program = "=; 20-,*$$+>~.,$>~*$,/*@@$ 63\n"
 test_file = 'integration_test'
 testnbl = test_file+'.nbl'
 testnbb = test_file+'.nbb'
 `rm #{testnbl} #{testnbb} out.hs 2> /dev/null`
 `ghc nibbles.hs 2> /dev/null`
-File.open(testnbl,'w'){|f|f<<'^; 20?,*$$+%~%,$%~*$,/*@@$ 63'}
+File.open(testnbl,'w'){|f|f<<test_program}
 
 `nibbles #{testnbl} 2> /dev/null`
 out = `runhaskell out.hs`
