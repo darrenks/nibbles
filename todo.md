@@ -5,3 +5,9 @@ for multipage quickref (coerce, etc)
 accept args in any order if different type
 
 char literals
+
+error if lit accidentally would map to something that is an extension
+
+is white space truthiness for chars
+
+something to convert to truthiness

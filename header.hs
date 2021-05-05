@@ -5,8 +5,10 @@ import Data.Char
 import Data.Maybe
 import Data.List.Split -- needs cabal install -lib split
 
+safeChr = chr.(`mod`256)
 sToA = map ord
-aToS = map$chr.fromIntegral
+aToS = map$safeChr.fromIntegral
+bToI b = if b then 1 else 0
 
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
 -- todo unused, use split lib

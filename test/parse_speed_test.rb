@@ -3,6 +3,8 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
+# todo this is only really testing it from binary since literate form has different names now
+
 n=1000
 t=Time.now
 `
@@ -33,4 +35,4 @@ echo long number 1>&2
 time echo '#{'1'*n}' | nibbles -c
 time nibbles a.nbb
 `
-puts Time.now - t > 2 ? 'fail parse too slow' : 'pass parse speed test'
+puts Time.now - t > 3 ? 'fail parse too slow' : 'pass parse speed test'

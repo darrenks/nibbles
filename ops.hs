@@ -28,7 +28,6 @@ ops = [
 	-- Test (size 3): 8 -> 8
 	-- Test (size 4): 100 -> 100
 	-- Test negative one (special case) (size 2): -1 -> -1
-	-- todo show 0-9 as lit form
 	atom("0-9", [1], parseIntExpr), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
@@ -37,6 +36,12 @@ ops = [
 	-- Test escapes: "\"" -> "\""
 	-- Test binary (size 5): "\200" -> "\200"
 	atom("\"", [2], parseStrExpr),
+	-- Desc: char
+	-- Example (size 4): 'b' -> 'b'
+	-- Test (size 3): 'a' -> 'a'
+	-- Test (size 3): ' ' -> ' '
+	-- Test (size 5): '\200' -> '\200'
+	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 3
 	atom("$", [3], getArg 0),
@@ -57,15 +62,14 @@ ops = [
 	op(":", [7], [PromoteList (Coerce anyT), PromoteList (Coerce anyT)], "++" ~> a1, []),
 	-- Desc: add
 	-- Example: +1 2 -> 3
-	-- Test coerce: +2 ="a"1 -> 'c'
-	-- Test coerce: +="a"1 2 -> 'c'
+	-- Test: +2 'a' -> 'c'
+	-- Test: +'a' 2 -> 'c'
+	-- Test: +' ' ' ' -> 64
 	-- Test vectorized: +1,3 -> [2,3,4]
 	-- Test 2d vectorized: +1 .,2 ,2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
-	-- Test char: +="a"1 :1 2 -> "bc"
-	op("+", [8], [Coerce num, Vec $ Coerce num], "+" ~> a2, [1,1]),
--- 		--todo delete one this v ^ but need to coerce in vector
--- 		op("+", [8], [N, V N], (a2, "+"), [todo]),
+	-- Test char vectorized: +'a' :1 2 -> "bc"
+	op("+", [8], [num, Vec num], "+" ~> (\[t1,t2] -> setBaseElem (xorChr [t1, getBaseElem t2]) t2), [1,1]),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
@@ -83,22 +87,20 @@ ops = [
 	op("+", [8], [listOf list], "concat" ~> elemT.a1, []),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
-	op("-", [9], [Coerce num, Coerce num], "-" ~> a1, [1, 1]),
+	-- Test: -'b''a' -> 1
+	-- Test: -'d'1 -> 'c'
+	op("-", [9], [num, num], "-" ~> xorChr, [1, 1]),
 	-- Desc: step
 	-- todo test/make negative
 	-- Example: %2,5 -> [1,3,5]
-	op("%", [9], [int, list], "step" ~> a2, [2]),
--- 		op("-", [9], [Chr, l], (todo::VT, todo::String), []), -- not sure yet, chr list
+	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	op("&", [9], [list, Fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, []),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
-	op("*", [10], [Coerce num, Vec $ Coerce num], "*" ~> a2, [-1, 2]),
--- 			-- 	-- todo * for either one being a char...
--- 		op("*", [10], [N, Str], (a1, todo::String), []), -- not sure yet, str int/chr (atoi+, ~ = 0, so it does atoi
--- 		op("*", [10], [N, V l], (a2, "*"), [-1, 2]),
--- 			-- 	-- todo ^ * chr list
+	-- Test: *2 "dd" -> [200,200]
+	op("*", [10], [num, Vec num], "*" ~> setBaseElem int.a2, [-1, 2]),
 	-- Desc: foldr1
 	-- Example: /,3+$@ -> 6
 	-- todo make/test empty
@@ -111,13 +113,11 @@ ops = [
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
-	op("/", [11], [Coerce num, Coerce num], "div" ~> a1, [autoTodo, 2]),
--- 				-- 	-- todo ^ chr div?
+	op("/", [11], [num, num], "div" ~> int, [autoTodo, 2]),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
--- 			--  	-- todo ^ chr take
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, Fn (elemT.a1)], "flip map" ~> listOf.a2, []),
@@ -126,35 +126,33 @@ ops = [
 	-- Test more than size: >5,3 -> []
 	-- todo test/make negative
 	op(">", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
--- 			--  	-- todo ^ chr drop
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives
-	op("%", [12], [Coerce num, Coerce num], "mod" ~> a1, [autoTodo, 2]),
--- 			-- 	-- todo ^ chr mod - actually that makes sense
+	op("%", [12], [num, num], "mod" ~> int, [autoTodo, 2]),
 	-- Desc: length
-	-- Example: ,"asdf" -> 4
+	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> int, []),
 	-- Desc: range from 1 to
 	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
 	op(",", [13], [num], "\\x->[1..x]" ~> listOf.a1, []),
+	-- Desc: is alpha?
+	-- Example: a'z' -> 1
+	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> int, []),
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
-	op("^", [14], [num, num], "^" ~> a1, [10,2]),
--- 			-- 	-- todo ^ chr pow...
+	op("^", [14], [int, num], "^" ~> a1, [10,2]),
 	-- Desc: replicate
 	-- todo test/make negative
 	-- Example: ^3 "ab" -> "ababab"
-	op("^", [14], [num, list], "(concat.).(replicate.fromIntegral)" ~> a2, [1]),
-	-- Desc: value at index. Wrapped.
+	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [1]),
+	-- Desc: subscript. Wrapped.
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
 	-- Test auto: ="asdf"~ -> 'a'
 	op("=", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
--- 		-- todo ^ chr !!
-
 	-- Desc: zip
 	-- Example: .z,3"abc"+$@ -> "bdf"
 	op("z", [14], [list, list], "zip" ~>  listOf.pairOf.(both elemT), []),
@@ -171,6 +169,7 @@ ops = [
 	-- Example: -"abcd""bd" -> "ac"
 	-- Test non existant elements: -"abc""de" -> "abc"
 	-- Test doesn't drop all: -"aa""a" -> "a"
+	-- todo Test coerce: -"123" 23 -> "1"
 	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []), -- todo e==e2
 	-- Desc: show
 	-- untested example: p"a" -> "\"a\""
@@ -189,6 +188,14 @@ pairOf = uncurry VPair
 
 elemOfA1 = Cond "a" (\[a1] a2->VList a2==a1)
 sameAsA1 = Cond "[a]" (\[a1]->(a1==))
+
+xorChr [VInt a, VInt b] = VInt (a/=b)
+setBaseElem t (VList e) = VList $ setBaseElem t e
+setBaseElem t (Vec e) = VList $ setBaseElem t e
+setBaseElem t _ = t
+getBaseElem (VList e) = getBaseElem e
+getBaseElem (Vec e) = getBaseElem e
+getBaseElem t = t
 
 class Impl impl where
 	toImpl :: impl -> [VT] -> (VT, String)

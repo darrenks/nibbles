@@ -3,6 +3,7 @@
 module Parse(
 	parseIntExpr,
 	parseStrExpr,
+	parseChrExpr,
 	cp,
 	match,
 	parseError,
@@ -20,7 +21,7 @@ import Data.Char
 import Numeric (showOct, readDec, readHex, showHex)
 
 import Text.ParserCombinators.ReadP (gather, readP_to_S)
-import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String))
+import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String), Lexeme(Char))
 
 import Data.List
 
@@ -62,6 +63,18 @@ parseStr(Nib (a:s) cp)
 parseStr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.String str), rest)] -> (str, sLit rest (cp+length used))
 	otherwise -> error $ "unparsable string: " ++ s
+
+specialChars = " \n,.-0a"
+parseChr :: Code -> (Char, Code)
+parseChr(Nib [] cp) = error "unterminated char"
+parseChr(Nib (c:rest) cp)
+	| c == 8 = (toByte rest, Nib (drop 2 rest) (cp+3))
+	| c > 8 = (specialChars !! (c-9), Nib rest (cp+1))
+parseChr(Nib [_] cp) = error "unterminated char"
+parseChr(Nib (a:b:rest) cp) = (toByte [a,b], Nib rest (cp+2))
+parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
+	[((used, Lex.Char char), rest)] -> (char, sLit rest (cp+length used))
+	otherwise -> error $ "unparsable char: " ++ s
 cp (Nib _ cp) = cp
 cp (Lit _ cp) = cp
 
@@ -83,6 +96,7 @@ match (Nib s cp) (_, needle) = if isPrefixOf needle s
 match (Lit s cp) (needle, _)
 	| needle == "0-9" && (isDigit (shead s) || isPrefixOf "-1" s) = Just $ Lit s cp
 	| needle == "\"" && '"' == head s = Just $ Lit s cp
+	| needle == "\'" && '\'' == head s = Just $ Lit s cp
 	| isPrefixOf needle s = Just $ sLit (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
@@ -108,6 +122,11 @@ parseStrExpr (Expr _ b _ _) (Thunk code _) =
 	(rest, Expr str (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
 		where (s, rest) = parseStr $ code
 
+parseChrExpr :: Expr -> Thunk -> (Code, Expr)
+parseChrExpr (Expr _ b _ _) (Thunk code _) =
+	(rest, Expr char (b ++ chrToNib s) (show s) (app1 "ord" (show s)))
+		where (s, rest) = parseChr $ code
+
 intToNib :: Integer -> [Nibble]
 intToNib (-1)=[0]
 intToNib n=init digits ++ [last digits + 8]
@@ -121,3 +140,11 @@ strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
 	otherwise -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
+
+-- todo optimizations for space and newline/etc
+chrToNib :: Char -> [Nibble]
+chrToNib c
+	| c >= chr 128 = 8 : fromByte c
+	| otherwise = case elemIndex c specialChars of
+	Just i -> [9 + i]
+	Nothing -> fromByte c
