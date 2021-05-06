@@ -25,11 +25,11 @@ Input is not supported yet as well as many other things...
 
 Here is a 24 byte (47 nibble) fizzbuzz program (spaces used to show true size):
 ```
-%, 100;:?%$ 3 ""   "Fizz"?%$ 5 ""   "Buzz"?,$$@
+., 100;:?%$ 3 ""   "Fizz"?%$ 5 ""   "Buzz"?,$$@
 ```
 And how it works.
 ```
-% # map
+. # map
  ,100 # list of 1 to 100 - note that 100 is actually 4 nibbles, 1 for number mode, then 3 digits of octal.
  ; # a let statement, 1st arg is value, 2nd is expr with value assigned to 1st debruijn index
   : # list concat of the potential fizz and buzz
