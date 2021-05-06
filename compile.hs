@@ -89,7 +89,9 @@ type Accum = (Thunk, [VT], VT)
 handle (Thunk _ vt, prefixTs, coercedType) (afterArgCode, argExpr) exprFn =
 	((Thunk afterArgCode vt, retT argExpr:prefixTs, coercedType), \ct -> exprFn ct argExpr)
 
--- todo support coerce on Fn, etc...
+-- todo support coerce on Fn, etc
+-- todo this could be cleaned up now that coerce and vec aren't used at same time
+-- todo also convert artype to argspec
 prepassArg :: Accum -> (ArgType, (Code, Expr)) -> (Accum, VT -> Expr)
 prepassArg (Thunk code vt, prefixTs, coercedType) (Fn fnT, _) =
 	((Thunk afterFnCode vt, prefixTs, coercedType), \_ -> addLambda vt argT fnExpr) where
@@ -129,7 +131,6 @@ convertAutoType VAuto = int
 convertAutoType t = t
 convertAuto (Expr VAuto b l _) auto = Expr int b l (show auto)
 convertAuto e auto = e
--- todo only step through if arg could be an auto (int like)
 convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ repeat undefined)
 
 getValue :: Thunk -> [[(Code,Expr)]] -> (Code, Expr)

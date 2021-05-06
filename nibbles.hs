@@ -16,7 +16,7 @@ usage = "\
 \Nibbles - a minimalistic-functional code golf language.\n\
 \\n\
 \Modes:\n\
-\  default = run the nibbles program\n\
+\  default = compile the nibbles program to out.hs\n\
 \  -c = compactify into bytes (2 nibbles each), save to base filename.nbb\n\
 \  -e = expand and print the literate form\n\
 \  -v = version\n\
@@ -46,7 +46,7 @@ main=do
 	-- todo for adding args, need to add types, depth, and hs setters
 	case filter isOpt args of
  		[] -> do
- 			putStrLn $ show t
+--  			putStrLn $ show t
  			hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
 --  			putStrLn $ lit ++ "\n" ++ hs
  			header <- readFile "header.hs"
@@ -57,7 +57,7 @@ main=do
 			hPutStrLn stderr $ "wrote " ++ (show $ length bytes) ++ " bytes to " ++ outname
 			writeFile outname bytes
 		["-e"] -> putStrLn lit
-		["-v"] -> putStrLn "nibbles alpha"
+		["-v"] -> putStrLn "nibbles alpha (unstable)"
 		e -> error $ "invalid option " ++ (show e) ++ "\n" ++ usage
 	where isOpt = isPrefixOf "-"
 	      toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])

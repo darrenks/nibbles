@@ -21,6 +21,7 @@ communitiave/associative
 length / reverse of a constant string
 let let (with new form of let)
 ~ div, or ~ mod
+opcode 15, mismatched 2d+ lists
 
 desired features
 min/max

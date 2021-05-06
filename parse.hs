@@ -75,9 +75,9 @@ parseChr(Nib (a:b:rest) cp) = (toByte [a,b], Nib rest (cp+2))
 parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.Char char), rest)] -> (char, sLit rest (cp+length used))
 	otherwise -> error $ "unparsable char: " ++ s
+
 cp (Nib _ cp) = cp
 cp (Lit _ cp) = cp
-
 empty (Nib [uselessOp] _) = True
 empty (Nib [] _) = True
 empty (Lit [] _) = True
@@ -87,14 +87,12 @@ nextOffset (Lit (c:s) cp) = Lit s (cp+1)
 nextHex (Nib (c:s) cp) = (c, Nib s (cp+1))
 nextHex (Lit (c:s) cp) = (h, sLit s (cp+1)) where [(h, _)] = readHex [c]
 
-shead (s:rest) = s
-
 match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
 
 match (Lit s cp) (needle, _)
-	| needle == "0-9" && (isDigit (shead s) || isPrefixOf "-1" s) = Just $ Lit s cp
+	| needle == "0-9" && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit s cp
 	| needle == "\"" && '"' == head s = Just $ Lit s cp
 	| needle == "\'" && '\'' == head s = Just $ Lit s cp
 	| isPrefixOf needle s = Just $ sLit (drop (length needle) s) (cp+length needle)
@@ -120,12 +118,12 @@ parseIntExpr (Expr _ b _ _) (Thunk code _) =
 parseStrExpr :: Expr -> Thunk -> (Code, Expr)
 parseStrExpr (Expr _ b _ _) (Thunk code _) =
 	(rest, Expr str (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
-		where (s, rest) = parseStr $ code
+		where (s, rest) = parseStr code
 
 parseChrExpr :: Expr -> Thunk -> (Code, Expr)
 parseChrExpr (Expr _ b _ _) (Thunk code _) =
 	(rest, Expr char (b ++ chrToNib s) (show s) (app1 "ord" (show s)))
-		where (s, rest) = parseChr $ code
+		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]
 intToNib (-1)=[0]
@@ -141,7 +139,6 @@ strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	otherwise -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
 
--- todo optimizations for space and newline/etc
 chrToNib :: Char -> [Nibble]
 chrToNib c
 	| c >= chr 128 = 8 : fromByte c

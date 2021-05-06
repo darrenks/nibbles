@@ -14,7 +14,6 @@ data Operation = Op [VT] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Co
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
 
-todo = error "todo"
 autoTodo = 0
 impossibleAuto = -77 -- suppress displaying in quickref
 
@@ -22,7 +21,7 @@ ops :: [(String, [Int], Operation)]
 ops = [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
-	op("~", [0], [], ("undefined"::String)~>VAuto, []),
+	op("~", [0], [], (undefined::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 3): 8 -> 8
@@ -163,14 +162,12 @@ ops = [
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
-	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> int, []), 
--- 			--todo if not eq then subarray index?
+	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> int, []),
 	-- Desc: diff
 	-- Example: -"abcd""bd" -> "ac"
 	-- Test non existant elements: -"abc""de" -> "abc"
 	-- Test doesn't drop all: -"aa""a" -> "a"
-	-- todo Test coerce: -"123" 23 -> "1"
-	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []), -- todo e==e2
+	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []),
 	-- Desc: add w/ cast
 	-- Example: +"10" 2 -> 12
 	op("+", [15], [str, int], "(+).read.aToS" ~> int, [0]),

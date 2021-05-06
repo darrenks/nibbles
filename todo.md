@@ -15,3 +15,5 @@ something to convert to truthiness
 either instead of bool/maybe
 
 pair for things like divmod, splitWhen, etc.
+
+move coerce/etc testing to getting examples from a tutorial
