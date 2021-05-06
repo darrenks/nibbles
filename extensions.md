@@ -51,3 +51,4 @@ functions
 bitwise ^ & |
 string + int coercing the otherway (old idea was to use opcode of *int str)
 	if could reverse operands of + could make it +str int for good literal form
+abs

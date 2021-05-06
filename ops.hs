@@ -171,6 +171,9 @@ ops = [
 	-- Test doesn't drop all: -"aa""a" -> "a"
 	-- todo Test coerce: -"123" 23 -> "1"
 	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []), -- todo e==e2
+	-- Desc: add w/ cast
+	-- Example: +"10" 2 -> 12
+	op("+", [15], [str, int], "(+).read.aToS" ~> int, [0]),
 	-- Desc: show
 	-- untested example: p"a" -> "\"a\""
 	op("p", onlyLit, [anyT], inspect.a1 ~> str, [])]
