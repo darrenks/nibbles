@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Code, Expr)) deriving Show
+data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -51,7 +51,8 @@ ops = [
 	-- Example: ;1;2;3 `2 -> 1
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
-	-- Example: ;3 +$$ -> 6
+	-- Example: ;3+$$ -> 6
+	-- Eaxample: +;3$ -> 6
 	op(";", [6], [anyT, Fn a1], "flip id" ~> a2, []),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
@@ -191,9 +192,6 @@ both f [a,b] = (f a, f b)
 pairOf = uncurry VPair
 x=undefined
 
-elemOfA1 = Cond "a" (\[a1] a2->VList a2==a1)
-sameAsA1 = Cond "[a]" (\[a1]->(a1==))
-
 xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr
 xorChr _ = VInt
@@ -231,3 +229,6 @@ listOf (Exact t) = Exact $ VList t
 listOf (Cond desc c) = Cond ("["++desc++"]") $ const $ c undefined.elemT
 
 elemT (VList e) = e
+
+elemOfA1 = Cond "a" (\[a1] a2->VList a2==a1)
+sameAsA1 = Cond "[a]" (\[a1]->(a1==))

@@ -110,19 +110,19 @@ consumeWhitespace (Lit (c:s) cp)
 	| otherwise = Lit (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-parseIntExpr :: Expr -> Thunk -> (Code, Expr)
-parseIntExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr VInt (b ++ intToNib n) (' ':show n) (i n))
+parseIntExpr :: Expr -> Thunk -> (Thunk, Expr)
+parseIntExpr (Expr _ b _ _) (Thunk code vt) =
+	(Thunk rest vt, Expr VInt (b ++ intToNib n) (' ':show n) (i n))
 		where (n, rest) = parseInt code
 
-parseStrExpr :: Expr -> Thunk -> (Code, Expr)
-parseStrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr vstr (b ++ strToNib s) (show s) (app1 "sToA" (HsAtom $ show s)))
+parseStrExpr :: Expr -> Thunk -> (Thunk, Expr)
+parseStrExpr (Expr _ b _ _) (Thunk code vt) =
+	(Thunk rest vt, Expr vstr (b ++ strToNib s) (show s) (app1 "sToA" (HsAtom $ show s)))
 		where (s, rest) = parseStr code
 
-parseChrExpr :: Expr -> Thunk -> (Code, Expr)
-parseChrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr VChr (b ++ chrToNib s) (show s) (app1 "ord" (HsAtom $ show s)))
+parseChrExpr :: Expr -> Thunk -> (Thunk, Expr)
+parseChrExpr (Expr _ b _ _) (Thunk code vt) =
+	(Thunk rest vt, Expr VChr (b ++ chrToNib s) (show s) (app1 "ord" (HsAtom $ show s)))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]

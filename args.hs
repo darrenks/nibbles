@@ -31,10 +31,10 @@ addLambda :: [VT] -> VT -> Expr -> Expr
 addLambda context argT (Expr t b l hs) =
 	Expr t b l (HsFn (argLhs (getDepth context) argT) hs)
 
-getArg n e (Thunk code vt) = (code, setTAndHs e argT argHs) where (argT, argHs) = argn vt n
+getArg n e (Thunk code vt) = (Thunk code vt, setTAndHs e argT argHs) where (argT, argHs) = argn vt n
 
-getArgN :: Expr -> Thunk -> (Code, Expr)
-getArgN (Expr _ nib lit _) (Thunk code vt) = (afterSlashCode, Expr argT (nib++[v]) (lit++showHex v "") argHs) 
+getArgN :: Expr -> Thunk -> (Thunk, Expr)
+getArgN (Expr _ nib lit _) (Thunk code vt) = (Thunk afterSlashCode vt, Expr argT (nib++[v]) (lit++showHex v "") argHs) 
 	where 
 		(argT, argHs) = argn vt v
 		(v, afterSlashCode) = nextHex code
