@@ -4,29 +4,30 @@ module Polylib where
 import Data.Char
 import Types
 
-truthy (VInt _) = "(>0)"
+truthy VInt = "(>0)"
+truthy VChr = "(>0)"
 truthy (VList _) = "(not null)"
 
-inspect (VInt False) = "(sToA.show)"
-inspect (VInt True) = "(sToA.show.chr.fromIntegral)"
-inspect (VList (VInt True)) = "(sToA.show.aToS)"
+inspect VInt = "(sToA.show)"
+inspect VChr = "(sToA.show.chr.fromIntegral)"
+inspect (VList VChr) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspect et++" v)) ++ (sToA \"]\"))"
 
 -- todo this could be cleaner with join?
-finish'' (VInt False) = "(aToS."++inspect int++")"
-finish'' (VInt True) = "((:[]).chr.fromIntegral)"
-finish'' (VList (VInt True)) = "aToS"
+finish'' VInt = "(aToS."++inspect VInt++")"
+finish'' VChr = "((:[]).chr.fromIntegral)"
+finish'' (VList VChr) = "aToS"
 finish'' (VList e) = "(concatMap " ++ finish'' e ++ ")"
-finish' (VList (VInt True)) = finish'' str
+finish' (VList VChr) = finish'' vstr
 finish' (VList e) = "(unwords . (map " ++ finish'' e ++ "))"
 finish' e = finish'' e
-finish (VList (VInt True)) = finish'' str
+finish (VList VChr) = finish'' vstr
 finish (VList e) = "(unlines . (map " ++ finish' e ++ "))"
 finish e = finish'' e
 
 -- finish t
 -- 	| sdim t > 2 = app1 (finish (lt t)) (join 
 
-join (VInt False) = (str, "(\\a b->intercalate a (map "++inspect int++" b))")
-join (VList (VInt True)) = (str, "intercalate")
+join VInt = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
+join (VList VChr) = (vstr, "intercalate")
 join (VList e) = (VList rt, "(map."++ej++")") where (rt, ej)=join e

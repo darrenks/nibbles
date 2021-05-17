@@ -71,15 +71,16 @@ toQuickRef (Op types impl autos) = [
 		usableAutos = filter (/= impossibleAuto) autos
 		sort_type = if null types then "" else rootType $ Data.List.head types
 
+typeToStr (Cond "[list]" _) n = "[[" ++ [n] ++ "]]"
 typeToStr (Cond "list" _) n = "[" ++ [n] ++ "]"
 typeToStr (Cond desc _) _ = desc
 typeToStr (Coerce t) n = "~"++typeToStr t n
 typeToStr (Vec t) n = "*"++typeToStr t n
 typeToStr (PromoteList t) n = "^"++typeToStr t n
-typeToStr (VList (VInt True)) _ = "str"
-typeToStr (VList t) n = "["++typeToStr t n++"]"
-typeToStr (VInt False) _ = "int"
-typeToStr (VInt True) _ = "chr"
+typeToStr (Exact (VList VChr)) _ = "str"
+typeToStr (Exact (VList t)) n = "["++typeToStr (Exact t) n++"]"
+typeToStr (Exact VInt) _ = "int"
+typeToStr (Exact VChr) _ = "chr"
 typeToStr (Fn f) _ = "fn"
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'

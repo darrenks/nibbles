@@ -32,7 +32,7 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 
 sLit = (consumeWhitespace .) . Lit
 
-_parseNibInt [] _ _ = error "unterminated number" -- todo auto range map
+_parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
 _parseNibInt(f:s) a cp
 	| f>=8 = (c,Nib s (cp+1))
 	| otherwise = _parseNibInt s c (cp+1)
@@ -46,7 +46,7 @@ parseInt (Lit s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit rest (cp+length used))
 	otherwise -> error $ "unparsable int: " ++ s
 	
-parseStr(Nib [] cp) = error "unterminated string" -- todo auto join
+parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
 	| a8==1 = cont ' ' 1
@@ -112,17 +112,17 @@ consumeWhitespace (Lit (c:s) cp)
 
 parseIntExpr :: Expr -> Thunk -> (Code, Expr)
 parseIntExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr int (b ++ intToNib n) (' ':show n) (i n))
+	(rest, Expr VInt (b ++ intToNib n) (' ':show n) (i n))
 		where (n, rest) = parseInt code
 
 parseStrExpr :: Expr -> Thunk -> (Code, Expr)
 parseStrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr str (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
+	(rest, Expr vstr (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
 		where (s, rest) = parseStr code
 
 parseChrExpr :: Expr -> Thunk -> (Code, Expr)
 parseChrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr char (b ++ chrToNib s) (show s) (app1 "ord" (show s)))
+	(rest, Expr VChr (b ++ chrToNib s) (show s) (app1 "ord" (show s)))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]

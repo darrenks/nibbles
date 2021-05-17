@@ -24,15 +24,15 @@ compile :: Code -> Expr
 compile input = if empty rest then e else error $ "unused code (todo make do something useful)\n"++(show rest)
 	where (rest, e) =  head $ toExprList $ Thunk (consumeWhitespace input) []
 
+coerce2 :: (VT, VT) -> VT
 coerce2(NoType, b) = b
-
-coerce2(a, Vec b) = coerce2(a, b)
-
-coerce2(VInt a, VInt b) = VInt (a||b)
-coerce2(VInt a, VList (VInt True)) = str
-coerce2(VList (VInt True), VInt a) = str
-coerce2(VList a, VInt b) = VList $ coerce2(a, VInt b)
-coerce2(VInt b, VList a) = coerce2(VList a, VInt b)
+coerce2(a, VVec b) = coerce2(a, b)
+coerce2(VInt, VInt) = VInt
+coerce2(a, b) | isNum a && isNum b = VChr
+coerce2(a, VList VChr) | isNum a = vstr
+coerce2(VList VChr, a) | isNum a = vstr
+coerce2(VList a, b) | isNum b = VList $ coerce2(a, b)
+coerce2(b, VList a) | isNum b = coerce2(VList a, b)
 coerce2(VList a, VList b) = VList $ coerce2(a, b)
 
 coerceTo :: VT -> Expr -> Expr
@@ -40,8 +40,8 @@ coerceTo to from = setT to $ case coerceToH (to, retT from) of
 	"" -> from
 	s -> applyHs ("("++s++")") from
 
-coerceToH (VList (VInt True), VInt False) = "sToA.show"
-coerceToH (VList a, VInt False) = "\\x->[x]"
+coerceToH (VList VChr, VInt) = "sToA.show"
+coerceToH (VList a, VInt) = "\\x->[x]"
 --todo need more, think through
 coerceToH _ = ""
 
@@ -50,24 +50,23 @@ coerceToH _ = ""
 dim (VList e) = 1 + dim e
 dim _ = 0
 -- dim where string is a scalar
-sdim (VList (VInt True)) = 0
+sdim (VList VChr) = 0
 sdim (VList e) = 1 + sdim e
 sdim _ = 0
-
-type ArgType = VT
 
 -- todo might want to override with str, etc
 innermostElem (VList t) = innermostElem t
 innermostElem t = t
 
+argMatch :: ArgSpec -> VT -> [VT] -> Bool
 argMatch (Vec t) b priorArgs = argMatch t (innermostElem b) priorArgs
 argMatch (Fn _) _ _ = True
-argMatch a VAuto priorArgs = argMatch a int priorArgs
+argMatch a VAuto priorArgs = argMatch a VInt priorArgs
 argMatch (Cond _ a) b priorArgs = a priorArgs b
 argMatch (Coerce a) b priorArgs = argMatch a b priorArgs
 argMatch (PromoteList a) b priorArgs = argMatch a b priorArgs
-argMatch (VList a) (VList b) priorArgs = argMatch a b priorArgs
-argMatch a b _ = a==b
+argMatch (Exact (VList a)) (VList b) priorArgs = argMatch (Exact a) b priorArgs
+argMatch (Exact a) b _ = a==b
 
 todo = error "todo"
 
@@ -92,7 +91,7 @@ handle (Thunk _ vt, prefixTs, coercedType) (afterArgCode, argExpr) exprFn =
 -- todo support coerce on Fn, etc
 -- todo this could be cleaned up now that coerce and vec aren't used at same time
 -- todo also convert artype to argspec
-prepassArg :: Accum -> (ArgType, (Code, Expr)) -> (Accum, VT -> Expr)
+prepassArg :: Accum -> (ArgSpec, (Code, Expr)) -> (Accum, VT -> Expr)
 prepassArg (Thunk code vt, prefixTs, coercedType) (Fn fnT, _) =
 	((Thunk afterFnCode vt, prefixTs, coercedType), \_ -> addLambda vt argT fnExpr) where
 		argT = fnT $ reverse prefixTs
@@ -103,15 +102,15 @@ prepassArg state (Coerce argSpec, arg) =
 prepassArg state (PromoteList argSpec, arg) =
 	((thunk, prefixTs, coercedType), (\ct -> promoteList $ f ct)) where
 		((thunk, prefixTs, coercedType), f) = prepassArg state (argSpec, arg)
-prepassArg state (Vec argSpec, (ic, Expr (VList t) b l hs)) = (accum, \ct->appT Vec (f ct))
+prepassArg state (Vec argSpec, (ic, Expr (VList t) b l hs)) = (accum, \ct->appT VVec (f ct))
 	where (accum, f) = prepassArg state (Vec argSpec, (ic, Expr t b l hs))
 prepassArg state (Vec argSpec, arg) = prepassArg state (argSpec, arg)
 prepassArg state (argSpec, arg) = handle state arg $ flip const
 
-unVec (Vec t) = VList (unVec t)
+unVec (VVec t) = VList (unVec t)
 unVec t = t
 
-massageArgs :: Thunk -> [(ArgType, (Code, Expr))] -> (Code, [Expr])
+massageArgs :: Thunk -> [(ArgSpec, (Code, Expr))] -> (Code, [Expr])
 massageArgs thunk args = (code, resultArgs) where
 	((Thunk code vt, _, coercedType), prepass) = mapAccumL prepassArg (thunk, [], NoType) args
 	resultArgs = map (\x->x coercedType) prepass
@@ -123,13 +122,13 @@ applyHs :: String -> Expr -> Expr
 applyHs s (Expr t b l hs) = Expr t b l $ app1 s hs
 
 applyExpr :: Expr -> Expr -> Expr
-applyExpr e1 (Expr (Vec t2) b2 l2 hs2) = appT unVec $ applyExpr (applyHs "map" e1) (Expr t2 b2 l2 hs2)
+applyExpr e1 (Expr (VVec t2) b2 l2 hs2) = appT unVec $ applyExpr (applyHs "map" e1) (Expr t2 b2 l2 hs2)
 applyExpr (Expr t1 b1 l1 hs1) (Expr t2 b2 l2 hs2) =
 	Expr t1 (b1++b2) (l1++l2) (app1 hs1 hs2)
 
-convertAutoType VAuto = int
+convertAutoType VAuto = VInt
 convertAutoType t = t
-convertAuto (Expr VAuto b l _) auto = Expr int b l (show auto)
+convertAuto (Expr VAuto b l _) auto = Expr VInt b l (show auto)
 convertAuto e auto = e
 convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ repeat undefined)
 

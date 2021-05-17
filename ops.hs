@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [VT] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Code, Expr)) deriving Show
+data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Code, Expr)) deriving Show
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -72,7 +72,7 @@ ops = [
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
-	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> listOf.a1, []),
+	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> VList .a1, []),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
@@ -80,7 +80,7 @@ ops = [
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
-	op("+", [8], [listOf int], "sum" ~> int, []),
+	op("+", [8], [listOf int], "sum" ~> VInt, []),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
 	op("+", [8], [listOf list], "concat" ~> elemT.a1, []),
@@ -99,10 +99,11 @@ ops = [
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
-	op("*", [10], [num, Vec num], "*" ~> setBaseElem int.a2, [-1, 2]),
+	op("*", [10], [num, Vec num], "*" ~> setBaseElem VInt .a2, [-1, 2]),
 	-- Desc: foldr1
 	-- Example: /,3+$@ -> 6
 	-- todo make/test empty
+	-- todo coerce accum type?
 	op("/", [10], [list, Fn (\[VList e]->VPair e e)], "flip$foldr1.curry" ~> a2, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
@@ -112,14 +113,17 @@ ops = [
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
-	op("/", [11], [num, num], "div" ~> int, [autoTodo, 2]),
+	op("/", [11], [num, num], "div" ~> VInt, [autoTodo, 2]),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
+-- 	Desc: map accum L
+-- 	Example: .~"abc"+1$ -> "bcd"
+-- 	op(".~", [12,0], [list, Fn (\[VList e]->VPair x e)], "flip map" ~> VList .a2, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, Fn (elemT.a1)], "flip map" ~> listOf.a2, []),
+	op(".", [12], [list, Fn (elemT.a1)], "flip map" ~> VList .a2, []),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -128,17 +132,17 @@ ops = [
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives
-	op("%", [12], [num, num], "mod" ~> int, [autoTodo, 2]),
+	op("%", [12], [num, num], "mod" ~> VInt, [autoTodo, 2]),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
-	op(",", [13], [list], "length" ~> int, []),
+	op(",", [13], [list], "length" ~> VInt, []),
 	-- Desc: range from 1 to
 	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
-	op(",", [13], [num], "\\x->[1..x]" ~> listOf.a1, []),
+	op(",", [13], [num], "\\x->[1..x]" ~> VList .a1, []),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
-	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> int, []),
+	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
@@ -154,7 +158,7 @@ ops = [
 	op("=", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: .z,3"abc"+$@ -> "bdf"
-	op("z", [14], [list, list], "zip" ~>  listOf.pairOf.(both elemT), []),
+	op("z", [14], [list, list], "zip" ~>  VList .pairOf.(both elemT), []),
 	-- Desc: if/else
 	-- Example: ? 0 "T" "F" -> "F"
 	-- Test coerce: ? 1 1 "F" -> "1"
@@ -162,7 +166,7 @@ ops = [
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
-	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> int, []),
+	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> VInt, []),
 	-- Desc: diff
 	-- Example: -"abcd""bd" -> "ac"
 	-- Test non existant elements: -"abc""de" -> "abc"
@@ -170,10 +174,10 @@ ops = [
 	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []),
 	-- Desc: add w/ cast
 	-- Example: +"10" 2 -> 12
-	op("+", [15], [str, int], "(+).read.aToS" ~> int, [0]),
+	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
 	-- Desc: show
 	-- untested example: p"a" -> "\"a\""
-	op("p", onlyLit, [anyT], inspect.a1 ~> str, [])]
+	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, [])]
 
 infixr 8 ~>
 a~>b = (b,a)
@@ -185,16 +189,20 @@ a3 = (!!2) :: [VT] -> VT
 
 both f [a,b] = (f a, f b)
 pairOf = uncurry VPair
+x=undefined
 
 elemOfA1 = Cond "a" (\[a1] a2->VList a2==a1)
 sameAsA1 = Cond "[a]" (\[a1]->(a1==))
 
-xorChr [VInt a, VInt b] = VInt (a/=b)
+xorChr [VInt, VChr] = VChr
+xorChr [VChr, VInt] = VChr
+xorChr _ = VInt
+
 setBaseElem t (VList e) = VList $ setBaseElem t e
-setBaseElem t (Vec e) = VList $ setBaseElem t e
+setBaseElem t (VVec e) = VList $ setBaseElem t e
 setBaseElem t _ = t
 getBaseElem (VList e) = getBaseElem e
-getBaseElem (Vec e) = getBaseElem e
+getBaseElem (VVec e) = getBaseElem e
 getBaseElem t = t
 
 class Impl impl where
@@ -210,3 +218,16 @@ instance Impl (VT, String) where
 instance Impl ([VT] -> (VT, String)) where
 	toImpl f context = f context
 
+--------------------------------------------------------------------
+
+int = Exact VInt
+char = Exact VChr
+str = Exact $ vstr
+
+num = Cond "num" $ const isNum
+list = Cond "list" $ const isList
+anyT = Cond "any" $ const $ const True
+listOf (Exact t) = Exact $ VList t
+listOf (Cond desc c) = Cond ("["++desc++"]") $ const $ c undefined.elemT
+
+elemT (VList e) = e

@@ -22,6 +22,7 @@ length / reverse of a constant string
 let let (with new form of let)
 ~ div, or ~ mod
 opcode 15, mismatched 2d+ lists
+ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 
 desired features
 min/max
@@ -52,4 +53,5 @@ functions
 bitwise ^ & |
 string + int coercing the otherway (old idea was to use opcode of *int str)
 	if could reverse operands of + could make it +str int for good literal form
-abs
+abs/sig
+list of strs shorthand?
