@@ -154,5 +154,11 @@ getValue (Thunk code contextTs) = fromMaybe fail $ msum $ map tryOp ops where
 				initExpr = setTAndHs partialExpr rt (HsAtom $ "("++hs++")")
 				(rt, hs) = impl $ map retT argList
 		convertOp (Atom impl) = Just $ impl partialExpr afterOpThunk
+		convertOp Let = Just $ lets partialExpr afterOpThunk
 		in convertOp op
 
+lets :: Expr -> Thunk -> (Thunk, Expr)
+lets (Expr _ nib lit _) (Thunk code vt) =
+	(Thunk nextCode (t:nextTypes), Expr t (nib++b) (lit++l) $ HsLet hs)
+		where
+			(Thunk nextCode nextTypes, Expr t b l hs) = getValue (Thunk code vt)

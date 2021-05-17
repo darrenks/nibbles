@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
+data Operation = Let | Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -52,8 +52,9 @@ ops = [
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
 	-- Example: ;3+$$ -> 6
-	-- Eaxample: +;3$ -> 6
 	op(";", [6], [anyT, Fn a1], "flip id" ~> a2, []),
+	-- Eaxample: +;3$ -> 6
+-- 	(";", [6], Let),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"

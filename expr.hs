@@ -4,7 +4,7 @@ import Types
 import Data.List (intercalate)
 
 -- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
-data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn [String] HsCode deriving Show
+data HsCode = HsAtom String | HsLet HsCode | HsApp HsCode HsCode | HsFn [String] HsCode deriving Show
 type NibLit = String
 type Nibble = Int
 data Expr = Expr VT [Nibble] NibLit HsCode deriving Show
@@ -30,9 +30,14 @@ toArgList args = "(" ++ intercalate "," args ++ ")"
 
 flatHs :: HsCode -> String
 flatHs (HsAtom s) = s
-flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
-flatHs (HsApp a b) = flatHs a ++ " " ++ flatHs b
+flatHs (HsApp (HsApp a (HsLet b)) c) =
+	"(let arg0 = " ++ flatHs b ++ " in " ++ flatHs (HsApp (HsApp a (HsAtom "arg0")) c) ++ ")"
+-- flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
+flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
 flatHs (HsFn args body) = "(\\" ++ toArgList args ++ "->" ++ flatHs body ++ ")"
+-- flatHs (HsLet a) = flatHs "arg0"
+
+-- if body, if have let that has all vars, put in a let/in statement, replace HsLet with argn
 
 i :: Integer -> HsCode
 i s = if s < 0 then HsAtom $ "(" ++ show s ++ ")" else HsAtom $ show s --"("++show s++"::Integer)"
