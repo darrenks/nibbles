@@ -36,12 +36,10 @@ coerce2(b, VList a) | isNum b = coerce2(VList a, b)
 coerce2(VList a, VList b) = VList $ coerce2(a, b)
 
 coerceTo :: VT -> Expr -> Expr
-coerceTo to from = setT to $ case coerceToH (to, retT from) of
-	"" -> from
-	s -> applyHs ("("++s++")") from
+coerceTo to from = setT to (applyHs (coerceToH (to, retT from)) from)
 
-coerceToH (VList VChr, VInt) = "sToA.show"
-coerceToH (VList a, VInt) = "\\x->[x]"
+coerceToH (VList VChr, VInt) = "(sToA.show)"
+coerceToH (VList a, VInt) = "(\\x->[x])"
 --todo need more, think through
 coerceToH _ = ""
 
@@ -116,7 +114,7 @@ massageArgs thunk args = (code, resultArgs) where
 	resultArgs = map (\x->x coercedType) prepass
 
 promoteList t | isList $ retT t = t
-promoteList (Expr t b l hs) = Expr (VList t) b l ("["++hs++"]")
+promoteList (Expr t b l hs) = Expr (VList t) b l (app1 "(\\x->[x])" hs)
 
 applyHs :: String -> Expr -> Expr
 applyHs s (Expr t b l hs) = Expr t b l $ app1 s hs
@@ -124,11 +122,11 @@ applyHs s (Expr t b l hs) = Expr t b l $ app1 s hs
 applyExpr :: Expr -> Expr -> Expr
 applyExpr e1 (Expr (VVec t2) b2 l2 hs2) = appT unVec $ applyExpr (applyHs "map" e1) (Expr t2 b2 l2 hs2)
 applyExpr (Expr t1 b1 l1 hs1) (Expr t2 b2 l2 hs2) =
-	Expr t1 (b1++b2) (l1++l2) (app1 hs1 hs2)
+	Expr t1 (b1++b2) (l1++l2) (HsApp hs1 hs2)
 
 convertAutoType VAuto = VInt
 convertAutoType t = t
-convertAuto (Expr VAuto b l _) auto = Expr VInt b l (show auto)
+convertAuto (Expr VAuto b l _) auto = Expr VInt b l $ i $ fromIntegral auto
 convertAuto e auto = e
 convertAutos l autos = zipWith (\(c,e) a -> (c,convertAuto e a)) l (autos ++ repeat undefined)
 
@@ -145,7 +143,7 @@ getValue (Thunk code contextTs) offsetExprs = fromMaybe fail $ msum $ map tryOp 
 				typeMatch = and $ zipWith3 argMatch ats valTypes (init $ inits valTypes)
 				(nextCode, argList) =  massageArgs afterOpThunk $ zip ats (convertAutos (valList) autos)
 				makeExpr = (nextCode, foldl applyExpr initExpr argList)
-				initExpr = setTAndHs partialExpr rt ("("++hs++")")
+				initExpr = setTAndHs partialExpr rt (HsAtom $ "("++hs++")")
 				(rt, hs) = impl $ map retT argList
 		convertOp (Atom impl) = Just $ impl partialExpr afterOpThunk
 		in convertOp op

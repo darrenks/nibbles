@@ -1,8 +1,10 @@
 module Expr where
 
 import Types
+import Data.List (intercalate)
 
-type HsCode = String
+-- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
+data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn [String] HsCode deriving Show
 type NibLit = String
 type Nibble = Int
 data Expr = Expr VT [Nibble] NibLit HsCode deriving Show
@@ -16,12 +18,21 @@ data Code = Lit NibLit Int | Nib [Nibble] Int deriving Show
 uselessOp = 7 :: Int -- for padding odd nibbles into bytes
 
 app1 :: String -> HsCode -> HsCode
-app1 op hs1 = "(" ++ op ++ " " ++ hs1 ++ ")"
+app1 = HsApp . HsAtom
 
 retT (Expr t _ _ _) = t
 setT t (Expr _ b l hs) = Expr t b l hs
 appT f e = setT (f (retT e)) e
 setTAndHs (Expr _ b l _) t hs = Expr t b l hs
 
+toArgList [arg] = arg
+toArgList args = "(" ++ intercalate "," args ++ ")"
+
+flatHs :: HsCode -> String
+flatHs (HsAtom s) = s
+flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
+flatHs (HsApp a b) = flatHs a ++ " " ++ flatHs b
+flatHs (HsFn args body) = "(\\" ++ toArgList args ++ "->" ++ flatHs body ++ ")"
+
 i :: Integer -> HsCode
-i s = if s < 0 then "(" ++ show s ++ ")" else show s --"("++show s++"::Integer)"
+i s = if s < 0 then HsAtom $ "(" ++ show s ++ ")" else HsAtom $ show s --"("++show s++"::Integer)"

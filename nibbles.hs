@@ -48,9 +48,9 @@ main=do
  		[] -> do
 --  			putStrLn $ show t
  			hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
---  			putStrLn $ lit ++ "\n" ++ hs
+ 			putStrLn $ lit ++ "\n" ++ flatHs hs
  			header <- readFile "header.hs"
- 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++hs
+ 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++"$"++ flatHs hs
 		["-c"] -> do
 			let bytes = toBytes b
 			let outname = (basename ++ ".nbb")

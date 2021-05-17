@@ -34,10 +34,10 @@ runHs prog = do
 	hGetContents hout
 
 toTest(origLit, expect, size) =
-	("putStrLn$aToS$"++(inspect t)++hs++";", (expect,
+	("putStrLn$aToS$"++inspect t++"$"++flatHs hs++";", (expect,
 	outLit, origLit,
 	length nib, size,
-	hsFromNib, hs))
+	flatHs hsFromNib, flatHs hs))
 	where
 		Expr t nib outLit hs = compile (Lit origLit 0)
 		Expr _ _ _ hsFromNib = compile (Nib nib 0)

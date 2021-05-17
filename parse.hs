@@ -117,12 +117,12 @@ parseIntExpr (Expr _ b _ _) (Thunk code _) =
 
 parseStrExpr :: Expr -> Thunk -> (Code, Expr)
 parseStrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr vstr (b ++ strToNib s) (show s) (app1 "sToA" (show s)))
+	(rest, Expr vstr (b ++ strToNib s) (show s) (app1 "sToA" (HsAtom $ show s)))
 		where (s, rest) = parseStr code
 
 parseChrExpr :: Expr -> Thunk -> (Code, Expr)
 parseChrExpr (Expr _ b _ _) (Thunk code _) =
-	(rest, Expr VChr (b ++ chrToNib s) (show s) (app1 "ord" (show s)))
+	(rest, Expr VChr (b ++ chrToNib s) (show s) (app1 "ord" (HsAtom $ show s)))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]
