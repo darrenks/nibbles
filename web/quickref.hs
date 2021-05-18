@@ -41,13 +41,13 @@ main=do
 					th "Autos"
 					th "Example"
 				forM_ opsTable $ (tr . mapM_ Prelude.id)
-			toHtml $ do
-				H.span "*" ! class_ "code"
-				toHtml " = vectorizable, "
-				H.span "^" ! class_ "code"
-				toHtml " = promote to list if nonlist, "
-				H.span "~" ! class_ "code"
-				toHtml " = coerce"
+-- 			toHtml $ do
+-- 				H.span "*" ! class_ "code"
+-- 				toHtml " = vectorizable, "
+-- 				H.span "^" ! class_ "code"
+-- 				toHtml " = promote to list if nonlist, "
+-- 				H.span "~" ! class_ "code"
+-- 				toHtml " = coerce"
 	where
 		convertToTdList (lit, nib, impl) desc [exI, exO] =
 			[td $ styleCode $ lit, -- styleCode
