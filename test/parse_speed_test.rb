@@ -3,36 +3,37 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
-# todo this is only really testing it from binary since literate form has different names now
+n=8
+pass = true
+`ghc nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
-n=1000
 t=Time.now
-`
-# ghc nibbles.hs 2> /dev/null
-echo nested expressions 1>&2
-time echo #{'+'*n+'1 '*n} 1 | nibbles -c
-time nibbles a.nbb
+`echo nested expressions 1>&2
+time echo #{'+'*n+'1 '*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
+`time nibbles a.nbb` ; pass &&= $?.exitstatus==0
 
-echo flat expressions 1>&2
-time echo #{'+1'*n} 1 | nibbles -c
-time nibbles a.nbb
+`echo flat expressions 1>&2
+time echo #{'+1'*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
+`time nibbles a.nbb` ; pass &&= $?.exitstatus==0
 
-# This could be a sort if operand is a list, if this isn't memoized this could become exponentially slow
+# This could be a sort if operand is a list, if this isn't memoized this could become exponentially slow (only the binary version will fail since literate uses st)
 
-echo non first choice multi character op 1>&2
-time echo '#{'//'*n + '1 1 '*n} 1' | nibbles -c
-time nibbles a.nbb
+`echo non first choice multi character op 1>&2
+time echo '#{'//'*n + '1 1 '*n} 1' | nibbles -c`; pass &&= $?.exitstatus==0
+`time nibbles a.nbb` ; pass &&= $?.exitstatus==0
 
-echo first choice multi character op 1>&2
-time echo '#{'//'*n},3' | nibbles -c
-time nibbles a.nbb
+`echo first choice multi character op 1>&2
+time echo '#{'st'*n},3' | nibbles -c`; pass &&= $?.exitstatus==0
+`time nibbles a.nbb` ; pass &&= $?.exitstatus==0
 
-echo long string 1>&2
-time echo '"#{'a'*n}"' | nibbles -c
-time nibbles a.nbb
+`echo long string 1>&2
+time echo '"#{'a'*n}"' | nibbles -c` ; pass &&= $?.exitstatus==0
+`time nibbles a.nbb` ; pass &&= $?.exitstatus==0
 
-echo long number 1>&2
-time echo '#{'1'*n}' | nibbles -c
-time nibbles a.nbb
-`
-puts Time.now - t > 3 ? 'fail parse too slow' : 'pass parse speed test'
+`echo long number 1>&2
+time echo '#{'1'*n}' | nibbles -c`; pass &&= $?.exitstatus==0
+`time nibbles a.nbb`; pass &&= $?.exitstatus==0
+
+raise 'errors in runs' if !pass
+raise 'fail, parse too slow' if Time.now - t > 3
+puts 'pass parse speed test'

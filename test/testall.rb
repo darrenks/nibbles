@@ -6,6 +6,7 @@ pass &&= $?.exitstatus==0
 
 # parse speed test
 puts `ruby test/parse_speed_test.rb 2>/dev/null`
+p $?.exitstatus ? "FAIL parse speed" : "SUCCESS parse speed"
 pass &&= $?.exitstatus==0
 
 # integration test

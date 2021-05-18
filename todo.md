@@ -3,6 +3,8 @@ https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-pri
 
 accept args in any order if different type?
 
+more coercers
+
 error if lit accidentally would map to something that is an extension
 better op not found error message (hard because memoize of arg types is lazy)
 

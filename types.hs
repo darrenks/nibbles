@@ -9,7 +9,7 @@ vstr = VList VChr
 
 data ArgSpec = Exact VT | Fn ([VT] -> VT) | Cond String ([VT] -> Bool) deriving Show
 
--- data ArgMatchResult = ArgMatches | ArgFnOf VT
+data ArgMatchResult = ArgMatches | ArgFnOf VT
 
 instance Eq (a -> b) where
 	a==b = False

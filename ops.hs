@@ -9,9 +9,9 @@ import Parse
 import Args
 import Parse
 
-data Operation = Let | Op [[VT] -> Maybe (Maybe VT)] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
+data Operation = Let | Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
 
-op(lit, nib, t, impl, autos) = (lit, nib, Op (simplifyArgSpecs t) (convertAutos autos (toImpl impl)) autos)
+op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
 
 autoTodo = 0
@@ -21,7 +21,7 @@ ops :: [(String, [Int], Operation)]
 ops = [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
-	op("~", [0], [], ("undefined"::String)~>VAuto, []),
+	op("~", [0], [], (undefined::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 3): 8 -> 8
@@ -208,39 +208,6 @@ instance Impl (VT, String) where
 	toImpl (t,s) context = (t, s)
 instance Impl ([VT] -> (VT, String)) where
 	toImpl f context = f context
-------------
-
---------------------------------------------------------------------
-
--- argMatch :: ArgSpec -> VT -> [VT] -> Bool
--- argMatch (Vec t) b priorArgs = argMatch t (innermostElem b) priorArgs
--- argMatch a VAuto priorArgs = argMatch a VInt priorArgs
--- argMatch (Coerce a) b priorArgs = argMatch a b priorArgs
--- argMatch (PromoteList a) b priorArgs = argMatch a b priorArgs
-
-simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe (Maybe VT)]
-simplifyArgSpecs = map simplifyArgSpec
-simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAuto (last vts)
-simplifyArgSpec (Fn f) vts = Just $ Just $ f $ init vts
-simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
-
-maybeMatch b = if b then Just Nothing else Nothing
-
-convertAutos :: [Int] -> ([VT] -> (VT, String)) -> [VT] -> (VT, String)
-convertAutos _ impl [] = impl []
-convertAutos autos impl vts = (rvt, rop) where
-	r = [0..length vts-1]
-	args = map convertAuto vts
-	(rvt, op) = impl args
-	rop = "(\\" ++ concatMap ((" c"++).show) r ++ " -> (" ++ op ++ ")" ++ concatMap atn r ++")"
-	atn n
-		| vts !! n == VAuto = " " ++ show (autos !! n) -- todo should use i
-		| otherwise = " c"++show n
-
-convertAuto VAuto = VInt
-convertAuto t = t
-
---------------------------------------------------------------------
 
 int = Exact VInt
 char = Exact VChr
@@ -258,8 +225,3 @@ elemT (VList e) = e
 
 elemOfA1 = Cond "a" (\[a1,a2]->VList a2==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
-
--- todo might want to override with str, etc
-innermostElem (VList t) = innermostElem t
-innermostElem t = t
-
