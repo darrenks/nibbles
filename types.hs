@@ -14,16 +14,14 @@ data ArgMatchResult = ArgMatches | ArgFnOf VT
 instance Eq (a -> b) where
 	a==b = False
 
--- nil = VMaybe Nothing
-
 isNum VInt = True
 isNum VChr = True
 isNum VAuto = True
 isNum _ = False
 
-getBaseElem (VList e) = getBaseElem e
-getBaseElem t = t
-isVec = isNum . getBaseElem
-
+isVec = isNum . getBaseElem where
+	getBaseElem (VList e) = getBaseElem e
+	getBaseElem t = t
+	
 isList (VList _) = True
 isList _ = False

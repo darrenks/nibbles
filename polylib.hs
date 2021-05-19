@@ -1,5 +1,13 @@
 -- Polymorphic functions for conversion at compile time
-module Polylib where
+module Polylib(
+	truthy,
+	inspect,
+	finish,
+	join,
+	vectorize,
+	coerce,
+	composeOp,
+	promoteList) where
 
 import Data.Char
 import Types

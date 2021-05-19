@@ -21,8 +21,6 @@ app1 :: String -> HsCode -> HsCode
 app1 = HsApp . HsAtom
 
 retT (Expr t _ _ _) = t
-setT t (Expr _ b l hs) = Expr t b l hs
-appT f e = setT (f (retT e)) e
 setTAndHs (Expr _ b l _) t hs = Expr t b l hs
 
 toArgList [arg] = arg
