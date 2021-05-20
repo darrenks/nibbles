@@ -4,12 +4,32 @@ import Types
 import Data.List (intercalate)
 
 -- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
-data HsCode = HsAtom String | HsLet HsCode | HsApp HsCode HsCode | HsFn [String] HsCode deriving Show
+data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn [String] HsCode deriving (Eq, Show)
+
 type NibLit = String
 type Nibble = Int
-data Expr = Expr VT [Nibble] NibLit HsCode deriving Show
+data Rep = Rep [Nibble] NibLit deriving Show
+addRep (Rep b1 l1) (Rep b2 l2) = Rep (b1++b2) (l1++l2)
 
-data Thunk = Thunk Code [VT]
+--                           min used depth
+data Impl = Impl VT [HsCode] Int deriving (Eq, Show)
+noArgsUsed = 0 :: Int
+getImplType (Impl t _ _) = t
+data Expr = Expr Rep Impl deriving Show
+
+data Thunk = Thunk Code [Arg]
+getContext (Thunk _ context) = context
+
+--                                dep def
+data ArgKind = LambdaArg | LetArg Int HsCode deriving Eq
+--                  depth
+data Arg = Arg Impl Int ArgKind deriving Eq
+-- getArgType (Arg impl _ _) | getType impl==VPair= impl
+getArgData (Arg _ _ kind) = kind
+getArgDepth (Arg _ depth _) = depth
+getArgImpl (Arg impl _ _) = impl
+isLet (Arg _ _ LambdaArg) = False
+isLet (Arg _ _ (LetArg _ _)) = True
 
 -- The Int is the number of characters consumed so far
 -- convention cp (code pointer) = this number
@@ -20,16 +40,16 @@ uselessOp = 7 :: Int -- for padding odd nibbles into bytes
 app1 :: String -> HsCode -> HsCode
 app1 = HsApp . HsAtom
 
-retT (Expr t _ _ _) = t
-setTAndHs (Expr _ b l _) t hs = Expr t b l hs
+retT (Expr _ (Impl t _ _)) = t
+setImpl (Expr r _) impl = Expr r impl
 
 toArgList [arg] = arg
 toArgList args = "(" ++ intercalate "," args ++ ")"
 
 flatHs :: HsCode -> String
 flatHs (HsAtom s) = s
-flatHs (HsApp (HsApp a (HsLet b)) c) =
-	"(let arg0 = " ++ flatHs b ++ " in " ++ flatHs (HsApp (HsApp a (HsAtom "arg0")) c) ++ ")"
+-- flatHs (HsApp (HsApp a (HsLet b)) c) =
+-- 	"(let arg0 = " ++ flatHs b ++ " in " ++ flatHs (HsApp (HsApp a (HsAtom "arg0")) c) ++ ")"
 -- flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
 flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
 flatHs (HsFn args body) = "(\\" ++ toArgList args ++ "->" ++ flatHs body ++ ")"

@@ -5,6 +5,8 @@ accept args in any order if different type?
 
 more coercers
 
+simpler memoization https://wiki.haskell.org/Memoization
+
 error if lit accidentally would map to something that is an extension
 better op not found error message (hard because memoize of arg types is lazy)
 

@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Let | Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Expr -> Thunk -> (Thunk, Expr)) deriving Show
+data Operation = Let | Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr)) deriving Show
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -42,19 +42,24 @@ ops = [
 	-- Test (size 5): '\200' -> '\200'
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
-	-- Example: ;1;2;3 $ -> 3
+	--- Example: ;1;2;3 $ -> 3
 	atom("$", [3], getArg 0),
 	-- Desc: 2nd arg
-	-- Example: ;1;2;3 @ -> 2
+	--- Example: ;1;2;3 @ -> 2
 	atom("@", [4], getArg 1),
 	-- Desc: nth arg
-	-- Example: ;1;2;3 `2 -> 1
+	--- Example: ;1;2;3 `2 -> 1
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
-	-- Example: ;3+$$ -> 6
-	op(";", [6], [anyT, fn a1], "flip id" ~> a2, []),
-	-- Eaxample: +;3$ -> 6
--- 	(";", [6], Let),
+	-- Example (onlyLit): +; 3 $ -> 6
+	-- Test (onlyLit): ++; 3 ; 2 $ -> 7
+	-- Test (onlyLit): ++; 3 ; 2 @ -> 8
+	-- Test (onlyLit): ++; 5 /,1 $ $ -> 11
+	-- Test (onlyLit): ++; 5 /,2 `2 $ -> 15
+	-- Test (onlyLit): ++; 5 /,1 ;7 $ -> 13
+	-- Test (onlyLit): ++; 5 /,1 ;$ $ -> 11
+	-- Test (onlyLit): +;1 + ;2 @
+	(";", [6], Let),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -178,7 +183,7 @@ ops = [
 	-- Example: +"10" 2 -> 12
 	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
 	-- Desc: show
-	-- untested example: p"a" -> "\"a\""
+	-- Example (onlyLit): p"a" -> "\"a\""
 	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, [])]
 
 infixr 8 ~>
@@ -196,17 +201,17 @@ xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr
 xorChr _ = VInt
 
-class Impl impl where
+class OpImpl impl where
 	toImpl :: impl -> [VT] -> (VT, String)
-instance Impl ([VT] -> VT, [VT] -> String) where
+instance OpImpl ([VT] -> VT, [VT] -> String) where
 	toImpl (f1,f2) context = (f1 context, f2 context)
-instance Impl ([VT] -> VT, String) where
+instance OpImpl ([VT] -> VT, String) where
 	toImpl (f1,s) context = (f1 context, s)
-instance Impl (VT, [VT] -> String) where
+instance OpImpl (VT, [VT] -> String) where
 	toImpl (t,f2) context = (t, f2 context)
-instance Impl (VT, String) where
+instance OpImpl (VT, String) where
 	toImpl (t,s) context = (t, s)
-instance Impl ([VT] -> (VT, String)) where
+instance OpImpl ([VT] -> (VT, String)) where
 	toImpl f context = f context
 
 int = Exact VInt

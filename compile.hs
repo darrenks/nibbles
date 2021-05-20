@@ -15,8 +15,12 @@ import Args
 import Parse
 
 compile :: Code -> Expr
-compile input = if empty rest then e else error $ "unused code (todo make do something useful)\n"++(show rest)
-	where (Thunk rest _, e) =  head $ toExprList $ Thunk (consumeWhitespace input) []
+compile input = if empty rest then prog else error $ "unused code (todo make do something useful)\n"++(show rest)
+	where
+-- 		(e, _) = addLetsToExpr [] e finalContext
+		(Thunk rest afterContext, Expr rep body) = head $ toExprList $ Thunk (consumeWhitespace input)	[]	
+		(_, progImpl) = popArg 0 afterContext body
+		prog = Expr rep progImpl
 
 -- Gets the arg list
 toExprList :: Thunk -> [(Thunk, Expr)]
@@ -40,12 +44,14 @@ exprsByOffset (Thunk code vt) =
 		rest = exprsByOffset (Thunk (nextOffset code) vt)
 
 applyExpr :: Expr -> Expr -> Expr
-applyExpr (Expr t1 b1 l1 hs1) (Expr t2 b2 l2 hs2) =
-	Expr t1 (b1++b2) (l1++l2) (HsApp hs1 hs2)
+applyExpr (Expr r1 (Impl t1 [hs1] d1)) (Expr r2 (Impl _ [hs2] d2)) =
+	Expr (addRep r1 r2) (Impl t1 [HsApp hs1 hs2] (min d1 d2))
 
 convertAutoType VAuto = VInt
 convertAutoType t = t
-convertAuto (Expr VAuto b l _) auto = Expr VInt b l $ i $ fromIntegral auto
+
+convertAuto (Expr r (Impl VAuto _ _)) auto =
+	Expr r $ Impl VInt [i $ fromIntegral auto] noArgsUsed
 convertAuto e _ = e
 
 convertAutos :: [Expr] -> [Int] -> [Expr]
@@ -63,22 +69,30 @@ convertLambdas :: Thunk -> [(ArgMatchResult, (Thunk, Expr))] -> (Thunk, [Expr])
 convertLambdas = mapAccumL convertLambda
 
 convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
-convertLambda _ (ArgMatches, arg) = arg
-convertLambda (Thunk code vt) (ArgFnOf argType, _) = (afterFnThunk, addLambda vt argType fnExpr) where
-	(afterFnThunk, fnExpr) = head $ toExprList $ Thunk code $ argType:vt
+convertLambda (Thunk code origContext) (ArgMatches, (Thunk argCode argContext, expr)) =
+	if origContext == argContext
+		then (Thunk argCode argContext, expr) -- use memoized expr
+		else head $ toExprList $ Thunk code origContext -- recompute expr
+convertLambda (Thunk code origContext) (ArgFnOf argType, _) = 
+	(Thunk afterFnCode finalContext, Expr rep lambda) where
+		(lambdaContext, newArgs) = newLambdaArgs origContext argType 
+		(Thunk afterFnCode afterFnContext, (Expr rep body)) =
+			head $ toExprList $ Thunk code lambdaContext
+		(finalContext, bodyWithLets) = popArg (getArgDepth $ head newArgs) afterFnContext body
+		lambda = addLambda newArgs bodyWithLets
 
 getValue :: Thunk -> [[(Thunk,Expr)]] -> (Thunk, Expr)
 getValue (Thunk code contextTs) offsetExprs = fromMaybe fail $ msum $ map tryOp ops where
 	fail = parseError "no matching op" $ Thunk code contextTs
 	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		afterOpThunk = (Thunk afterOpCode contextTs)
--- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) contextTs
-		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
-		partialExpr = (Expr undefined nib lit undefined)
-		in convertOp partialExpr afterOpThunk valList op
+		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) contextTs
+-- 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
+		opRep = Rep nib lit
+		in convertOp opRep afterOpThunk valList op
 
-convertOp :: Expr -> Thunk -> [(Thunk, Expr)] -> Operation -> Maybe (Thunk, Expr)
-convertOp partialExpr afterOpThunk valList (Op atso impl autos) = 
+convertOp :: Rep -> Thunk -> [(Thunk, Expr)] -> Operation -> Maybe (Thunk, Expr)
+convertOp opRep afterOpThunk valList (Op atso impl autos) = 
 	if all isJust typeMatch then Just makeExpr else Nothing where
 		valTypes = map (retT.snd) valList
 		ats = simplifyArgSpecs atso
@@ -86,14 +100,15 @@ convertOp partialExpr afterOpThunk valList (Op atso impl autos) =
 		isFns = map fromJust typeMatch
 		(nextCode, argList) = convertLambdas afterOpThunk $ zip isFns valList
 		makeExpr = (nextCode, foldl applyExpr initExpr (convertAutos argList autos))
-		initExpr = setTAndHs partialExpr rt (HsAtom $ "("++hs++")")
+		initExpr = Expr opRep $ Impl rt [HsAtom $ "("++hs++")"] noArgsUsed
 		(rt, hs) = impl $ map retT argList
 
-convertOp partialExpr afterOpThunk _ (Atom impl) = Just $ impl partialExpr afterOpThunk
--- convertOp partialExpr afterOpThunk _ Let = Just $ lets partialExpr afterOpThunk
+convertOp opRep afterOpThunk _ (Atom impl) = Just $ impl opRep afterOpThunk
+convertOp opRep afterOpThunk _ Let = Just $ lets opRep afterOpThunk
 
--- lets :: Expr -> Thunk -> (Thunk, Expr)
--- lets (Expr _ nib lit _) (Thunk code vt) =
--- 	(Thunk nextCode (t:nextTypes), Expr t (nib++b) (lit++l) $ HsLet hs)
--- 		where
--- 			(Thunk nextCode nextTypes, Expr t b l hs) = getValue (Thunk code vt)
+lets :: Rep -> Thunk -> (Thunk, Expr)
+lets opRep origThunk =
+	(Thunk nextCode afterLetContext, Expr (addRep opRep r) (getArgImpl letArg)) where
+		(Thunk nextCode nextContext, Expr r letDefImpl) = head $ toExprList origThunk
+		(afterLetContext, letArg) = newLetArg nextContext letDefImpl
+

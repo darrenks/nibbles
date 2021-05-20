@@ -62,7 +62,6 @@ main=do
 		toHex s = map intToDigit s
 		styleCode html = H.div (toHtml html) ! class_ "code"
 
-toQuickRef (Atom _) = [td "",td ""]
 toQuickRef (Op types impl autos) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
 		toHtml $ unwords $ zipWith typeToStr types ['a'..],
@@ -70,6 +69,7 @@ toQuickRef (Op types impl autos) = [
 	where 
 		usableAutos = filter (/= impossibleAuto) autos
 		sort_type = if null types then "" else rootType $ Data.List.head types
+toQuickRef _ = [td "",td ""]
 
 typeToStr (Cond "[list]" _) n = "[[" ++ [n] ++ "]]"
 typeToStr (Cond "list" _) n = "[" ++ [n] ++ "]"

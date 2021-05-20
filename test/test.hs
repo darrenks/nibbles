@@ -19,7 +19,9 @@ getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (
 			[input,output] = splitOn " -> " (drop (i + 2) s)
 			size = case splitOn "(size" (take i s) of
 				[pre,post] -> read (head $ splitOn ")" post)
-				otherwise -> 0
+				otherwise -> case splitOn "(onlyLit" (take i s) of
+					[_,_] -> -1
+					otherwise -> 0
 	)
 getExample _ = Nothing
 
@@ -39,8 +41,8 @@ toTest(origLit, expect, size) =
 	length nib, size,
 	flatHs hsFromNib, flatHs hs))
 	where
-		Expr t nib outLit hs = compile (Lit origLit 0)
-		Expr _ _ _ hsFromNib = compile (Nib nib 0)
+		Expr (Rep nib outLit) (Impl t [hs] _) = compile (Lit origLit 0)
+		Expr _ (Impl _ [hsFromNib] _) = compile (Nib nib 0)
 
 removeSpaces = filter (not.isSpace)
 
@@ -48,9 +50,11 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 -- 	putStrLn $ "Running test: " ++ origLit
 	assertEq expected result "Output mismatch"
 	assertEq (removeSpaces origLit) (removeSpaces outLit) "Literate mismatch"
-	if expectedSize == 0 then return ()
-		else assertEq (show expectedSize) (show nibSize) "Nibble size mismatch"
-	assertEq hsFromLit hsFromNib "HS mismatch"
+	if expectedSize == -1 then return ()
+	else do 
+		if expectedSize == 0 then return ()
+			else assertEq (show expectedSize) (show nibSize) "Nibble size mismatch"
+		assertEq hsFromLit hsFromNib "HS mismatch"
 	where assertEq expected actual reason = do
 		if expected == actual then return ()
 		else putStrLn $ "Test failed: " ++ origLit ++ "\nReason: " ++ reason ++ "\nExpected: " ++ expected ++ "\nActual  : " ++ actual
