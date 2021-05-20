@@ -58,7 +58,7 @@ ops = [
 	-- Test (onlyLit): ++; 5 /,2 `2 $ -> 15
 	-- Test (onlyLit): ++; 5 /,1 ;7 $ -> 13
 	-- Test (onlyLit): ++; 5 /,1 ;$ $ -> 11
-	-- Test (onlyLit): +;1 + ;2 @
+	-- Test (onlyLit): +;1 + ;2 @ -> 4
 	(";", [6], Let),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
