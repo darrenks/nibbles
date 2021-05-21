@@ -42,13 +42,13 @@ ops = [
 	-- Test (size 5): '\200' -> '\200'
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
-	--- Example: ;1;2;3 $ -> 3
+	-- Example: +++;1;2;3 $ -> 9
 	atom("$", [3], getArg 0),
 	-- Desc: 2nd arg
-	--- Example: ;1;2;3 @ -> 2
+	-- Example: +++;1;2;3 @ -> 8
 	atom("@", [4], getArg 1),
 	-- Desc: nth arg
-	--- Example: ;1;2;3 `2 -> 1
+	-- Example: +++;1;2;3 `2 -> 7
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
 	-- Example (onlyLit): +; 3 $ -> 6
