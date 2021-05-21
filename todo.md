@@ -29,9 +29,7 @@ io
 pair in loop for macAccumL
 index/prev in loop
 
-better let
-
-extensions
+more extensions
 
 auto fill $ for implicit input (or unused args that were expected to be used)
 multiple outputs

@@ -53,9 +53,6 @@ flatHs (HsAtom s) = s
 -- flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
 flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
 flatHs (HsFn args body) = "(\\" ++ toArgList args ++ "->" ++ flatHs body ++ ")"
--- flatHs (HsLet a) = flatHs "arg0"
-
--- if body, if have let that has all vars, put in a let/in statement, replace HsLet with argn
 
 i :: Integer -> HsCode
 i s = if s < 0 then HsAtom $ "(" ++ show s ++ ")" else HsAtom $ show s --"("++show s++"::Integer)"

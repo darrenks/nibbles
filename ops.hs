@@ -51,14 +51,15 @@ ops = [
 	-- Example: +++;1;2;3 `2 -> 7
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: let
-	-- Example (onlyLit): +; 3 $ -> 6
-	-- Test (onlyLit): ++; 3 ; 2 $ -> 7
-	-- Test (onlyLit): ++; 3 ; 2 @ -> 8
-	-- Test (onlyLit): ++; 5 /,1 $ $ -> 11
-	-- Test (onlyLit): ++; 5 /,2 `2 $ -> 15
-	-- Test (onlyLit): ++; 5 /,1 ;7 $ -> 13
-	-- Test (onlyLit): ++; 5 /,1 ;$ $ -> 11
-	-- Test (onlyLit): +;1 + ;2 @ -> 4
+	-- Example: + ;3 $ -> 6
+	-- Test: ++; 3 ; 2 $ -> 7
+	-- Test: ++; 3 ; 2 @ -> 8
+	-- Test: ++; 5 /,1 $ $ -> 11
+	-- Test: ++; 5 /,2 `2 $ -> 15
+	-- Test: ++; 5 /,1 ;7 $ -> 13
+	-- Test: ++; 5 /,1 ;$ $ -> 11
+	-- Test: +;1 + ;2 @ -> 4
+	-- Test: .,3 ;%$3 -> [1,2,0]
 	(";", [6], Let),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"

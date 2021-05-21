@@ -25,7 +25,7 @@ compile input = if empty rest then prog else error $ "unused code (todo make do 
 
 applyExpr :: Expr -> Expr -> Expr
 applyExpr (Expr r1 (Impl t1 [hs1] d1)) (Expr r2 (Impl _ [hs2] d2)) =
-	Expr (addRep r1 r2) (Impl t1 [HsApp hs1 hs2] (min d1 d2))
+	Expr (addRep r1 r2) (Impl t1 [HsApp hs1 hs2] (max d1 d2))
 
 convertAutoType VAuto = VInt
 convertAutoType t = t

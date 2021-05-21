@@ -1,6 +1,6 @@
 ## Welcome to Nibbles (alpha).
 
-Nibbles is a minimal codegolf language. It is also functional, prefix based, statically typed, and lazy. Each instruction is half a byte.
+Nibbles is a minimal codegolf language. It is also functional, statically typed, lazy and written in Polish notation. Each instruction is half a byte.
 
 It is in Alpha, meaning things will be drastically changed. There is also minimal documentation (but there is a full [quick reference](https://nibbles.golf/quickref.html)).
 
@@ -13,30 +13,24 @@ Compile nibbles.hs for command line use (it will compile nibbles code to out.hs 
 ## Basics:
 Each op is one nibble (half a byte). You code in regular ascii (where each op is 1 character) and can automatically compile to bytes (since most competitions measure bytes).
 
-Syntax is `Expr :: op Expr Expr ... Expr`. The number of args depends on the arity of the op. This is also called prefix notation. So for example ```+ 1 2``` gives ```3```. See [quick reference](https://nibbles.golf/quickref.html) for the full list of ops and examples. In this example `+` takes 2 arguments and the numbers each take 0 arguments.
+Syntax is `Expr :: op Expr Expr ... Expr`. The number of args depends on the arity of the op. This is known as Polish notation. So for example ```+ 1 2``` gives ```3```. See [quick reference](https://nibbles.golf/quickref.html) for the full list of ops and examples. In this example `+` takes 2 arguments and the numbers each take 0 arguments.
 
-Functions are implicitly created for ops that require functions (i.e. map). Arguments to functions are referenced using DeBruijn indicies. `$` = 1st, `@` = 2nd, `\2`-`\f` for 3rd-16th. So for example `%,3 +1$` maps through the list `[1,2,3]` and adds 1 to the argument which is the element of the list.
+Functions are implicitly created for ops that require functions (i.e. map). Arguments to functions are referenced using DeBruijn indicies. `$` = 1st, `@` = 2nd, `\2`-`\f` for 3rd-16th. So for example `.,3 +1$` maps through the list `[1,2,3]` and adds 1 to the argument which is the element of the list.
 
 There are essentially 2 types (ints and lists). Strings are actually a list of chars. And chars are just an int, but occasionally have different behaviors (for instance how they are displayed).
 
 `~` Can be used to save space specifying the most common integer for operations. For example `+4~` -> `5` and `*4~` -> `8` (1 is most commonly added to things and 2 is most commonly multiplied by things, see the quickref for what the auto values are for each function). This may not be shorter in literate form, but numbers are actually multiple nibbles (see below).
 
+`;` is a let statement and is somewhat special. It takes one argument and saves that argument for use by anything after it, you reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
+
 Input is not supported yet as well as many other things...
 
-Here is a 24 byte (47 nibble) fizzbuzz program (spaces used to show true size):
+Here is a 22 byte (44 nibble) fizzbuzz program:
 ```
-., 100;:?%$ 3 ""   "Fizz"?%$ 5 ""   "Buzz"?,$$@
+.,100?,;:^-~%$3"Fizz"^-~%$5"Buzz"$@
 ```
 And how it works.
-```
-. # map
- ,100 # list of 1 to 100 - note that 100 is actually 4 nibbles, 1 for number mode, then 3 digits of octal.
- ; # a let statement, 1st arg is value, 2nd is expr with value assigned to 1st debruijn index
-  : # list concat of the potential fizz and buzz
-   ? %$3 "" "Fizz" # if/else statement, note the $ is the 1st debruijn index which is the arg from the map
-   ? %$5 "" "Buzz" # note that strings are 1 nibble + 2 * length, except the empty string which is 3.
-  ? ,$ $ @ # another if else, @ is the 2nd debruijn index which is the arg from the map now.
-```
+
 The final result is a list of strings, which by default are implicitly unlined and printed.
 
 There are lots of pain points in this solution still.
