@@ -18,30 +18,10 @@ compile :: Code -> Expr
 compile input = if empty rest then prog else error $ "unused code (todo make do something useful)\n"++(show rest)
 	where
 -- 		(e, _) = addLetsToExpr [] e finalContext
-		(Thunk rest afterContext, Expr rep body) = head $ toExprList $ Thunk (consumeWhitespace input)	[]	
+		(Thunk rest afterContext, Expr rep body) = getValueMemo $ Thunk (consumeWhitespace input)	[]	
 		(_, progImpl) = popArg 0 afterContext body
 		prog = Expr rep progImpl
 
--- Gets the arg list
-toExprList :: Thunk -> [(Thunk, Expr)]
--- toExprList thunk =
--- 	(rest, expr) : toExprList rest where
--- 		(rest, expr) = getValue thunk
-toExprList = head . exprsByOffset
-
--- Gets the arg list (given an arg from each possible offset after this one?)
-getValueL :: Thunk -> [[(Thunk, Expr)]] -> [(Thunk, Expr)]
-getValueL thunk offsetExprs = (afterThunk, expr) : getValueL afterThunk offsetAfterExprs where
-	(afterThunk,expr) = getValue thunk offsetExprs
-	Thunk after _ = afterThunk
-	Thunk code context = thunk
-	offsetAfterExprs = drop (cp after-cp code) offsetExprs
--- 
--- Gets the arg lists from each possible offset
-exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
-exprsByOffset (Thunk code vt) =
-	getValueL (Thunk code vt) rest : rest where
-		rest = exprsByOffset (Thunk (nextOffset code) vt)
 
 applyExpr :: Expr -> Expr -> Expr
 applyExpr (Expr r1 (Impl t1 [hs1] d1)) (Expr r2 (Impl _ [hs2] d2)) =
@@ -69,25 +49,55 @@ convertLambdas :: Thunk -> [(ArgMatchResult, (Thunk, Expr))] -> (Thunk, [Expr])
 convertLambdas = mapAccumL convertLambda
 
 convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
-convertLambda (Thunk code origContext) (ArgMatches, (Thunk argCode argContext, expr)) =
-	if origContext == argContext
-		then (Thunk argCode argContext, expr) -- use memoized expr
-		else head $ toExprList $ Thunk code origContext -- recompute expr
+convertLambda (Thunk code origContext) (ArgMatches, result) = result
 convertLambda (Thunk code origContext) (ArgFnOf argType, _) = 
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
 		(lambdaContext, newArgs) = newLambdaArgs origContext argType 
 		(Thunk afterFnCode afterFnContext, (Expr rep body)) =
-			head $ toExprList $ Thunk code lambdaContext
+			getValueMemo $ Thunk code lambdaContext
 		(finalContext, bodyWithLets) = popArg (getArgDepth $ head newArgs) afterFnContext body
 		lambda = addLambda newArgs bodyWithLets
 
-getValue :: Thunk -> [[(Thunk,Expr)]] -> (Thunk, Expr)
-getValue (Thunk code contextTs) offsetExprs = fromMaybe fail $ msum $ map tryOp ops where
-	fail = parseError "no matching op" $ Thunk code contextTs
+-- Gets the arg list
+getValuesMemo :: Thunk -> [(Thunk, Expr)]
+getValuesMemo = head . exprsByOffset
+getValueMemo = head . getValuesMemo
+
+-- only memoized by offset, not context
+data MemoData = MemoData [Arg] [[(Thunk, Expr)]]
+
+-- Gets the arg list (given an arg from each possible offset after this one)
+getValues :: Thunk -> MemoData -> [(Thunk, Expr)]
+getValues thunk offsetExprs = (afterThunk, expr) : getValues afterThunk offsetAfterExprs where
+	(afterThunk,expr) = getValue thunk offsetExprs
+	Thunk code context = thunk
+	Thunk after _ = afterThunk
+	MemoData _ offsetExprsz = offsetExprs
+	offsetAfterExprs = MemoData context $ drop (cp after-cp code) offsetExprsz
+-- 
+-- Gets the arg lists from each possible offset
+exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
+exprsByOffset (Thunk code context) =
+	getValues (Thunk code context) (MemoData context rest) : rest where
+		rest = exprsByOffset (Thunk (nextOffset code) context)
+
+-- check the arg list for any changes to context, and regenerate the rest if so
+checkMemos :: [Arg] -> Thunk -> [(Thunk, Expr)] -> [(Thunk, Expr)]
+checkMemos memoContext thunk (first : rest)
+	| memoContext == context = first : checkMemos memoContext afterThunk rest
+	| otherwise = checkMemos context thunk (getValuesMemo thunk)
+	where
+		(Thunk _ context) = thunk
+		(afterThunk, expr) = first
+
+getValue :: Thunk -> MemoData -> (Thunk, Expr)
+getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp ops where
+	fail = parseError "no matching op" $ Thunk code context
 	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
-		afterOpThunk = (Thunk afterOpCode contextTs)
-		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) contextTs
--- 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
+		afterOpThunk = (Thunk afterOpCode context)
+-- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) context
+		(MemoData memoContext offsetExprs) = memo
+		valList = checkMemos memoContext afterOpThunk $ head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		opRep = Rep nib lit
 		in convertOp opRep afterOpThunk valList op
 
@@ -98,8 +108,8 @@ convertOp opRep afterOpThunk valList (Op atso impl autos) =
 		ats = simplifyArgSpecs atso
 		typeMatch = zipWith id ats (tail $ inits valTypes)
 		isFns = map fromJust typeMatch
-		(nextCode, argList) = convertLambdas afterOpThunk $ zip isFns valList
-		makeExpr = (nextCode, foldl applyExpr initExpr (convertAutos argList autos))
+		(nextThunk, argList) = convertLambdas afterOpThunk $ zip isFns valList
+		makeExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
 		initExpr = Expr opRep $ Impl rt [HsAtom $ "("++hs++")"] noArgsUsed
 		(rt, hs) = impl $ map retT argList
 
@@ -109,6 +119,5 @@ convertOp opRep afterOpThunk _ Let = Just $ lets opRep afterOpThunk
 lets :: Rep -> Thunk -> (Thunk, Expr)
 lets opRep origThunk =
 	(Thunk nextCode afterLetContext, Expr (addRep opRep r) (getArgImpl letArg)) where
-		(Thunk nextCode nextContext, Expr r letDefImpl) = head $ toExprList origThunk
+		(Thunk nextCode nextContext, Expr r letDefImpl) = getValueMemo origThunk
 		(afterLetContext, letArg) = newLetArg nextContext letDefImpl
-

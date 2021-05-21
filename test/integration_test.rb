@@ -1,5 +1,5 @@
 # test nibbles on a program which computes all primes < 400 then prints 62nd
-test_program = "=; 20-,*$$+>~.,$>~*$,/*@@$ 63\n"
+test_program = "=-,*; 20$+>~.,$>~*$,/*@@$ 63\n"
 test_file = 'integration_test'
 testnbl = test_file+'.nbl'
 testnbb = test_file+'.nbb'
