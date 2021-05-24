@@ -61,6 +61,9 @@ ops = [
 	-- Test: +;1 + ;2 @ -> 4
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	(";", [6], Let),
+	-- Desc: singleton
+	-- Example: ~:3 -> [3]
+	op("~:", [0,7], [anyT], "\\x->[x]" ~> VList .a1, []),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"

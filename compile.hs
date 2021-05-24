@@ -90,8 +90,10 @@ checkMemos memoContext thunk (first : rest)
 		(Thunk _ context) = thunk
 		(afterThunk, expr) = first
 
+sortedOps = sortOn (\(_,b,_)-> -length b) ops
+
 getValue :: Thunk -> MemoData -> (Thunk, Expr)
-getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp ops where
+getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps where
 	fail = parseError "no matching op" $ Thunk code context
 	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		afterOpThunk = (Thunk afterOpCode context)
