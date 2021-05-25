@@ -112,17 +112,17 @@ consumeWhitespace (Lit (c:s) cp)
 
 parseIntExpr :: Rep -> Thunk -> (Thunk, Expr)
 parseIntExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ intToNib n) (' ':show n)) (Impl VInt [i n] noArgsUsed))
+	(Thunk rest vt, Expr (Rep (b ++ intToNib n) (' ':show n)) (Impl VInt (i n) noArgsUsed))
 		where (n, rest) = parseInt code
 
 parseStrExpr :: Rep -> Thunk -> (Thunk, Expr)
 parseStrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr [app1 "sToA" (HsAtom $ show s)] noArgsUsed))
+	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr (app1 "sToA" (HsAtom $ show s)) noArgsUsed))
 		where (s, rest) = parseStr code
 
 parseChrExpr :: Rep -> Thunk -> (Thunk, Expr)
 parseChrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr [app1 "ord" (HsAtom $ show s)] noArgsUsed))
+	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr (app1 "ord" (HsAtom $ show s)) noArgsUsed))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]

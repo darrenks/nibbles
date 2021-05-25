@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Let | Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr)) deriving Show
+data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr)) deriving Show
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -60,15 +60,18 @@ ops = [
 	-- Test: ++; 5 /,1 ;$ $ -> 11
 	-- Test: +;1 + ;2 @ -> 4
 	-- Test: .,3 ;%$3 -> [1,2,0]
-	(";", [6], Let),
+	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
 	-- Desc: singleton
-	-- Example: ~:3 -> [3]
-	op("~:", [0,7], [anyT], "\\x->[x]" ~> VList .a1, []),
+	-- Example: :~3 -> [3]
+	op(":~", [7,0], [anyT], "\\x->[x]" ~> VList .a1, []),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
 	-- Test promoting to list: :1 2 -> [1,2]
+	
+	-- todo :x~ could be default or Nothing
+	
 	op(":", [7], [anyT, anyT], composeOp promoteList (coerce "(++)" [0,1] id), []),
 	-- Desc: add
 	-- Example: +1 2 -> 3
@@ -122,16 +125,21 @@ ops = [
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
+	-- Desc: divmod
+	-- Example: :/~7 2 $ -> [3,1]
+	op("/~", [11,0], [num, num], "divMod" ~> (\[a1,_] -> VPair a1 a1), [2]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
-	op("/", [11], [num, num], "div" ~> VInt, [autoTodo, 2]),
+	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
--- 	Desc: map accum L
--- 	Example: .~"abc"+1$ -> "bcd"
--- 	op(".~", [12,0], [list, fn (\[VList e]->VPair x e)], "flip map" ~> VList .a2, []),
+	--- Desc: map accum L
+	-- todo, put this in the parse of lambda so can have arbitrary nesting/combo
+	--- Example: .~,3 0 +@$ +@$ -> "[1,2,3]"
+-- 	op(".~", [12,0], [list, anyT, fn (\[VList e, x]->VPair x e)],
+-- 		"snd $ \\l i f->mapAccumL f i l" ~> VList .sndOf.a2, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn (elemT.a1)], "flip map" ~> VList .a2, []),
@@ -166,6 +174,7 @@ ops = [
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
 	-- Test auto: ="asdf"~ -> 'a'
+	-- todo make lazier
 	op("=", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: .z,3"abc"+$@ -> "bdf"
@@ -200,6 +209,8 @@ a3 = (!!2) :: [VT] -> VT
 
 both f [a,b] = (f a, f b)
 pairOf = uncurry VPair
+sndOf (VPair a b) = b
+dup a = VPair a a
 
 xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr

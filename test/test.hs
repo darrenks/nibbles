@@ -41,8 +41,8 @@ toTest(origLit, expect, size) =
 	length nib, size,
 	flatHs hsFromNib, flatHs hs))
 	where
-		Expr (Rep nib outLit) (Impl t [hs] _) = compile (Lit origLit 0)
-		Expr _ (Impl _ [hsFromNib] _) = compile (Nib nib 0)
+		Expr (Rep nib outLit) (Impl t hs _) = compile (Lit origLit 0)
+		Expr _ (Impl _ hsFromNib _) = compile (Nib nib 0)
 
 removeSpaces = filter (not.isSpace)
 
@@ -61,8 +61,9 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 
 main=do
 	testCases <- getTestsFromAnnotations
-	let tests = map toTest $ take 100 testCases
--- 	putStrLn $ show $ last tests
+	let tests = map toTest $ take 1900 testCases
+-- 	let (_,(_,_,x,_,_,_,_)) = last tests
+-- 	putStrLn $ show $ x
 	header <- readFile "header.hs"
 	let prog = header ++ "\nmain=do;" ++ concatMap fst tests
 	result <- runHs prog

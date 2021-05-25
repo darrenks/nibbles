@@ -10,6 +10,13 @@ sToA = map ord
 aToS = map$safeChr.fromIntegral
 bToI b = if b then 1 else 0
 
+at :: [a] -> Int -> Maybe a
+at [] _ = Nothing
+at (x:xs) n
+ | n < 0     = Nothing
+ | n == 0    = Just x
+ | otherwise = at xs (n-1)
+
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
 -- todo unused, use split lib
 reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a

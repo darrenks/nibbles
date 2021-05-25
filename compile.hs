@@ -24,14 +24,14 @@ compile input = if empty rest then prog else error $ "unused code (todo make do 
 
 
 applyExpr :: Expr -> Expr -> Expr
-applyExpr (Expr r1 (Impl t1 [hs1] d1)) (Expr r2 (Impl _ [hs2] d2)) =
-	Expr (addRep r1 r2) (Impl t1 [HsApp hs1 hs2] (max d1 d2))
+applyExpr (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl _ hs2 d2)) =
+	Expr (addRep r1 r2) (Impl t1 (HsApp hs1 hs2) (max d1 d2))
 
 convertAutoType VAuto = VInt
 convertAutoType t = t
 
 convertAuto (Expr r (Impl VAuto _ _)) auto =
-	Expr r $ Impl VInt [i $ fromIntegral auto] noArgsUsed
+	Expr r $ Impl VInt (i $ fromIntegral auto) noArgsUsed
 convertAuto e _ = e
 
 convertAutos :: [Expr] -> [Int] -> [Expr]
@@ -52,11 +52,11 @@ convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
 convertLambda (Thunk code origContext) (ArgMatches, result) = result
 convertLambda (Thunk code origContext) (ArgFnOf argType, _) = 
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
-		(lambdaContext, newArgs) = newLambdaArgs origContext argType 
+		(lambdaContext, newArg) = newLambdaArg origContext argType 
 		(Thunk afterFnCode afterFnContext, (Expr rep body)) =
 			getValueMemo $ Thunk code lambdaContext
-		(finalContext, bodyWithLets) = popArg (getArgDepth $ head newArgs) afterFnContext body
-		lambda = addLambda newArgs bodyWithLets
+		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
+		lambda = addLambda newArg bodyWithLets
 
 -- Gets the arg list
 getValuesMemo :: Thunk -> [(Thunk, Expr)]
@@ -90,7 +90,7 @@ checkMemos memoContext thunk (first : rest)
 		(Thunk _ context) = thunk
 		(afterThunk, expr) = first
 
-sortedOps = sortOn (\(_,b,_)-> -length b) ops
+sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
 
 getValue :: Thunk -> MemoData -> (Thunk, Expr)
 getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps where
@@ -104,22 +104,28 @@ getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps
 		in convertOp opRep afterOpThunk valList op
 
 convertOp :: Rep -> Thunk -> [(Thunk, Expr)] -> Operation -> Maybe (Thunk, Expr)
-convertOp opRep afterOpThunk valList (Op atso impl autos) = 
-	if all isJust typeMatch then Just makeExpr else Nothing where
+convertOp opRep afterOpThunk valList (Op ats impl autos) = 
+	if all isJust typeMatch then Just finalExpr else Nothing where
 		valTypes = map (retT.snd) valList
-		ats = simplifyArgSpecs atso
-		typeMatch = zipWith id ats (tail $ inits valTypes)
+		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits valTypes)
 		isFns = map fromJust typeMatch
 		(nextThunk, argList) = convertLambdas afterOpThunk $ zip isFns valList
-		makeExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
-		initExpr = Expr opRep $ Impl rt [HsAtom $ "("++hs++")"] noArgsUsed
 		(rt, hs) = impl $ map retT argList
+		initExpr = Expr opRep $ Impl rt (HsAtom $ "("++hs++")") noArgsUsed
+		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
+		finalExpr = convertPairToLet fullExpr
 
 convertOp opRep afterOpThunk _ (Atom impl) = Just $ impl opRep afterOpThunk
-convertOp opRep afterOpThunk _ Let = Just $ lets opRep afterOpThunk
 
-lets :: Rep -> Thunk -> (Thunk, Expr)
-lets opRep origThunk =
-	(Thunk nextCode afterLetContext, Expr (addRep opRep r) (getArgImpl letArg)) where
-		(Thunk nextCode nextContext, Expr r letDefImpl) = getValueMemo origThunk
-		(afterLetContext, letArg) = newLetArg nextContext letDefImpl
+convertPairToLet :: (Thunk, Expr) -> (Thunk, Expr)
+convertPairToLet (Thunk code context, Expr rep impl)
+	| isPair (getImplType impl) = (Thunk code letContext, Expr rep firstImpl) where
+		(letContext, letArg) = newLetArg context impl Hidden
+		firstImpl = getFirstOf letArg
+		
+		isPair (VPair _ _) = True
+		isPair _ = False
+		getFirstOf (Arg (Impl (VPair a b) hs dep) _ _) = getFirstOf $ Arg (Impl a (app1"fst"hs) dep) undefined undefined
+		getFirstOf (Arg impl _ _) = impl
+		
+convertPairToLet r = r
