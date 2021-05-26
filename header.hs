@@ -3,6 +3,7 @@ module Header where
 import Data.List
 import Data.Char
 import Data.Maybe
+import Data.Tuple
 import Data.List.Split -- needs cabal install -lib split
 
 safeChr = chr.(`mod`256)

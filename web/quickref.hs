@@ -65,9 +65,11 @@ main=do
 toQuickRef (Op types impl autos) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
 		toHtml $ unwords $ zipWith typeToStr types ['a'..],
-	td $ H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map show usableAutos)]
+	td $ H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map showAuto usableAutos)]
 	where 
 		usableAutos = filter (/= impossibleAuto) autos
+		showAuto i | i == autoTodo = "tbd"
+		           | otherwise = show i
 		sort_type = if null types then "" else rootType $ Data.List.head types
 toQuickRef _ = [td "",td ""]
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), ops, impossibleAuto) where
+module Ops (Operation(..), ops, impossibleAuto, autoTodo) where
 
 import Types
 import Polylib
@@ -14,7 +14,7 @@ data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk ->
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
 
-autoTodo = 0
+autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
 ops :: [(String, [Int], Operation)]
@@ -127,7 +127,7 @@ ops = [
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divmod
 	-- Example: :/~7 2 $ -> [3,1]
-	op("/~", [11,0], [num, num], "divMod" ~> (\[a1,_] -> VPair a1 a1), [2]),
+	op("/~", [11,0], [num, num], "divMod" ~> VPair VInt VInt, [2]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
@@ -148,6 +148,9 @@ ops = [
 	-- Test more than size: >5,3 -> []
 	-- todo test/make negative
 	op(">", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
+	-- Desc: moddiv
+	-- Example : :%~7 2 $ -> [1,3]
+	op("%~", [12,0], [num, num], "(swap.).divMod" ~> VPair VInt VInt, [2]),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives

@@ -6,6 +6,8 @@ website design
 
 more coercers
 
+lambda
+
 error if lit accidentally would map to something that is an extension
 better op not found error message (hard because memoize of arg types is lazy)
 
