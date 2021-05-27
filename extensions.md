@@ -5,8 +5,6 @@ Only tracking things which take 2 nibbles to achieve.
 available extensions
 constant + constant (*) too
 constant in loop
-leading 0
-32 char value in str
 ~ auto valued int (2 in *) (could mean infinity)
 `0,1
 `unset
@@ -18,29 +16,27 @@ opcode 15, mismatched 2d+ lists
 ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 
 desired features
+pair (only needed in fns)
 min/max
-pair
 not
 or
 and
-array bool
+more vectorized ops (- / %)
+more special folds
 something to convert to truthiness
-2** (or 10** if auto 2)
-negativeness?
+2** (or 10** if auto 2) (or bitshift)
 empty str, empty list of various types
-char
-ord
-reshape
+range0
 iterate / unfold / until
-sortby
 chunk/while
 splitWhen
+last/init (can use reverse or foldr for this now)
 takeWhile (instead of first of split?)
 things that return pair of two things, i.e head, tail ?
 group
 transpose
-base?
 array split, not removing empties
+maybe version of things that throw?
 ==, list comparison < >, etc
 functions
 10
@@ -48,4 +44,14 @@ bitwise ^ & |
 string + int coercing the otherway (old idea was to use opcode of *int str)
 	if could reverse operands of + could make it +str int for good literal form
 abs/sig
-list of strs shorthand?
+ljust/etc
+uniq, setwise op [by]
+
+-- "too complicated"
+sqrt
+list of strs shorthand (use 32 value of str?)
+magic/hash
+permutations/combinations
+prefixes/suffixes
+base conversion
+popcount

@@ -36,7 +36,7 @@ isLet (Arg _ _ (LetArg _ _ _)) = True
 -- convention cp (code pointer) = this number
 data Code = Lit NibLit Int | Nib [Nibble] Int deriving Show
 
-uselessOp = 7 :: Int -- for padding odd nibbles into bytes
+uselessOp = 6 :: Int -- for padding odd nibbles into bytes
 
 app1 :: String -> HsCode -> HsCode
 app1 = HsApp . HsAtom
@@ -46,7 +46,7 @@ app1Hs s (Impl t hs d) = Impl t (app1 s hs) d
 
 retT (Expr _ (Impl t _ _)) = t
 setImpl (Expr r _) impl = Expr r impl
--- modifyImpl f (Exp r i) = Expr f (f i)
+modifyImpl f (Expr r i) = Expr r (f i)
 
 -- toArgList [arg] = arg
 -- toArgList args = "(" ++ intercalate "," args ++ ")"
@@ -62,4 +62,4 @@ flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
 flatHs (HsFn arg body) = "(\\" ++ arg ++ "->" ++ flatHs body ++ ")"
 
 i :: Integer -> HsCode
-i s = if s < 0 then HsAtom $ "(" ++ show s ++ ")" else HsAtom $ show s --"("++show s++"::Integer)"
+i s = HsAtom $ "(" ++ show s ++ ")" -- "::Integer)"

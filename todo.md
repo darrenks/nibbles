@@ -8,7 +8,7 @@ more coercers
 
 10 as leading 0 in int rep
 
-lambda
+lambda and recursive functions
 
 error if lit accidentally would map to something that is an extension
 better op not found error message (hard because memoize of arg types is lazy)

@@ -14,13 +14,20 @@ import Expr
 import Args
 import Parse
 
-compile :: Code -> Expr
-compile input = if empty rest then prog else error $ "unused code (todo make do something useful)\n"++(show rest)
-	where
--- 		(e, _) = addLetsToExpr [] e finalContext
-		(Thunk rest afterContext, Expr rep body) = getValueMemo $ Thunk (consumeWhitespace input)	[]	
-		(_, progImpl) = popArg 0 afterContext body
-		prog = Expr rep progImpl
+compile :: (VT -> String) -> String -> Code -> Expr
+compile finishFn seperator input = Expr rep progImpl where
+	initialThunk = Thunk (consumeWhitespace input) []
+	exprs = takeOneMore codeAfter $ getValuesMemo initialThunk
+	Thunk _ afterContext = fst $ last exprs
+	--todo could be empty program, no exprs
+	Expr rep body = foldl1 combineExprs $ map (applyFinish.snd) exprs
+	(_, progImpl) = popArg 0 afterContext body
+	
+	combineExprs a v = applyExpr (modifyImpl (app1Hs $"(\\a b-> a++"++(show$sToA seperator)++"++b)") a) v
+	applyFinish (Expr rep impl) =
+		Expr rep $ app1Hs (finishFn $ getImplType impl) impl
+	codeAfter (Thunk code _, _) = not $ empty code
+	takeOneMore f l = a++[b] where (a,(b:c)) = span f l
 
 
 applyExpr :: Expr -> Expr -> Expr

@@ -40,9 +40,9 @@ main=do
 				where (basename, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
-	let Expr (Rep b lit) (Impl t hs _) = case parseMode of
-		FromLit -> compile $ Lit contents 0
-		FromBytes -> compile $  Nib (concatMap fromByte contents) 0
+	let Expr (Rep b lit) (Impl t hs _) = compile finish "" $ case parseMode of
+		FromLit -> Lit contents 0
+		FromBytes -> Nib (concatMap fromByte contents) 0
 	-- todo for adding args, need to add types, depth, and hs setters
 	case filter isOpt args of
  		[] -> do
@@ -51,7 +51,7 @@ main=do
  			print hs
  			putStrLn $ lit ++ "\n" ++ flatHs hs
  			header <- readFile "header.hs"
- 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++finish t++"$"++ flatHs hs
+ 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++ flatHs hs
 		["-c"] -> do
 			let bytes = toBytes b
 			let outname = (basename ++ ".nbb")

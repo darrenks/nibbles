@@ -42,7 +42,8 @@ ops = [
 	-- Test (size 5): '\200' -> '\200'
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
-	-- Example: +++;1;2;3 $ -> 9
+	-- Test: ;1 $ -> 1,1
+	--- Example: ++;1;2;3 $ -> 1,2,3,3
 	atom("$", [3], getArg 0),
 	-- Desc: 2nd arg
 	-- Example: +++;1;2;3 @ -> 8
@@ -101,9 +102,10 @@ ops = [
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
 	op("*", [8], [str, list], join.elemT.a2, []),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("+\\", [8,11], [listOf int], "asdf" ~> VInt, []),
+	-- Desc: product
+	-- Example: pt,4 -> 24
+	-- Test: pt,0 -> 1
+	op("pt", [8,11], [listOf int], "product" ~> VInt, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
@@ -160,9 +162,9 @@ ops = [
 	-- op(".~", [12,0], [list, anyT, fn (\[VList e, x]->VPair x e)],
 	--	"snd $ \\l i f->mapAccumL f i l" ~> VList .sndOf.a3, []),
 	
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(",.", [13,12], [list], "asdf" ~> VInt, []),	
+	-- Desc: sort by
+	-- Example: sb,4%$2 -> [2,4,1,3]
+	op("sb", [13,12], [list, fn (elemT.a1)], "flip sortOn" ~> a1, []),	
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn (elemT.a1)], "flip map" ~> VList .a2, []),
@@ -178,15 +180,18 @@ ops = [
 	-- Example:  %7 2 -> 1
 	-- todo test negatives
 	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(",,", [13,13], [num], "asdf" ~> VInt, [autoTodo]),
+	-- Desc: chr/ord
+	-- Example: ch 100 ch 'e' -> 'd',101
+	op("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
+	-- Desc: reshape
+	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
+	op("rs", [13,9], [num, list], "reshape" ~> VList .a2, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op(",%", [13,9], [num, list], "asdf" ~> VInt, [autoTodo]),
+	op(",^", [13,14], [int, list], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt, []),

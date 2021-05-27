@@ -78,7 +78,7 @@ parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
 
 cp (Nib _ cp) = cp
 cp (Lit _ cp) = cp
-empty (Nib [uselessOp] _) = True
+empty (Nib [op] _) | op == uselessOp = True
 empty (Nib [] _) = True
 empty (Lit [] _) = True
 empty _ = False
