@@ -32,4 +32,3 @@ more extensions
 	communitive extensions
 
 auto fill $ for implicit input (or unused args that were expected to be used)
-multiple outputs
