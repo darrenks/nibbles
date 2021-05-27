@@ -54,9 +54,11 @@ convertLambda (Thunk code origContext) (ArgFnOf argType, _) =
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
 		(lambdaContext, newArg) = newLambdaArg origContext argType 
 		(Thunk afterFnCode afterFnContext, (Expr rep body)) =
-			getValueMemo $ Thunk code lambdaContext
+			fillArg $ Thunk code lambdaContext
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
 		lambda = addLambda newArg bodyWithLets
+		
+fillArg thunk = getValueMemo thunk
 
 -- Gets the arg list
 getValuesMemo :: Thunk -> [(Thunk, Expr)]

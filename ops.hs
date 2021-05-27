@@ -50,6 +50,15 @@ ops = [
 	-- Desc: nth arg
 	-- Example: +++;1;2;3 `2 -> 7
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
+	-- Desc: tbd (@ too)
+	-- Example: 0 -> 0
+	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
+	-- Desc: tbd (fn, n ;'s)
+	-- Example: 0 -> 0
+	op(";;", [6,6], [anyT], "asdf" ~> VInt, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(";~", [6,0], [anyT], "asdf" ~> VInt, []),	
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -57,13 +66,13 @@ ops = [
 	-- Test: ++; 5 /,1 $ $ -> 11
 	-- Test: ++; 5 /,2 `2 $ -> 15
 	-- Test: ++; 5 /,1 ;7 $ -> 13
-	-- Test: ++; 5 /,1 ;$ $ -> 11
+	-- Test: ++; 5 /,1 ;+0$ $ -> 11
 	-- Test: +;1 + ;2 @ -> 4
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
-	op(":~", [7,0], [anyT], "\\x->[x]" ~> VList .a1, []),
+	op(":~", [7,0], [anyT], "\\x->[x]" ~> VList .a1, [autoTodo]),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -71,6 +80,7 @@ ops = [
 	-- Test promoting to list: :1 2 -> [1,2]
 	
 	-- todo :x~ could be default or Nothing
+	-- todo :x~ could mean haskell's ":" (to make list of lists)
 	
 	op(":", [7], [anyT, anyT], composeOp promoteList (coerce "(++)" [0,1] id), []),
 	-- Desc: add
@@ -91,6 +101,9 @@ ops = [
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
 	op("*", [8], [str, list], join.elemT.a2, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("+\\", [8,11], [listOf int], "asdf" ~> VInt, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
@@ -98,6 +111,9 @@ ops = [
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
 	op("+", [8], [listOf list], "concat" ~> elemT.a1, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [8], [str, num], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -122,6 +138,9 @@ ops = [
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	op("st", [11, 11], [list], "sort" ~> a1, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [11,2], [anyT], "asdf" ~> VInt, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
@@ -135,11 +154,15 @@ ops = [
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
-	--- Desc: map accum L
-	-- todo, put this in the parse of lambda so can have arbitrary nesting/combo
-	--- Example: .~,3 0 +@$ +@$ -> "[1,2,3]"
--- 	op(".~", [12,0], [list, anyT, fn (\[VList e, x]->VPair x e)],
--- 		"snd $ \\l i f->mapAccumL f i l" ~> VList .sndOf.a2, []),
+	---- Desc: map accum L
+	---- todo, put this in the parse of lambda so can have arbitrary nesting/combo
+	---- Example: .~,3 0 +@$ +@$ -> [1,3,6]
+	-- op(".~", [12,0], [list, anyT, fn (\[VList e, x]->VPair x e)],
+	--	"snd $ \\l i f->mapAccumL f i l" ~> VList .sndOf.a3, []),
+	
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(",.", [13,12], [list], "asdf" ~> VInt, []),	
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn (elemT.a1)], "flip map" ~> VList .a2, []),
@@ -154,14 +177,23 @@ ops = [
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives
-	op("%", [12], [num, num], "mod" ~> VInt, [autoTodo, 2]),
+	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(",,", [13,13], [num], "asdf" ~> VInt, [autoTodo]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(",%", [13,9], [num, list], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt, []),
 	-- Desc: range from 1 to
 	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
-	op(",", [13], [num], "\\x->[1..x]" ~> VList .a1, []),
+	op(",", [13], [num], "\\x->[1..x]" ~> VList .a1, [autoTodo]),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
@@ -172,7 +204,7 @@ ops = [
 	-- Desc: replicate
 	-- todo test/make negative
 	-- Example: ^3 "ab" -> "ababab"
-	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [1]),
+	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [2 {- todo maybe this should be inf -}]),
 	-- Desc: subscript. Wrapped.
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
@@ -182,10 +214,15 @@ ops = [
 	-- Desc: zip
 	-- Example: .z,3"abc"+$@ -> "bdf"
 	op("z", [14], [list, list], "zip" ~>  VList .pairOf.(both elemT), []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [15,1], [anyT], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: if/else
-	-- Example: ? 0 "T" "F" -> "F"
-	-- Test coerce: ? 1 1 "F" -> "1"
-	op("?", [15], [num, anyT, anyT], \ts -> coerce ("(iff."++truthy (a1 ts)++")") [1,2] id ts, []),
+	-- Example: ? +0 0 "T" "F" -> "F"
+	-- Test coerce: ? +0 1 1 "F" -> "1"
+	-- todo more lazy empty check than computing length
+	-- todo args could be fn's with orig value (orig list if ?,)
+	op("?", [15], [num, anyT, anyT], \ts -> coerce ("(iff."++truthy (a1 ts)++")") [1,2] id ts, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
@@ -196,10 +233,14 @@ ops = [
 	-- Test doesn't drop all: -"aa""a" -> "a"
 	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []),
 	-- Desc: add w/ cast
+	-- todo return Maybe
 	-- Example: +"10" 2 -> 12
 	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
+	
+	-- todo there are some type combinations that are invalid for bin 15
+	
 	-- Desc: show
-	-- Example (onlyLit): p"a" -> "\"a\""
+	-- Example: p"a" -> "\"a\""
 	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, [])]
 
 infixr 8 ~>

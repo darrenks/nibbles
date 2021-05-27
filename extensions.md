@@ -7,47 +7,41 @@ constant + constant (*) too
 constant in loop
 leading 0
 32 char value in str
-~ auto valued int (2 in *)
+~ auto valued int (2 in *) (could mean infinity)
 `0,1
 `unset
-length of reverse
-length of map (if no filter)
-length of range
-length of drop/take
+length of drop/take? not if they weren't as long as the int
 if of constant
-value at of a range
-length of a step
+value at of a range (although depending on OOB behavior...)
 communitiave/associative
-length / reverse of a constant string
-let let (with new form of let)
-~ div, or ~ mod
 opcode 15, mismatched 2d+ lists
 ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 
 desired features
 min/max
 pair
-list1
 not
 or
 and
 array bool
+something to convert to truthiness
 2** (or 10** if auto 2)
 negativeness?
-empty str
+empty str, empty list of various types
 char
 ord
-str to int
 reshape
-iterate / unfold
+iterate / unfold / until
 sortby
 chunk/while
 splitWhen
+takeWhile (instead of first of split?)
+things that return pair of two things, i.e head, tail ?
 group
 transpose
 base?
 array split, not removing empties
-==
+==, list comparison < >, etc
 functions
 10
 bitwise ^ & |

@@ -46,7 +46,7 @@ vectorize op rtf [t1, VList t2] = (VList rt, rop) where
 vectorize op rtf [t1, t2] = (rtf [t1, t2], op)
 
 coerce2 :: (VT, VT) -> VT
-coerce2(NoType, b) = b -- not used yet todo
+-- coerce2(NoType, b) = b -- not used yet todo, nothing -> Maybe
 coerce2(VInt, VInt) = VInt
 coerce2(a, b) | isNum a && isNum b = VChr -- actually I think Int would be better
 coerce2(a, VList VChr) | isNum a = vstr

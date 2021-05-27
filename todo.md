@@ -6,6 +6,8 @@ website design
 
 more coercers
 
+10 as leading 0 in int rep
+
 lambda
 
 error if lit accidentally would map to something that is an extension
@@ -13,14 +15,10 @@ better op not found error message (hard because memoize of arg types is lazy)
 
 is white space truthiness for chars
 
-something to convert to truthiness
-
 either instead of bool/maybe
 maybe id, maybe nothing
 handle div 0 errors/etc
 infinity
-
-pair for things like divmod, splitWhen, etc.
 
 move coerce/etc testing to getting examples from a tutorial
 

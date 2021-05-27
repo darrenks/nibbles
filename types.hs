@@ -2,11 +2,12 @@ module Types where
 
 import Text.Show.Functions
 
-data VT = VInt | VChr | VList VT | VPair VT VT | VAuto | VMaybe (Maybe VT) | NoType
+data VT = VInt | VChr | VList VT | VPair VT VT | VAuto -- | VMaybe VT | Nothing
 	deriving (Show, Eq)
 
 vstr = VList VChr
 
+--                       prev args -> fn arg
 data ArgSpec = Exact VT | Fn ([VT] -> VT) | Cond String ([VT] -> Bool) deriving Show
 
 data ArgMatchResult = ArgMatches | ArgFnOf VT

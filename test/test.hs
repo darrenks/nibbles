@@ -19,9 +19,7 @@ getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (
 			[input,output] = splitOn " -> " (drop (i + 2) s)
 			size = case splitOn "(size" (take i s) of
 				[pre,post] -> read (head $ splitOn ")" post)
-				otherwise -> case splitOn "(onlyLit" (take i s) of
-					[_,_] -> -1
-					otherwise -> 0
+				otherwise -> 0
 	)
 getExample _ = Nothing
 
@@ -38,7 +36,7 @@ runHs prog = do
 toTest(origLit, expect, size) =
 	("putStrLn$aToS$"++inspect t++"$"++flatHs hs++";", (expect,
 	outLit, origLit,
-	length nib, size,
+	length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
 	flatHs hsFromNib, flatHs hs))
 	where
 		Expr (Rep nib outLit) (Impl t hs _) = compile (Lit origLit 0)
