@@ -99,7 +99,7 @@ match (Lit s cp) (needle, _)
 	| otherwise = Nothing
 
 parseError msg (Thunk (Lit s _) context) = error $ msg ++ "\n" ++ head (lines s)
-parseError msg (Thunk (Nib s _) context) = error $ msg
+parseError msg (Thunk (Nib s _) context) = error $ msg ++ "\n" ++ show s
 
 consumeWhitespace :: Code -> Code
 consumeWhitespace (Nib n cp) = Nib n cp

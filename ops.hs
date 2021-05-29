@@ -159,8 +159,8 @@ ops = [
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
 	-- Desc: map accum L
-	-- Example: .~,3 0 +@$ $ $ -> [0,1,3],6
-	op(".~", [12, 0], [list, anyT, Fn (\[VList e, x]->[x,e])], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
+	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
+	op("mac", onlyLit, [list, anyT, Fn (\[VList e, x]->[x,e])], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]

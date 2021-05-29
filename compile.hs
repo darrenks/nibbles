@@ -66,8 +66,6 @@ convertLambda (Thunk code origContext) (ArgFnOf argType, _) =
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
 		lambda = addLambda newArg bodyWithLets
 
-fillArg thunk = getValueMemo thunk
-
 makePairs :: [(Thunk, Expr)] -> (Thunk, Expr)
 makePairs [one] = one
 makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =

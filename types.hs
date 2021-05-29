@@ -7,7 +7,7 @@ data VT = VInt | VChr | VList VT | VPair VT VT | VAuto -- | VMaybe VT | Nothing
 
 vstr = VList VChr
 
---                       prev args -> fn arg
+--                       prev args -> fn args
 data ArgSpec = Exact VT | Fn ([VT] -> [VT]) | Cond String ([VT] -> Bool) deriving (Eq, Show)
 
 data ArgMatchResult = ArgMatches | ArgFnOf [VT]
