@@ -17,24 +17,32 @@ truthy VInt = "(>0)"
 truthy VChr = "(>0)"
 truthy (VList _) = "(not null)"
 
+inspect (VPair a b) = "(\\(a,b)->sToA \"(\"++"++inspect a++"a++sToA \",\"++"++inspect b++"b++sToA \")\")"
 inspect VInt = "(sToA.show)"
 inspect VChr = "(sToA.show.chr.fromIntegral)"
 inspect (VList VChr) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspect et++" v)) ++ (sToA \"]\"))"
 
-finish :: VT -> String
-finish (VList t)
+finishH :: VT -> String
+finishH (VList t)
 	| d >= 3 = joinC "[]"
 	| d == 2 = joinC "[32]"
 	| d == 1 = compose1 "(++[10])" $ joinC "[10]"
 	where
 		d = sdim t
-		joinC s = compose1 (finish jt) $ app1 js s where (jt,js) = join t
-		compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
-		app1 a b = "(" ++ a ++ b ++ ")"
-finish (VList VChr) = "(id)"
-finish VInt = inspect VInt
-finish VChr = "(:[])"
+		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join t
+finishH (VList VChr) = "(id)"
+finishH VInt = inspect VInt
+finishH VChr = "(:[])"
+finish = composez finishH removePairs
+
+composez a b t = compose1 (a t2) s where (t2, s) = b t
+compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
+app1 a b = "(" ++ a ++ b ++ ")"
+
+removePairs (VPair a b) = (a, "(fst)")
+removePairs (VList a) = (VList rt, app1 "map" rs) where (rt, rs) = removePairs a
+removePairs a = (a, "(id)")
 
 join VInt = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
 join (VList VChr) = (vstr, "intercalate")

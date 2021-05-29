@@ -4,6 +4,8 @@ https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-pri
 tutorial (and auto test tutorial examples)
 website design
 
+make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
+
 coerce after foldr
 
 10 as leading 0 in int rep

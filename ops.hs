@@ -217,7 +217,7 @@ ops = [
 	-- todo make lazier
 	op("=", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
-	-- Example: .z,3"abc"+$@ -> "bdf"
+	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	op("z", [14], [list, list], "zip" ~>  VList .pairOf.(both elemT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -334,6 +334,7 @@ ops = [
 	-- Test: testFinish .,3"abc" -> "abc\nabc\nabc\n"
 	-- Test: testFinish .,2.,2,2 -> "12 12\n12 12\n"
 	-- Test: testFinish .,2.,2"ab" -> "ab ab\nab ab\n"
+	-- Test: testFinish z ,3 "abc" -> "1\n2\n3\n"
 	op("testFinish", onlyLit, [anyT], finish.a1 ~> vstr, [])]
 
 infixr 8 ~>
