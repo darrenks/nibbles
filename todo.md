@@ -12,7 +12,6 @@ coerce after foldr
 
 lambda and recursive functions
 
-error if lit accidentally would map to something that is an extension
 better op not found error message (hard because memoize of arg types is lazy)
 aliases so don't have to use ~ in middle of extensions type : "1" ~
 helpful error if communitive backwards (use aliases)

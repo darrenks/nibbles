@@ -160,6 +160,7 @@ ops = [
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
 	-- Desc: map accum L
 	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
+	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
 	op("mac", onlyLit, [list, anyT, Fn (\[VList e, x]->[x,e])], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
 	
 	-- Desc: sort by
