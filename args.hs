@@ -10,10 +10,10 @@ import Data.Maybe
 
 argStr n = "arg" ++ show n
 
-newLambdaArg :: [Arg] -> VT -> ([Arg], Arg)
+newLambdaArg :: [Arg] -> [VT] -> ([Arg], Arg)
 newLambdaArg context argT = (newArg : context, newArg) where
 	depth = 1+foldr (const . getArgDepth) 0 context
-	impl = Impl argT (HsAtom $ argStr depth) depth
+	impl = Impl (foldr1 VPair argT) (HsAtom $ argStr depth) depth
 	newArg = Arg impl depth LambdaArg
 
 newLetArg :: [Arg] -> Impl -> VisibleFirst -> ([Arg], Arg)
@@ -28,6 +28,7 @@ argn context deBruijnIndex =
 			at flattenedArgs deBruijnIndex
 	where
 		flattenedArgs = concatMap flattenArg context
+-- 		flattenArg (Arg (Impl (VMultArgs a b) hs depth) z k) = flattenArg (Arg (Impl (VPair a b) hs depth) z k)
 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)

@@ -8,9 +8,9 @@ data VT = VInt | VChr | VList VT | VPair VT VT | VAuto -- | VMaybe VT | Nothing
 vstr = VList VChr
 
 --                       prev args -> fn arg
-data ArgSpec = Exact VT | Fn ([VT] -> VT) | Cond String ([VT] -> Bool) deriving (Eq, Show)
+data ArgSpec = Exact VT | Fn ([VT] -> [VT]) | Cond String ([VT] -> Bool) deriving (Eq, Show)
 
-data ArgMatchResult = ArgMatches | ArgFnOf VT
+data ArgMatchResult = ArgMatches | ArgFnOf [VT]
 
 instance Eq (a -> b) where
 	a==b = False

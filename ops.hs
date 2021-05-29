@@ -158,11 +158,9 @@ ops = [
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
-	---- Desc: map accum L
-	---- todo, put this in the parse of lambda so can have arbitrary nesting/combo
-	---- Example: .~,3 0 +@$ +@$ -> [1,3,6]
-	-- op(".~", [12,0], [list, anyT, fn (\[VList e, x]->VPair x e)],
-	--	"snd $ \\l i f->mapAccumL f i l" ~> VList .sndOf.a3, []),
+	-- Desc: map accum L
+	-- Example: .~,3 0 +@$ $ $ -> [0,1,3],6
+	op(".~", [12, 0], [list, anyT, Fn (\[VList e, x]->[x,e])], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -373,7 +371,7 @@ char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
 
-fn = Fn
+fn fx = Fn $ \ts -> [fx ts] -- fn of 1 arg
 num = Cond "num" $ isNum . last
 vec = Cond "vec" $ isVec . last
 list = Cond "list" $ isList . last
@@ -382,6 +380,8 @@ listOf (Exact t) =  Exact $ VList t
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> c [elemT $ last vts]
 
 elemT (VList e) = e
+fstT (VPair a _) = a
+sndT (VPair _ b) = b
 
 elemOfA1 = Cond "a" (\[a1,a2]->VList a2==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))

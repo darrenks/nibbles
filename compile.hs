@@ -61,12 +61,18 @@ convertLambda (Thunk code origContext) (ArgMatches, result) = result
 convertLambda (Thunk code origContext) (ArgFnOf argType, _) = 
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
 		(lambdaContext, newArg) = newLambdaArg origContext argType 
-		(Thunk afterFnCode afterFnContext, (Expr rep body)) =
-			fillArg $ Thunk code lambdaContext
+		(Thunk afterFnCode afterFnContext, Expr rep body) =
+			makePairs $ take (length argType) $ getValuesMemo $ Thunk code lambdaContext
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
 		lambda = addLambda newArg bodyWithLets
-		
+
 fillArg thunk = getValueMemo thunk
+
+makePairs :: [(Thunk, Expr)] -> (Thunk, Expr)
+makePairs [one] = one
+makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
+		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT fstT) (HsApp (app1 "(\\a b->(a,b))" fstHs) restHs) (min fstDep restDep)))
+	where (restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
 
 -- Gets the arg list
 getValuesMemo :: Thunk -> [(Thunk, Expr)]
