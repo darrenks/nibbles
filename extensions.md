@@ -28,6 +28,9 @@ something to convert to truthiness
 empty str, empty list of various types
 range0
 iterate / unfold / until
+mapaccum
+scan
+prepend Nothing
 chunk/while
 splitWhen
 last/init (can use reverse or foldr for this now)

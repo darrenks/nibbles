@@ -5,6 +5,8 @@ import Data.Char
 import Data.Maybe
 import Data.Tuple
 import Data.List.Split -- needs cabal install -lib split
+import Text.Read (readMaybe)
+import Types -- only for test
 
 safeChr = chr.(`mod`256)
 sToA = map ord

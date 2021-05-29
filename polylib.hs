@@ -6,6 +6,7 @@ module Polylib(
 	join,
 	vectorize,
 	coerce,
+	coerce2, coerceTo, -- test only
 	composeOp,
 	promoteList) where
 
@@ -46,19 +47,33 @@ vectorize op rtf [t1, VList t2] = (VList rt, rop) where
 vectorize op rtf [t1, t2] = (rtf [t1, t2], op)
 
 coerce2 :: (VT, VT) -> VT
--- coerce2(NoType, b) = b -- not used yet todo, nothing -> Maybe
-coerce2(VInt, VInt) = VInt
-coerce2(a, b) | isNum a && isNum b = VChr -- actually I think Int would be better
-coerce2(a, VList VChr) | isNum a = vstr
-coerce2(VList VChr, a) | isNum a = vstr
+coerce2(VChr, VChr) = VChr
+coerce2(a, b) | isNum a && isNum b = VInt
+coerce2(a, VList VChr)
+	| VChr == a || (VInt == baseElem a) = vstr
+	| otherwise = a
+coerce2(VList VChr, a) = coerce2(a, VList VChr)
 coerce2(VList a, b) | isNum b = VList $ coerce2(a, b)
 coerce2(b, VList a) | isNum b = coerce2(VList a, b)
 coerce2(VList a, VList b) = VList $ coerce2(a, b)
 
+coerceTo (a, b) | a==b || (baseElem a == VInt && dim a == dim b) || (isNum a && isNum b) = "(id)"
 coerceTo (VList VChr, VInt) = "(sToA.show)"
-coerceTo (VList a, VInt) = "(\\x->[x])"
---todo need more, think through
-coerceTo _ = ""
+coerceTo (VInt, VList VChr) = "((fromMaybe 0).readMaybe.aToS)"
+coerceTo (VInt, VList a) = "(sum.(map"++coerceTo(VInt,a)++"))"
+-- coerceTo (VList VInt, VList VChr) = "(id)"
+coerceTo (VChr, VList a) = "(head."++coerceTo(VChr,a)++")"
+coerceTo (VList a, b) | sdim (VList a) > sdim b = "((\\x->[x])."++coerceTo(a, b)++")"
+coerceTo (VList a, VList b) | sdim a == sdim b = "(map"++coerceTo(a, b)++")"
+coerceTo (a, VList b) | sdim a < sdim (VList b) = "(concatMap"++coerceTo(a, b)++")"
+
+dim VInt = 1
+dim VChr = 1
+dim (VList a) = 1+dim a
+
+sdim VInt = 1
+sdim VChr = 0
+sdim (VList a) = 1+sdim a
 
 coerce :: String -> [Int] -> (VT -> VT) -> [VT] -> (VT, String)
 coerce op coerceArgIndices rtf vts = (rtf coercedType, rop) where

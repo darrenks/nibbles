@@ -42,14 +42,13 @@ ops = [
 	-- Test (size 5): '\200' -> '\200'
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
-	-- Test: ;1 $ -> 1,1
-	--- Example: ++;1;2;3 $ -> 1,2,3,3
+	-- Example: ;1;2;3 $ -> 1,2,3,3
 	atom("$", [3], getArg 0),
 	-- Desc: 2nd arg
-	-- Example: +++;1;2;3 @ -> 8
+	-- Example: ;1;2;3 @ -> 1,2,3,2
 	atom("@", [4], getArg 1),
 	-- Desc: nth arg
-	-- Example: +++;1;2;3 `2 -> 7
+	-- Example: ;1;2;3 `2 -> 1,2,3,1
 	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
 	-- Desc: tbd (@ too)
 	-- Example: 0 -> 0
@@ -74,15 +73,18 @@ ops = [
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	op(":~", [7,0], [anyT], "\\x->[x]" ~> VList .a1, [autoTodo]),
+	-- Desc: cons
+	-- Example: :"a"~"b" -> ["a","b"]
+	-- Test (coerce, but pointless todo): :,2~ "34" -> "1234"
+	op(":", [7], [list, auto, anyT], cons, [impossibleAuto, impossibleAuto, autoTodo]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op(":", [7], [num, auto, anyT], "todo" ~> VList .a1, [autoTodo]),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
 	-- Test promoting to list: :1 2 -> [1,2]
-	
-	-- todo :x~ could be default or Nothing
-	-- todo :x~ could mean haskell's ":" (to make list of lists)
-	
 	op(":", [7], [anyT, anyT], composeOp promoteList (coerce "(++)" [0,1] id), []),
 	-- Desc: add
 	-- Example: +1 2 -> 3
@@ -147,7 +149,7 @@ ops = [
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divmod
-	-- Example: :/~7 2 $ -> [3,1]
+	-- Example: /~7 2 $ -> 3,1
 	op("/~", [11,0], [num, num], "divMod" ~> VPair VInt VInt, [2]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
@@ -174,7 +176,7 @@ ops = [
 	-- todo test/make negative
 	op(">", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
 	-- Desc: moddiv
-	-- Example : :%~7 2 $ -> [1,3]
+	-- Example : %~7 2 $ -> 1,3
 	op("%~", [12,0], [num, num], "(swap.).divMod" ~> VPair VInt VInt, [2]),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
@@ -246,7 +248,95 @@ ops = [
 	
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
-	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, [])]
+	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, []),
+-- todo move test code out of this file, bloated
+	-- Test: testCoerce2 1 1 -> "VInt"
+	-- Test: testCoerce2 1 'a' -> "VInt"
+	-- Test: testCoerce2 1 ,3 -> "VList VInt"
+	-- Test: testCoerce2 1 "abc" -> "VList VChr"
+	-- Test: testCoerce2 1 .,3,3 -> "VList (VList VInt)"
+	-- Test: testCoerce2 1 .,3"abc" -> "VList (VList VChr)"
+
+	-- Test: testCoerce2 'a' 'a' -> "VChr"
+	-- Test: testCoerce2 'a' ,3 -> "VList VInt"
+	-- Test: testCoerce2 'a' "abc" -> "VList VChr"
+	-- Test: testCoerce2 'a' .,3,3 -> "VList (VList VInt)"
+	-- Test: testCoerce2 'a' .,3"abc" -> "VList (VList VChr)"
+
+	-- Test: testCoerce2 ,3 ,3 -> "VList VInt"
+	-- Test: testCoerce2 ,3 "abc" -> "VList VChr"
+	-- Test: testCoerce2 ,3 .,3,3 -> "VList (VList VInt)"
+	-- Test: testCoerce2 ,3 .,3"abc" -> "VList (VList VChr)"
+
+	-- Test: testCoerce2 "abc" "abc" -> "VList VChr"
+	-- Test: testCoerce2 "abc" .,3,3 -> "VList VChr"
+	-- Test: testCoerce2 "abc" .,3"abc" -> "VList (VList VChr)"
+
+	-- Test: testCoerce2 .,3,3 .,3,3 -> "VList (VList VInt)"
+	-- Test: testCoerce2 .,3,3 .,3"abc" -> "VList (VList VChr)"
+
+	-- Test: testCoerce2 .,3"abc" .,3"abc" -> "VList (VList VChr)"
+	op("testCoerce2", onlyLit, [anyT, anyT], testCoerce2 ~> vstr, []),
+	
+	-- Test: testCoerceToInt 1 -> 1
+	-- Test: testCoerceToInt 'a' -> 97
+	-- Test: testCoerceToInt ,3 -> 6
+	-- Test: testCoerceToInt "abc" -> 0
+	-- Test: testCoerceToInt "12" -> 12
+	-- Test: testCoerceToInt .,3,3 -> 18
+	-- Test: testCoerceToInt .,3"3" -> 9
+	op("testCoerceToInt", onlyLit, [anyT], testCoerceTo VInt, []),
+	
+	-- Test: testCoerceToChr 100 -> 'd'
+	-- Test: testCoerceToChr 'a' -> 'a'
+	-- Test: testCoerceToChr :100 200 -> 'd'
+	-- Test: testCoerceToChr "abc" -> 'a'
+	-- Test: testCoerceToChr .,3:100 200 -> 'd'
+	-- Test: testCoerceToChr .,3"abc" -> 'a'
+	op("testCoerceToChr", onlyLit, [anyT], testCoerceTo VChr, []),
+	
+	-- Test: testCoerceToListInt 100 -> [100]
+	-- Test: testCoerceToListInt 'a' -> [97]
+	-- Test: testCoerceToListInt ,3 -> [1,2,3]
+	-- Test: testCoerceToListInt "abc" -> [97,98,99]
+	-- Test: testCoerceToListInt .,3,3 -> [1,2,3,1,2,3,1,2,3]
+	-- Test: testCoerceToListInt .,3"abc" -> [0,0,0]
+	-- Test: testCoerceToListInt .,3"12" -> [12,12,12]
+	op("testCoerceToListInt", onlyLit, [anyT], testCoerceTo (VList VInt), []),
+
+	-- Test: testCoerceToStr 100 -> "100"
+	-- Test: testCoerceToStr 'a' -> "a"
+	-- Test: testCoerceToStr ,3 -> "123"
+	-- Test: testCoerceToStr "abc" -> "abc"
+	-- Test: testCoerceToStr .,3,3 -> "123123123"
+	-- Test: testCoerceToStr .,3"abc" -> "abcabcabc"
+	op("testCoerceToStr", onlyLit, [anyT], testCoerceTo vstr, []),
+
+	-- Test: testCoerceToListListInt 100 -> [[100]]
+	-- Test: testCoerceToListListInt 'a' -> [[97]]
+	-- Test: testCoerceToListListInt ,3 -> [[1,2,3]]
+	-- Test: testCoerceToListListInt "abc" -> [[97,98,99]]
+	-- Test: testCoerceToListListInt .,3,3 -> [[1,2,3],[1,2,3],[1,2,3]]
+	-- Test: testCoerceToListListInt .,3"abc" -> [[97,98,99],[97,98,99],[97,98,99]]
+	op("testCoerceToListListInt", onlyLit, [anyT], testCoerceTo (VList $ VList VInt), []),
+	
+	-- Test: testCoerceToListStr 100 -> ["100"]
+	-- Test: testCoerceToListStr 'a' -> ["a"]
+	-- Test: testCoerceToListStr ,3 -> ["1","2","3"]
+	-- Test: testCoerceToListStr "abc" -> ["abc"]
+	-- Test: testCoerceToListStr .,3,3 -> ["1","2","3","1","2","3","1","2","3"]
+	-- Test: testCoerceToListStr .,3"abc" -> ["abc","abc","abc"]
+	op("testCoerceToListStr", onlyLit, [anyT], testCoerceTo (VList vstr), []),
+	
+	-- Test: testFinish 123 -> "123"
+	-- Test: testFinish 'c' -> "c"
+	-- Test: testFinish "abc" -> "abc"
+	-- Test: testFinish ,3 -> "1\n2\n3\n"
+	-- Test: testFinish .,3,3 -> "1 2 3\n1 2 3\n1 2 3\n"
+	-- Test: testFinish .,3"abc" -> "abc\nabc\nabc\n"
+	-- Test: testFinish .,2.,2,2 -> "12 12\n12 12\n"
+	-- Test: testFinish .,2.,2"ab" -> "ab ab\nab ab\n"
+	op("testFinish", onlyLit, [anyT], ("sToA."++).finish.a1 ~> vstr, [])]
 
 infixr 8 ~>
 a~>b = (b,a)
@@ -281,6 +371,7 @@ instance OpImpl ([VT] -> (VT, String)) where
 int = Exact VInt
 char = Exact VChr
 str =  Exact vstr
+auto = Exact VAuto
 
 fn = Fn
 num = Cond "num" $ isNum . last
@@ -294,3 +385,17 @@ elemT (VList e) = e
 
 elemOfA1 = Cond "a" (\[a1,a2]->VList a2==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
+
+cons [a,b,c] = (t, "\\a b c->"++code++"[a] b c") where
+	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList a,b,c]
+
+testCoerce2 :: [VT] -> String
+testCoerce2 [a1,a2] = "const $ const $ sToA $ show $" ++ if ct1 == ct2
+	then show ct1
+	else "flipped mismatch: " ++ show ct1 ++ "," ++ show ct2
+	where
+		ct1 = coerce2(a1,a2)
+		ct2 = coerce2(a2,a1)
+
+testCoerceTo :: VT -> [VT] -> (VT, String)
+testCoerceTo to [a1] =  (to, coerceTo(to, a1))

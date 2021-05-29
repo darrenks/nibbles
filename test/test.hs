@@ -30,7 +30,7 @@ getTestsFromAnnotations = do
 
 runHs prog = do
 	writeFile "out.hs" prog
-	(_, Just hout, _, _) <- createProcess (proc "runhaskell" ["out.hs"]){ std_out = CreatePipe }
+	(_, Just hout, _, _) <- createProcess (proc "runhaskell" ["--ghc-arg=-Wno-tabs", "out.hs"]){ std_out = CreatePipe }
 	hGetContents hout
 
 toTest(origLit, expect, size) =

@@ -46,6 +46,7 @@ convertAutos l autos = zipWith (\(e) a -> (convertAuto e a)) l (autos ++ repeat 
 
 simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec
+simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
 simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
 simplifyArgSpec (Fn f) vts = Just $ ArgFnOf $ f $ init vts
 simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
