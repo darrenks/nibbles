@@ -28,7 +28,6 @@ argn context deBruijnIndex =
 			at flattenedArgs deBruijnIndex
 	where
 		flattenedArgs = concatMap flattenArg context
--- 		flattenArg (Arg (Impl (VMultArgs a b) hs depth) z k) = flattenArg (Arg (Impl (VPair a b) hs depth) z k)
 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)
@@ -39,11 +38,9 @@ argn context deBruijnIndex =
 		visibleArg = LambdaArg
 		isVisible (LetArg _ _ Hidden) = False
 		isVisible _ = True
-		
--- 		maybeHide 
 
 addLambda :: Arg -> Impl -> Impl
-addLambda arg (Impl t body d) = Impl t (HsFn (getCode arg) body) d -- todo undefined because lambdas aren't first class yet
+addLambda arg (Impl t body d) = Impl t (HsFn (getCode arg) body) d
 
 popArg :: Int -> [Arg] -> Impl -> ([Arg], Impl)
 popArg depth context impl = (concat finalContext, finalImpl) where

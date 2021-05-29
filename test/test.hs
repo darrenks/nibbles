@@ -25,8 +25,9 @@ getExample _ = Nothing
 
 
 getTestsFromAnnotations = do
-	ops <- readFile "ops.hs"
-	return $ catMaybes $ map getExample (lines ops)
+	ops1 <- readFile "ops.hs"
+	ops2 <- readFile "test/additional_tests.hs"
+	return $ catMaybes $ map getExample (lines ops1 ++ lines ops2)
 
 runHs prog = do
 	writeFile "out.hs" prog
