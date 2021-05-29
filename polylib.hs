@@ -22,25 +22,19 @@ inspect VChr = "(sToA.show.chr.fromIntegral)"
 inspect (VList VChr) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspect et++" v)) ++ (sToA \"]\"))"
 
-toStrVec VInt = (vstr, inspect VInt)
-toStrVec VChr = (vstr, "(:[])")
-toStrVec (VList VChr) = (vstr, "(id)")
-toStrVec (VList a) = (VList t, app1 "map" s) where (t, s) = toStrVec a
-
-finishH :: VT -> String
-finishH (VList t)
-	| d >= 3 = compose1 (finishH t) $ joinC "[]"
-	| d == 2 = compose1 (finishH t) $ joinC "[32]"
-	| d == 1 = "(++[10]).intercalate [10]"
-	| d == 0 = "(id)"
+finish :: VT -> String
+finish (VList t)
+	| d >= 3 = joinC "[]"
+	| d == 2 = joinC "[32]"
+	| d == 1 = compose1 "(++[10])" $ joinC "[10]"
 	where
 		d = sdim t
-		joinC s = (app1 (snd $ join t) s)
-
-finish t = compose1 (finishH vt) s where (vt, s) = toStrVec t
-
-compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
-app1 a b = "(" ++ a ++ b ++ ")"
+		joinC s = compose1 (finish jt) $ app1 js s where (jt,js) = join t
+		compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
+		app1 a b = "(" ++ a ++ b ++ ")"
+finish (VList VChr) = "(id)"
+finish VInt = inspect VInt
+finish VChr = "(:[])"
 
 join VInt = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
 join (VList VChr) = (vstr, "intercalate")
