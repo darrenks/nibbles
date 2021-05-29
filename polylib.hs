@@ -22,20 +22,25 @@ inspect VChr = "(sToA.show.chr.fromIntegral)"
 inspect (VList VChr) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspect et++" v)) ++ (sToA \"]\"))"
 
--- todo this could be cleaner with join?
-finish'' VInt = "(aToS."++inspect VInt++")"
-finish'' VChr = "((:[]).chr.fromIntegral)"
-finish'' (VList VChr) = "aToS"
-finish'' (VList e) = "(concatMap " ++ finish'' e ++ ")"
-finish' (VList VChr) = finish'' vstr
-finish' (VList e) = "(unwords . (map " ++ finish'' e ++ "))"
-finish' e = finish'' e
-finish (VList VChr) = finish'' vstr
-finish (VList e) = "(unlines . (map " ++ finish' e ++ "))"
-finish e = finish'' e
+toStrVec VInt = (vstr, inspect VInt)
+toStrVec VChr = (vstr, "(:[])")
+toStrVec (VList VChr) = (vstr, "(id)")
+toStrVec (VList a) = (VList t, app1 "map" s) where (t, s) = toStrVec a
 
--- finish t
--- 	| sdim t > 2 = app1 (finish (lt t)) (join 
+finishH :: VT -> String
+finishH (VList t)
+	| d >= 3 = compose1 (finishH t) $ joinC "[]"
+	| d == 2 = compose1 (finishH t) $ joinC "[32]"
+	| d == 1 = "(++[10]).intercalate [10]"
+	| d == 0 = "(id)"
+	where
+		d = sdim t
+		joinC s = (app1 (snd $ join t) s)
+
+finish t = compose1 (finishH vt) s where (vt, s) = toStrVec t
+
+compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
+app1 a b = "(" ++ a ++ b ++ ")"
 
 join VInt = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
 join (VList VChr) = (vstr, "intercalate")
@@ -63,7 +68,7 @@ coerceTo (VInt, VList VChr) = "((fromMaybe 0).readMaybe.aToS)"
 coerceTo (VInt, VList a) = "(sum.(map"++coerceTo(VInt,a)++"))"
 -- coerceTo (VList VInt, VList VChr) = "(id)"
 coerceTo (VChr, VList a) = "(head."++coerceTo(VChr,a)++")"
-coerceTo (VList a, b) | sdim (VList a) > sdim b = "((\\x->[x])."++coerceTo(a, b)++")"
+coerceTo (VList a, b) | sdim (VList a) > sdim b = "((:[])."++coerceTo(a, b)++")"
 coerceTo (VList a, VList b) | sdim a == sdim b = "(map"++coerceTo(a, b)++")"
 coerceTo (a, VList b) | sdim a < sdim (VList b) = "(concatMap"++coerceTo(a, b)++")"
 

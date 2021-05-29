@@ -72,7 +72,7 @@ ops = [
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
-	op(":~", [7,0], [anyT], "\\x->[x]" ~> VList .a1, [autoTodo]),
+	op(":~", [7,0], [anyT], "(:[])" ~> VList .a1, [autoTodo]),
 	-- Desc: cons
 	-- Example: :"a"~"b" -> ["a","b"]
 	-- Test (coerce, but pointless todo): :,2~ "34" -> "1234"
@@ -336,7 +336,7 @@ ops = [
 	-- Test: testFinish .,3"abc" -> "abc\nabc\nabc\n"
 	-- Test: testFinish .,2.,2,2 -> "12 12\n12 12\n"
 	-- Test: testFinish .,2.,2"ab" -> "ab ab\nab ab\n"
-	op("testFinish", onlyLit, [anyT], ("sToA."++).finish.a1 ~> vstr, [])]
+	op("testFinish", onlyLit, [anyT], finish.a1 ~> vstr, [])]
 
 infixr 8 ~>
 a~>b = (b,a)

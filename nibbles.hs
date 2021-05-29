@@ -51,7 +51,7 @@ main=do
  			print hs
  			putStrLn $ lit ++ "\n" ++ flatHs hs
  			header <- readFile "header.hs"
- 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$"++ flatHs hs
+ 			writeFile "out.hs" $ header ++ "\nmain=putStrLn$aToS$"++ flatHs hs
 		["-c"] -> do
 			let bytes = toBytes b
 			let outname = (basename ++ ".nbb")
