@@ -61,7 +61,7 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 
 main=do
 	testCases <- getTestsFromAnnotations
-	let tests = map toTest $ take 1900 testCases
+	let tests = map toTest $ take 1000 testCases
 -- 	let (_,(_,_,x,_,_,_,_)) = last tests
 -- 	putStrLn $ show $ x
 	header <- readFile "header.hs"

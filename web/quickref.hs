@@ -50,10 +50,10 @@ main=do
 -- 				H.span "~" ! class_ "code"
 -- 				toHtml " = coerce"
 	where
-		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op
+		isExtension ((_, lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op
 		isExtOpt (Op types _ _) = elem (Exact VAuto) types
 		isExtOpt _ = False
-		convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
+		convertToTdList ((_, lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ lit, -- styleCode
 			td $ styleCode $ toHex nib, -- styleCode
 			td $ toHtml desc] ++

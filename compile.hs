@@ -17,7 +17,7 @@ import Parse
 compile :: (VT -> String) -> String -> Code -> Expr
 compile finishFn seperator input = Expr rep progImpl where
 	initialThunk = Thunk (consumeWhitespace input) []
-	exprs = takeOneMore codeAfter $ getValuesMemo initialThunk
+	exprs = takeOneMore codeAfter $ getValuesMemo True initialThunk
 	Thunk _ afterContext = fst $ last exprs
 	--todo could be empty program, no exprs
 	Expr rep body = foldl1 combineExprs $ map (applyFinish.snd) exprs
@@ -62,7 +62,7 @@ convertLambda (Thunk code origContext) (ArgFnOf argType, _) =
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
 		(lambdaContext, newArg) = newLambdaArg origContext argType 
 		(Thunk afterFnCode afterFnContext, Expr rep body) =
-			makePairs $ take (length argType) $ getValuesMemo $ Thunk code lambdaContext
+			makePairs $ take (length argType) $ getValuesMemo True $ Thunk code lambdaContext
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
 		lambda = addLambda newArg bodyWithLets
 
@@ -73,47 +73,46 @@ makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
 	where (restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
 
 -- Gets the arg list
-getValuesMemo :: Thunk -> [(Thunk, Expr)]
-getValuesMemo = head . exprsByOffset
-getValueMemo = head . getValuesMemo
+getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
+getValuesMemo = (head .) . exprsByOffset
 
 -- only memoized by offset, not context
-data MemoData = MemoData [Arg] [[(Thunk, Expr)]]
+data MemoData = MemoData (Bool,[Arg]) [[(Thunk, Expr)]]
 
 -- Gets the arg list (given an arg from each possible offset after this one)
-getValues :: Thunk -> MemoData -> [(Thunk, Expr)]
-getValues thunk offsetExprs = (afterThunk, expr) : getValues afterThunk offsetAfterExprs where
-	(afterThunk,expr) = getValue thunk offsetExprs
+getValues :: Bool -> Thunk -> MemoData -> [(Thunk, Expr)]
+getValues isFirstInFn thunk offsetExprs = (afterThunk, expr) : getValues isFirstInFn afterThunk offsetAfterExprs where
+	(afterThunk,expr) = getValue isFirstInFn thunk offsetExprs
 	Thunk code context = thunk
 	Thunk after _ = afterThunk
 	MemoData _ offsetExprsz = offsetExprs
-	offsetAfterExprs = MemoData context $ drop (cp after-cp code) offsetExprsz
+	offsetAfterExprs = MemoData (isFirstInFn,context) $ drop (cp after-cp code) offsetExprsz
 -- 
 -- Gets the arg lists from each possible offset
-exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
-exprsByOffset (Thunk code context) =
-	getValues (Thunk code context) (MemoData context rest) : rest where
-		rest = exprsByOffset (Thunk (nextOffset code) context)
+exprsByOffset :: Bool -> Thunk -> [[(Thunk, Expr)]]
+exprsByOffset isFirstInFn (Thunk code context) =
+	getValues isFirstInFn (Thunk code context) (MemoData (isFirstInFn,context) rest) : rest where
+		rest = exprsByOffset isFirstInFn (Thunk (nextOffset code) context)
 
 -- check the arg list for any changes to context, and regenerate the rest if so
-checkMemos :: [Arg] -> Thunk -> [(Thunk, Expr)] -> [(Thunk, Expr)]
-checkMemos memoContext thunk (first : rest)
-	| memoContext == context = first : checkMemos memoContext afterThunk rest
-	| otherwise = checkMemos context thunk (getValuesMemo thunk)
+checkMemos :: Bool -> (Bool,[Arg]) -> Thunk -> [(Thunk, Expr)] -> [(Thunk, Expr)]
+checkMemos isFirstInFn memoConditions thunk (first : rest)
+	| memoConditions == (isFirstInFn,context) = first : checkMemos isFirstInFn memoConditions afterThunk rest
+	| otherwise = checkMemos isFirstInFn (isFirstInFn,context) thunk (getValuesMemo False thunk)
 	where
 		(Thunk _ context) = thunk
 		(afterThunk, expr) = first
 
 sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
 
-getValue :: Thunk -> MemoData -> (Thunk, Expr)
-getValue (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps where
+getValue :: Bool -> Thunk -> MemoData -> (Thunk, Expr)
+getValue isFirstInFn (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps where
 	fail = parseError "no matching op" $ Thunk code context
-	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
+	tryOp (onlyAtBegin, lit, nib, op) = (if isFirstInFn || not onlyAtBegin then match code (lit, nib) else Nothing) >>= \afterOpCode -> let
 		afterOpThunk = (Thunk afterOpCode context)
 -- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) context
 		(MemoData memoContext offsetExprs) = memo
-		valList = checkMemos memoContext afterOpThunk $ head (drop (cp afterOpCode - cp code - 1) offsetExprs)
+		valList = checkMemos onlyAtBegin memoContext afterOpThunk $ head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		opRep = Rep nib lit
 		in convertOp opRep afterOpThunk valList op
 
@@ -127,7 +126,7 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 		(rt, hs) = impl $ map retT argList
 		initExpr = Expr opRep $ Impl rt (HsAtom $ "("++hs++")") noArgsUsed
 		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
-		finalExpr = convertPairToLet fullExpr
+		finalExpr = convertMultRetToPair $ convertPairToLet fullExpr
 
 convertOp opRep afterOpThunk _ (Atom impl) = Just $ impl opRep afterOpThunk
 
@@ -143,3 +142,8 @@ convertPairToLet (Thunk code context, Expr rep impl)
 		getFirstOf (Arg impl _ _) = impl
 		
 convertPairToLet r = r
+
+convertMultRetToPair (thunk, Expr rep (Impl t hs dep)) =
+	(thunk, Expr rep (Impl (convertMultRetToPairH t) hs dep))
+convertMultRetToPairH (VMultRet a b) = VPair (convertMultRetToPairH a) (convertMultRetToPairH b)
+convertMultRetToPairH a = a

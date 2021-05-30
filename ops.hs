@@ -11,14 +11,20 @@ import Parse
 
 data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr)) deriving Show
 
-op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
-atom(lit, nib, impl) = (lit, nib, Atom impl)
+op(lit, nib, t, impl, autos) = (False, lit, nib, Op t (toImpl impl) autos)
+headOp(lit, nib, t, impl, autos) = (True, lit, nib, Op t (toImpl impl) autos)
+atom(lit, nib, impl) = (False, lit, nib, Atom impl)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
-ops :: [(String, [Int], Operation)]
+ops :: [(Bool, String, [Int], Operation)]
 ops = [
+	-- Desc: return pair
+	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
+	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
+	-- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
+	headOp("~", [0], [anyT,anyT], "\\a b->(a,b)"~>(\[a,b]->VMultRet a b), []),
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),

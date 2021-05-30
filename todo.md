@@ -25,8 +25,6 @@ infinity
 
 io
 
-pair in loop for macAccumL
-	ability to add map pair, accum pair to any loop
 index/prev in loop
 
 more extensions
