@@ -61,8 +61,8 @@ ops = [
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
 	-- Desc: tbd (fn, n ;'s)
 	-- Example: ;;2+$1 $4 -> 3,5
-	-- Test: ;;2 @1 -> fail
-	op(";;", [6,6], [anyT, fn a1], "\\x f->(f x,f)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
+	--- Test: ;;2 @1 -> fail
+	op(";;", [6,6], [anyT, fn (\args->(a1 args))], "\\x f->let ff = f in (ff x,ff)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(";~", [6,0], [anyT], "asdf" ~> VInt, []),	
@@ -168,7 +168,7 @@ ops = [
 	-- Desc: map accum L
 	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
 	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mac", onlyLit, [list, anyT, Fn (\[VList e, x]->[x,e])], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
+	op("mac", onlyLit, [list, anyT, fn2 (\[VList e, x]->VPair x e)], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -300,7 +300,8 @@ char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
 
-fn fx = Fn $ \ts -> [fx ts] -- fn of 1 arg
+fn = Fn 1
+fn2 = Fn 2
 num = Cond "num" $ isNum . last
 vec = Cond "vec" $ isVec . last
 list = Cond "list" $ isList . last

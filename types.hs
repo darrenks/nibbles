@@ -7,10 +7,12 @@ data VT = VInt | VChr | VList VT | VPair VT VT | VMultRet VT VT | VAuto | VFn [V
 
 vstr = VList VChr
 
---                       prev args -> fn args
-data ArgSpec = Exact VT | Fn ([VT] -> [VT]) | Cond String ([VT] -> Bool) deriving (Eq, Show)
+--                           prev args -> fn arg
+data ArgSpec = Exact VT | Fn Int ([VT] -> VT) | Cond String ([VT] -> Bool) deriving (Eq, Show)
+--                     num ret ^
 
-data ArgMatchResult = ArgMatches | ArgFnOf [VT]
+--                                     num ret arg type
+data ArgMatchResult = ArgMatches | ArgFnOf Int VT
 
 instance Eq (a -> b) where
 	a==b = False

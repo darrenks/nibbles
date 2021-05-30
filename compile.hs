@@ -48,7 +48,7 @@ simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec
 simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
 simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
-simplifyArgSpec (Fn f) vts = Just $ ArgFnOf $ f $ init vts
+simplifyArgSpec (Fn numRets f) vts = Just $ ArgFnOf numRets $ f $ init vts
 simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
 
 maybeMatch b = if b then Just ArgMatches else Nothing
@@ -58,11 +58,11 @@ convertLambdas = mapAccumL convertLambda
 
 convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
 convertLambda (Thunk code origContext) (ArgMatches, result) = result
-convertLambda (Thunk code origContext) (ArgFnOf argType, _) = 
+convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) = 
 	(Thunk afterFnCode finalContext, Expr rep lambda) where
 		(lambdaContext, newArg) = newLambdaArg origContext argType 
 		(Thunk afterFnCode afterFnContext, Expr rep body) =
-			makePairs $ take (length argType) $ getValuesMemo True $ Thunk code lambdaContext
+			makePairs $ take numRets $ getValuesMemo True $ Thunk code lambdaContext
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
 		lambda = addLambda newArg bodyWithLets
 

@@ -10,10 +10,10 @@ import Data.Maybe
 
 argStr n = "arg" ++ show n
 
-newLambdaArg :: [Arg] -> [VT] -> ([Arg], Arg)
+newLambdaArg :: [Arg] -> VT -> ([Arg], Arg)
 newLambdaArg context argT = (newArg : context, newArg) where
 	depth = 1+foldr (const . getArgDepth) 0 context
-	impl = Impl (foldr1 VPair argT) (HsAtom $ argStr depth) depth
+	impl = Impl argT (HsAtom $ argStr depth) depth
 	newArg = Arg impl depth LambdaArg
 
 newLetArg :: [Arg] -> Impl -> VisibleFirst -> ([Arg], Arg)

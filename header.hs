@@ -7,6 +7,7 @@ import Data.Tuple
 import Data.List.Split -- needs cabal install -lib split
 import Text.Read (readMaybe)
 import Types -- only for test
+import Data.Function (fix)
 
 safeChr = chr.(`mod`256)
 sToA = map ord
