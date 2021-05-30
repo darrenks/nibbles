@@ -60,8 +60,9 @@ ops = [
 	-- Example: 0 -> 0
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
 	-- Desc: tbd (fn, n ;'s)
-	-- Example: 0 -> 0
-	op(";;", [6,6], [anyT], "asdf" ~> VInt, []),
+	-- Example: ;;2+$1 $4 -> 3,5
+	-- Test: ;;2 @1 -> fail
+	op(";;", [6,6], [anyT, fn a1], "\\x f->(f x,f)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(";~", [6,0], [anyT], "asdf" ~> VInt, []),	
@@ -111,9 +112,9 @@ ops = [
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
 	op("*", [8], [str, list], join.elemT.a2, []),
 	-- Desc: product
-	-- Example: pt,4 -> 24
-	-- Test: pt,0 -> 1
-	op("pt", [8,11], [listOf int], "product" ~> VInt, []),
+	-- Example: pd,4 -> 24
+	-- Test: pd,0 -> 1
+	op("pd", [8,11], [listOf int], "product" ~> VInt, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0

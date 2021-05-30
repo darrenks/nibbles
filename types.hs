@@ -2,7 +2,7 @@ module Types where
 
 import Text.Show.Functions
 
-data VT = VInt | VChr | VList VT | VPair VT VT | VMultRet VT VT | VAuto -- | VMaybe VT | Nothing
+data VT = VInt | VChr | VList VT | VPair VT VT | VMultRet VT VT | VAuto | VFn [VT] VT -- | VMaybe VT | Nothing
 	deriving (Show, Eq)
 
 vstr = VList VChr

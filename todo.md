@@ -31,3 +31,5 @@ more extensions
 	communitive extensions
 
 auto fill $ for implicit input (or unused args that were expected to be used) (let's wait and see what would be most useful)
+
+quickref to show return types

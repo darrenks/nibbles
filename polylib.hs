@@ -34,6 +34,7 @@ finishH (VList t)
 finishH (VList VChr) = "(id)"
 finishH VInt = inspect VInt
 finishH VChr = "(:[])"
+finishH a = error $ show a
 finish = composez finishH removePairs
 
 composez a b t = compose1 (a t2) s where (t2, s) = b t

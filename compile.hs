@@ -128,7 +128,24 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
 		finalExpr = convertMultRetToPair $ convertPairToLet fullExpr
 
-convertOp opRep afterOpThunk _ (Atom impl) = Just $ impl opRep afterOpThunk
+convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opRep afterOpThunk
+
+-- todo memoize
+-- todo coerce args
+-- todo could put in getValue if wanted to support real first class functions
+-- todo could unify function calling with convertOp code
+-- convertMultRetToPair
+-- todo recursion
+applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
+applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
+	(nextThunk, foldl applyExpr initExpr argValues) where
+		initExpr = Expr rep $ Impl to hs dep
+		args = take (length from) $ getValuesMemo False $ thunk
+		argValues = map snd args
+		nextThunk = fst $ last args
+
+applyFirstClassFn x = x
+
 
 convertPairToLet :: (Thunk, Expr) -> (Thunk, Expr)
 convertPairToLet (Thunk code context, Expr rep impl)
