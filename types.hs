@@ -2,8 +2,8 @@ module Types where
 
 -- todo could create a simple/complex type, forcing maybe/pair conversion before use
 -- todo could get rid of VPair and use [VT] everywhere a VT is used
---                                               recursive fn
-data VT = VInt | VChr | VList VT | VPair VT VT | VRec | VMultRet VT VT | VAuto | VFn [VT] VT -- | VMaybe VT | Nothing
+--                                                     recursive fn place holder
+data VT = VInt | VChr | VList VT | VPair VT VT | VTuple0 | VRec | VMultRet VT VT | VAuto | VFn [VT] VT -- | VMaybe VT | Nothing
 	deriving (Show, Eq)
 
 vstr = VList VChr

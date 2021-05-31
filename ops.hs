@@ -20,7 +20,7 @@ impossibleAuto = -77 -- suppress displaying in quickref
 
 ops :: [(Bool, String, [Int], Operation)]
 ops = map convertNullNib [
-	-- Desc: return pair
+	-- Desc: return pair in fn
 	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
 	-- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
@@ -68,7 +68,7 @@ ops = map convertNullNib [
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	op(";~", [6,0], [anyT, Fn 0 (\[a1]->VPair a1 VRec)],
-	(\[a1,a2]->"\\x f -> let ff=fix (\\rec f x->case f (x,rec f) of (a,(b,c)) -> if "++truthy (fstOf a2)++" a then c else b) f in (ff x, ff)") ~> (\[a1,a2]->
+	(\[a1,a2]->"\\x f -> let ff=fix (\\rec f x->let (a,(b,c))=f (x,rec f) in if "++truthy (fstOf a2)++" a then c else b) f in (ff x, ff)") ~> (\[a1,a2]->
 		let frt = sndOf3 a2 in VPair frt $ VFn [a1] frt
 		), []),
 		-- (uncurry $ uncurry . iff)
@@ -118,6 +118,8 @@ ops = map convertNullNib [
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
+	-- Test empty: %"" "a" -> []
+	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> VList .a1, []),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
@@ -148,7 +150,7 @@ ops = map convertNullNib [
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
-	op("&", [9], [list, fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, []),
+	op("&", [9], [list, fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, [impossibleAuto, autoTodo {-reject?-}]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]

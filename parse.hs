@@ -32,14 +32,13 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 
 sLit = (consumeWhitespace .) . Lit
 
-_parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
-_parseNibInt(f:s) a cp
-	| f>=8 = (c,Nib s (cp+1))
-	| otherwise = _parseNibInt s c (cp+1)
-	where c=a*8+toInteger f`mod`8
-
-parseInt(Nib (0:s) cp) = (-1, Nib s (cp+1))
-parseInt(Nib s cp) = _parseNibInt s 0 cp
+parseInt (Nib (0:s) cp) = (-1, Nib s (cp+1))
+parseInt (Nib s cp) = parseNibInt s 0 cp where
+	parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
+	parseNibInt(f:s) a cp
+		| f>=8 = (c,Nib s (cp+1))
+		| otherwise = parseNibInt s c (cp+1)
+		where c=a*8+toInteger f`mod`8
 parseInt (Lit ('-':'1':s) cp) = (-1, sLit s (cp+2))
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit s cp) = case readP_to_S (gather readDecP) s of
