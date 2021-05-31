@@ -281,8 +281,8 @@ ops = map convertNullNib [
 
 infixr 8 ~>
 a~>b = (b,a)
--- 16 makes it so that parsing bin will never try ita
 
+-- 16 makes it so that parsing bin will never try it
 convertNullNib (h, lit, nib, op) = (h, lit, if null nib
 		then [16, error $ "attempt to convert "++lit++" to bin (it is only for literate mode)"]
 		else nib
