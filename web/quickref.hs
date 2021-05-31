@@ -51,7 +51,9 @@ main=do
 -- 				toHtml " = coerce"
 	where
 		isExtension ((_, lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op
-		isExtOpt (Op types _ _) = elem (Exact VAuto) types
+		isExtOpt (Op types _ _) = any (\t -> case t of
+			(Exact VAuto) -> True
+			otherwise -> False) types
 		isExtOpt _ = False
 		convertToTdList ((_, lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ lit, -- styleCode

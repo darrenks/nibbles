@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr)) deriving Show
+data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr))
 
 op(lit, nib, t, impl, autos) = (False, lit, nib, Op t (toImpl impl) autos)
 headOp(lit, nib, t, impl, autos) = (True, lit, nib, Op t (toImpl impl) autos)
@@ -19,7 +19,7 @@ autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
 ops :: [(Bool, String, [Int], Operation)]
-ops = [
+ops = map convertNullNib [
 	-- Desc: return pair
 	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
@@ -180,7 +180,7 @@ ops = [
 	-- Desc: map accum L
 	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
 	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mac", onlyLit, [list, anyT, fn2 (\[VList e, x]->VPair x e)], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
+	op("mac", [], [list, anyT, fn2 (\[VList e, x]->VPair x e)], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -266,21 +266,26 @@ ops = [
 	
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
-	op("p", onlyLit, [anyT], inspect.a1 ~> vstr, []),
+	op("p", [], [anyT], inspect.a1 ~> vstr, []),
 
-	op("testCoerce2", onlyLit, [anyT, anyT], testCoerce2 ~> vstr, []),
-	op("testCoerceToInt", onlyLit, [anyT], testCoerceTo VInt, []),
-	op("testCoerceToChr", onlyLit, [anyT], testCoerceTo VChr, []),
-	op("testCoerceToListInt", onlyLit, [anyT], testCoerceTo (VList VInt), []),
-	op("testCoerceToStr", onlyLit, [anyT], testCoerceTo vstr, []),
-	op("testCoerceToListListInt", onlyLit, [anyT], testCoerceTo (VList $ VList VInt), []),
-	op("testCoerceToListStr", onlyLit, [anyT], testCoerceTo (VList vstr), []),
-	op("testFinish", onlyLit, [anyT], finish.a1 ~> vstr, [])]
+	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
+	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
+	op("testCoerceToChr", [], [anyT], testCoerceTo VChr, []),
+	op("testCoerceToListInt", [], [anyT], testCoerceTo (VList VInt), []),
+	op("testCoerceToStr", [], [anyT], testCoerceTo vstr, []),
+	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList $ VList VInt), []),
+	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList vstr), []),
+	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
 
 infixr 8 ~>
 a~>b = (b,a)
+-- 16 makes it so that parsing bin will never try ita
 
-onlyLit = [16, error $ "attempt to convert "++"(todo put op name here)"++" to bin (it is only for literate mode)"] -- 16 makes it so that parsing bin will never try it
+convertNullNib (h, lit, nib, op) = (h, lit, if null nib
+		then [16, error $ "attempt to convert "++lit++" to bin (it is only for literate mode)"]
+		else nib
+	, op)
+	
 a1 = head :: [VT] -> VT
 a2 = (!!1) :: [VT] -> VT
 a3 = (!!2) :: [VT] -> VT
@@ -337,9 +342,9 @@ cons [a,b,c] = (t, "\\a b c->"++code++"[a] b c") where
 	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList a,b,c]
 
 testCoerce2 :: [VT] -> String
-testCoerce2 [a1,a2] = "const $ const $ sToA $ show $" ++ if ct1 == ct2
+testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 	then show ct1
-	else "flipped mismatch: " ++ show ct1 ++ "," ++ show ct2
+	else "flipped mismatch: " ++ show ct1 ++ "," ++ show ct2)
 	where
 		ct1 = coerce2(a1,a2)
 		ct2 = coerce2(a2,a1)
