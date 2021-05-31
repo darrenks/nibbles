@@ -1,7 +1,6 @@
 module Expr where
 
 import Types
-import Data.List (intercalate)
 
 -- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
 data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn String HsCode deriving (Eq, Show)
