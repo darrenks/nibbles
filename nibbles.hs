@@ -45,7 +45,7 @@ main=do
 		FromBytes -> Nib (concatMap fromByte contents)
 	-- todo for adding args, need to add types, depth, and hs setters
 	let realLit = getLit (compileIt $ Nib b) in
-		if parseMode == FromLit && realLit /= lit
+		if parseMode == FromLit && noOnlyLits b && realLit /= lit
 		then error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ lit ++ "\nBut this actually will mean:\n" ++ realLit ++ "\nThis usually means there is an alternative (likely shorter) way to do what you are trying to. For more infromation see the Extensions section of the docs"
 		else return ()
 	case filter isOpt args of
@@ -68,5 +68,6 @@ main=do
 	      toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
 	      compileIt rep = compile finish "" (rep 0)
 	      getLit (Expr (Rep _ lit) _) = lit
+	      noOnlyLits b = all (/=16) b
 
 --   hSetBuffering stdout NoBuffering

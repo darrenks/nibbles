@@ -15,7 +15,7 @@ import Types
 
 truthy VInt = "(>0)"
 truthy VChr = "(>0)"
-truthy (VList _) = "(not null)"
+truthy (VList _) = "(not.null)"
 
 inspect (VPair a b) = "(\\(a,b)->sToA \"(\"++"++inspect a++"a++sToA \",\"++"++inspect b++"b++sToA \")\")"
 inspect VInt = "(sToA.show)"

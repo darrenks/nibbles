@@ -1,6 +1,13 @@
 for multipage quickref (coerce, etc)
 https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
+make first arg in let rec/fn be fn of () so can be a pair
+
+debug helpers
+	see current context
+	show type of arg and exit
+	see the parse tree
+
 tutorial (and auto test tutorial examples)
 website design
 
@@ -31,5 +38,7 @@ more extensions
 	communitive extensions
 
 auto fill $ for implicit input (or unused args that were expected to be used) (let's wait and see what would be most useful)
+
+auto range1 map if number then multiple outputs? also could auto map if list?
 
 quickref to show return types

@@ -28,6 +28,7 @@ argn context deBruijnIndex =
 			at flattenedArgs deBruijnIndex
 	where
 		flattenedArgs = concatMap flattenArg context
+		flattenArg (Arg (Impl VRec hs depth) _ k) = []
 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)
@@ -44,7 +45,7 @@ addLambda arg (Impl t body d) = Impl t (HsFn (getCode arg) body) d
 
 popArg :: Int -> [Arg] -> Impl -> ([Arg], Impl)
 popArg depth context impl = (concat finalContext, finalImpl) where
-	(finalImpl, finalContext) = mapAccumR maybePopIt impl context
+	(finalImpl, finalContext) = mapAccumL maybePopIt impl context
 
 	maybePopIt :: Impl -> Arg -> (Impl, [Arg])
 	maybePopIt impl eachArg
@@ -56,8 +57,8 @@ popArg depth context impl = (concat finalContext, finalImpl) where
 
 	popIt :: Arg -> Impl -> Impl
 	popIt (Arg _ _ LambdaArg) impl = impl
-	popIt (Arg (Impl _ varHs _) _ (LetArg _ refHs _)) (Impl retT bodyHs _) =
-		Impl retT (HsApp (HsFn (getCode2 varHs) bodyHs) refHs) undefined
+	popIt (Arg (Impl _ varHs dep) _ (LetArg _ refHs _)) (Impl retT bodyHs _) =
+		Impl retT (HsApp (HsFn (getCode2 varHs) bodyHs) refHs) dep
 
 getCode (Arg (Impl _ (HsAtom hs) _) _ _) = hs
 getCode2 (HsAtom hs) = hs

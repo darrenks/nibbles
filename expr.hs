@@ -16,6 +16,7 @@ data Impl = Impl VT HsCode Int deriving (Eq, Show)
 noArgsUsed = 0 :: Int
 getImplType (Impl t _ _) = t
 data Expr = Expr Rep Impl deriving Show
+getExprType (Expr _ impl) = getImplType impl
 
 data Thunk = Thunk Code [Arg]
 getContext (Thunk _ context) = context

@@ -105,7 +105,7 @@ consumeWhitespace :: Code -> Code
 consumeWhitespace (Nib n cp) = Nib n cp
 consumeWhitespace (Lit [] cp) = Lit [] cp
 consumeWhitespace (Lit (c:s) cp)
-	| c=='#' = sLit rest (cp+length comment)
+	| c=='#' = sLit rest (cp+1+length comment)
 	| isSpace c = sLit s (cp+1)
 	| otherwise = Lit (c:s) cp
 		where (comment, rest) = break (=='\n') s

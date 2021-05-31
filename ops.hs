@@ -59,13 +59,24 @@ ops = [
 	-- Desc: tbd (@ too)
 	-- Example: 0 -> 0
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
-	-- Desc: tbd (fn, n ;'s)
+	-- Desc: let fn
 	-- Example: ;;2+$1 $4 -> 3,5
-	--- Test: ;;2 @1 -> fail
-	op(";;", [6,6], [anyT, fn (\args->(a1 args))], "\\x f->let ff = f in (ff x,ff)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(";~", [6,0], [anyT], "asdf" ~> VInt, []),	
+	op(";;", [6,6], [anyT, fn a1], "\\x f->(f x,f)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
+	-- Desc: let rec
+	-- todo coerce 3rd to frt
+	-- todo clean this mess up
+	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
+	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
+	op(";~", [6,0], [anyT, Fn 0 (\[a1]->VPair a1 VRec)],
+	(\[a1,a2]->"\\x f -> let ff=fix (\\rec f x->case f (x,rec f) of (a,(b,c)) -> if "++truthy (fstOf a2)++" a then c else b) f in (ff x, ff)") ~> (\[a1,a2]->
+		let frt = sndOf3 a2 in VPair frt $ VFn [a1] frt
+		), []),
+		-- (uncurry $ uncurry . iff)
+
+	-- todo (see todo in compile convertLambdas)
+	--- Test: testMutliFn 3 $ 2 -> 3
+	--op("testMutliFn", onlyLit, [int,fn a1,fn a1], "\\a b c->b (c a)"~>a1, []),
+
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -76,6 +87,7 @@ ops = [
 	-- Test: ++; 5 /,1 ;+0$ $ -> 11
 	-- Test: +;1 + ;2 @ -> 4
 	-- Test: .,3 ;%$3 -> [1,2,0]
+	-- Test: +;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
@@ -268,14 +280,19 @@ ops = [
 infixr 8 ~>
 a~>b = (b,a)
 
-onlyLit = [16, undefined]
+onlyLit = [16, error $ "attempt to convert "++"(todo put op name here)"++" to bin (it is only for literate mode)"] -- 16 makes it so that parsing bin will never try it
 a1 = head :: [VT] -> VT
 a2 = (!!1) :: [VT] -> VT
 a3 = (!!2) :: [VT] -> VT
 
 both f [a,b] = (f a, f b)
 pairOf = uncurry VPair
+fstOf (VPair a b) = a
 sndOf (VPair a b) = b
+sndOf3 (VPair (VPair a b) c) = b
+sndOf3 (VPair a (VPair b c)) = b
+sndOf3 a = error $ show a
+
 dup a = VPair a a
 
 xorChr [VInt, VChr] = VChr

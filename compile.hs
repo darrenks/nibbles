@@ -56,21 +56,47 @@ maybeMatch b = if b then Just ArgMatches else Nothing
 convertLambdas :: Thunk -> [(ArgMatchResult, (Thunk, Expr))] -> (Thunk, [Expr])
 convertLambdas = mapAccumL convertLambda
 
+-- todo mark rec snd pair as used since, it's already served a purpose
+
+-- todo this is a better spot to checkMemoData because fns change parse after, so right now anything after a fn is broken since this still uses memoized list
+-- but why is fn after a fn broken?
 convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
 convertLambda (Thunk code origContext) (ArgMatches, result) = result
 convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) = 
-	(Thunk afterFnCode finalContext, Expr rep lambda) where
-		(lambdaContext, newArg) = newLambdaArg origContext argType 
-		(Thunk afterFnCode afterFnContext, Expr rep body) =
-			makePairs $ take numRets $ getValuesMemo True $ Thunk code lambdaContext
+	(finalThunk, Expr rep (addLambda newArg body)) where
+		(newArg, finalThunk, Expr rep body) = pushLambdaArg origContext argType bodyFn
+		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
+		bodyFn = if numRets == 0
+			then (\lambdaContext newArg -> let
+				[(c1,a),(c2,b)] = take 2 $ getValuesMemo True $ Thunk code lambdaContext
+				(Arg (Impl (VPair t VRec) hs d) dep LambdaArg) = newArg
+				recType = VFn (flattenArg t) (getExprType b)
+				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
+				recContext = replaceArg newArg recArg lambdaContext
+				(Thunk recCode _) = c2
+				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo True $ Thunk recCode recContext])
+			else (\lambdaContext _ ->
+				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
+
+flattenArg (VPair a b) = flattenArg a ++ flattenArg b
+flattenArg a = [a]
+replaceArg old new = map (\arg-> if arg == old then new else arg)
+
+pushLambdaArg origContext argType f =
+	(newArg, Thunk afterFnCode finalContext, Expr rep bodyWithLets) where
+		(lambdaContext, newArg) = newLambdaArg origContext argType
+		(Thunk afterFnCode afterFnContext, Expr rep body) = makePairs $ f lambdaContext newArg
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
-		lambda = addLambda newArg bodyWithLets
 
 makePairs :: [(Thunk, Expr)] -> (Thunk, Expr)
 makePairs [one] = one
 makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
-		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT fstT) (HsApp (app1 "(\\a b->(a,b))" fstHs) restHs) (min fstDep restDep)))
-	where (restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
+		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT restT) newHs (min fstDep restDep)))
+	where
+		(restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
+		--newHs = (HsApp (app1 "(curry id)" fstHs) restHs)
+		newHs = HsAtom $ "(" ++ flatHs fstHs ++ "," ++ flatHs restHs ++ ")"
+	
 
 -- Gets the arg list
 getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
@@ -130,12 +156,11 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 
 convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opRep afterOpThunk
 
--- todo memoize
+-- todo memoize the parse
 -- todo coerce args
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
 -- convertMultRetToPair
--- todo recursion
 applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
 applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
 	(nextThunk, foldl applyExpr initExpr argValues) where
