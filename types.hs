@@ -12,8 +12,7 @@ vstr = VList VChr
 data ArgSpec = Exact VT | Fn Int ([VT] -> VT) | Cond String ([VT] -> Bool)
 --                     num ret ^
 
---                                     num ret arg type
-data ArgMatchResult = ArgMatches | ArgFnOf Int VT deriving Show
+data ArgMatchResult = ArgMatches | ArgFn ArgSpec
 
 isNum VInt = True
 isNum VChr = True

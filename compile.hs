@@ -48,23 +48,25 @@ simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec
 simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
 simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
-simplifyArgSpec (Fn numRets f) vts = Just $ ArgFnOf numRets $ f $ init vts
+simplifyArgSpec (Fn numRets f) vts = Just $ ArgFn (Fn numRets f)
 simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
 
 maybeMatch b = if b then Just ArgMatches else Nothing
 
 convertLambdas :: Thunk -> [(ArgMatchResult, (Thunk, Expr))] -> (Thunk, [Expr])
-convertLambdas = mapAccumL convertLambda
+convertLambdas thunk estimatedArgs = (finalThunk, args) where
+	((finalThunk,vts),args) = mapAccumL convertLambda (thunk, []) estimatedArgs
 
 -- todo mark rec snd pair as used since, it's already served a purpose
 
--- todo this is a better spot to checkMemoData because fns change parse after, so right now anything after a fn is broken since this still uses memoized list
--- but why is fn after a fn broken? memoized parse
-convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
-convertLambda (Thunk code origContext) (ArgMatches, result) = result
-convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) = 
-	(finalThunk, Expr rep (addLambda newArg body)) where
+convertLambda :: (Thunk, [VT]) -> (ArgMatchResult, (Thunk, Expr)) -> ((Thunk, [VT]), Expr)
+convertLambda (Thunk code origContext, argTypes) (ArgMatches, (memoThunk, memoExpr)) = -- todo could check memoThunk = thunk
+	((memoThunk, argTypes ++ [getExprType memoExpr]), memoExpr)
+convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), _) = 
+	((finalThunk, argTypes ++ [fnRetType]), Expr rep (addLambda newArg body)) where
+		argType = argTypeFn argTypes
 		(newArg, finalThunk, Expr rep body) = pushLambdaArg origContext argType bodyFn
+		fnRetType = getImplType body
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
 		bodyFn = if numRets == 0
 			then (\lambdaContext newArg -> let -- todo better dependent types
