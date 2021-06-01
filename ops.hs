@@ -61,7 +61,10 @@ ops = map convertNullNib [
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
 	-- Desc: let fn
 	-- Example: ;;2+$1 $4 -> 3,5
-	op(";;", [6,6], [anyT, fn a1], "\\x f->(f x,f)" ~> (\args->VPair (last args) $ VFn (init args) (last args)), []),
+
+	-- also add ()
+	
+	op(";;", [6,6], [anyT {-fn $ const VTuple0 -}, fn a1], "\\x f->(f $ x,f)" ~> (\args->VPair (last args) $ VFn (flattenArg $ head args) (last args)), []),
 	-- Desc: let rec
 	-- todo coerce 3rd to frt
 	-- todo clean this mess up
@@ -75,7 +78,7 @@ ops = map convertNullNib [
 
 	-- todo (see todo in compile convertLambdas)
 	--- Test: testMutliFn 3 $ 2 -> 3
-	--op("testMutliFn", onlyLit, [int,fn a1,fn a1], "\\a b c->b (c a)"~>a1, []),
+	op("testMutliFn", [], [int,fn a1,fn a1], "\\a b c->b (c a)"~>a1, []),
 
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
@@ -353,3 +356,8 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 
 testCoerceTo :: VT -> [VT] -> (VT, String)
 testCoerceTo to [a1] =  (to, coerceTo(to, a1))
+
+flattenArg VTuple0 = []
+flattenArg (VPair a b) = flattenArg a ++ flattenArg b
+flattenArg a = [a]
+

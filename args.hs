@@ -29,6 +29,7 @@ argn context deBruijnIndex =
 	where
 		flattenedArgs = concatMap flattenArg context
 		flattenArg (Arg (Impl VRec hs depth) _ k) = []
+		flattenArg (Arg (Impl VTuple0 hs depth) _ k) = []
 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)

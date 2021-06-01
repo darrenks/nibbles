@@ -59,7 +59,7 @@ convertLambdas = mapAccumL convertLambda
 -- todo mark rec snd pair as used since, it's already served a purpose
 
 -- todo this is a better spot to checkMemoData because fns change parse after, so right now anything after a fn is broken since this still uses memoized list
--- but why is fn after a fn broken?
+-- but why is fn after a fn broken? memoized parse
 convertLambda :: Thunk -> (ArgMatchResult, (Thunk, Expr)) -> (Thunk, Expr)
 convertLambda (Thunk code origContext) (ArgMatches, result) = result
 convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) = 
@@ -78,6 +78,7 @@ convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) =
 			else (\lambdaContext _ ->
 				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
 
+flattenArg VTuple0 = []
 flattenArg (VPair a b) = flattenArg a ++ flattenArg b
 flattenArg a = [a]
 replaceArg old new = map (\arg-> if arg == old then new else arg)

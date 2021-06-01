@@ -13,7 +13,7 @@ data ArgSpec = Exact VT | Fn Int ([VT] -> VT) | Cond String ([VT] -> Bool)
 --                     num ret ^
 
 --                                     num ret arg type
-data ArgMatchResult = ArgMatches | ArgFnOf Int VT
+data ArgMatchResult = ArgMatches | ArgFnOf Int VT deriving Show
 
 isNum VInt = True
 isNum VChr = True
