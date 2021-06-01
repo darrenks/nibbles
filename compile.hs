@@ -17,7 +17,7 @@ import Parse
 compile :: (VT -> String) -> String -> Code -> Expr
 compile finishFn seperator input = Expr rep progImpl where
 	initialThunk = Thunk (consumeWhitespace input) []
-	exprs = takeOneMore codeAfter $ getValuesMemo True initialThunk
+	exprs = takeOneMore codeAfter $ getValuesMemo initialThunk
 	Thunk _ afterContext = fst $ last exprs
 	--todo could be empty program, no exprs
 	Expr rep body = foldl1 combineExprs $ map (applyFinish.snd) exprs
@@ -67,16 +67,16 @@ convertLambda (Thunk code origContext) (ArgFnOf numRets argType, _) =
 		(newArg, finalThunk, Expr rep body) = pushLambdaArg origContext argType bodyFn
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
 		bodyFn = if numRets == 0
-			then (\lambdaContext newArg -> let
-				[(c1,a),(c2,b)] = take 2 $ getValuesMemo True $ Thunk code lambdaContext
+			then (\lambdaContext newArg -> let -- todo better dependent types
+				[(c1,a),(c2,b)] = take 2 $ getValuesMemo $ Thunk code lambdaContext
 				(Arg (Impl (VPair t VRec) hs d) dep LambdaArg) = newArg
 				recType = VFn (flattenArg t) (getExprType b)
 				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
 				recContext = replaceArg newArg recArg lambdaContext
 				(Thunk recCode _) = c2
-				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo True $ Thunk recCode recContext])
+				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo $ Thunk recCode recContext])
 			else (\lambdaContext _ ->
-				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
+				take numRets $ getValuesMemo $ Thunk code lambdaContext)
 
 flattenArg VTuple0 = []
 flattenArg (VPair a b) = flattenArg a ++ flattenArg b
@@ -100,46 +100,35 @@ makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
 	
 
 -- Gets the arg list
-getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
-getValuesMemo = (head .) . exprsByOffset
-
--- only memoized by offset, not context
-data MemoData = MemoData (Bool,[Arg]) [[(Thunk, Expr)]]
+getValuesMemo :: Thunk -> [(Thunk, Expr)]
+getValuesMemo = (head ) . exprsByOffset
 
 -- Gets the arg list (given an arg from each possible offset after this one)
-getValues :: Bool -> Thunk -> MemoData -> [(Thunk, Expr)]
-getValues isFirstInFn thunk offsetExprs = (afterThunk, expr) : getValues isFirstInFn afterThunk offsetAfterExprs where
-	(afterThunk,expr) = getValue isFirstInFn thunk offsetExprs
+getValues :: Thunk -> [[(Thunk, Expr)]] -> [(Thunk, Expr)]
+getValues thunk offsetExprs = (afterThunk, expr) : getValues afterThunk offsetAfterExprs where
+	(afterThunk,expr) = getValue thunk offsetExprs
 	Thunk code context = thunk
-	Thunk after _ = afterThunk
-	MemoData _ offsetExprsz = offsetExprs
-	offsetAfterExprs = MemoData (isFirstInFn,context) $ drop (cp after-cp code) offsetExprsz
+	Thunk after afterContext = afterThunk
+	offsetAfterExprs =
+		if afterContext == context
+		then drop (cp after-cp code) offsetExprs
+		else drop 1 $ exprsByOffset afterThunk
 -- 
 -- Gets the arg lists from each possible offset
-exprsByOffset :: Bool -> Thunk -> [[(Thunk, Expr)]]
-exprsByOffset isFirstInFn (Thunk code context) =
-	getValues isFirstInFn (Thunk code context) (MemoData (isFirstInFn,context) rest) : rest where
-		rest = exprsByOffset isFirstInFn (Thunk (nextOffset code) context)
-
--- check the arg list for any changes to context, and regenerate the rest if so
-checkMemos :: Bool -> (Bool,[Arg]) -> Thunk -> [(Thunk, Expr)] -> [(Thunk, Expr)]
-checkMemos isFirstInFn memoConditions thunk (first : rest)
-	| memoConditions == (isFirstInFn,context) = first : checkMemos isFirstInFn memoConditions afterThunk rest
-	| otherwise = checkMemos isFirstInFn (isFirstInFn,context) thunk (getValuesMemo False thunk)
-	where
-		(Thunk _ context) = thunk
-		(afterThunk, expr) = first
+exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
+exprsByOffset (Thunk code context) =
+	getValues (Thunk code context) rest : rest where
+		rest = exprsByOffset (Thunk (nextOffset code) context)
 
 sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
 
-getValue :: Bool -> Thunk -> MemoData -> (Thunk, Expr)
-getValue isFirstInFn (Thunk code context) memo = fromMaybe fail $ msum $ map tryOp sortedOps where
+getValue :: Thunk -> [[(Thunk, Expr)]] -> (Thunk, Expr)
+getValue (Thunk code context) offsetExprs = fromMaybe fail $ msum $ map tryOp sortedOps where
 	fail = parseError "no matching op" $ Thunk code context
-	tryOp (onlyAtBegin, lit, nib, op) = (if isFirstInFn || not onlyAtBegin then match code (lit, nib) else Nothing) >>= \afterOpCode -> let
+	tryOp (onlyAtBegin, lit, nib, op) = (if False || not onlyAtBegin then match code (lit, nib) else Nothing) >>= \afterOpCode -> let
 		afterOpThunk = (Thunk afterOpCode context)
 -- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) context
-		(MemoData memoContext offsetExprs) = memo
-		valList = checkMemos onlyAtBegin memoContext afterOpThunk $ head (drop (cp afterOpCode - cp code - 1) offsetExprs)
+		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		opRep = Rep nib lit
 		in convertOp opRep afterOpThunk valList op
 
@@ -166,7 +155,7 @@ applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
 applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
 	(nextThunk, foldl applyExpr initExpr argValues) where
 		initExpr = Expr rep $ Impl to hs dep
-		args = take (length from) $ getValuesMemo False $ thunk
+		args = take (length from) $ getValuesMemo $ thunk
 		argValues = map snd args
 		nextThunk = fst $ last args
 
