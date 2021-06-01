@@ -21,10 +21,10 @@ impossibleAuto = -77 -- suppress displaying in quickref
 ops :: [(Bool, String, [Int], Operation)]
 ops = map convertNullNib [
 	-- Desc: return pair in fn
-	--- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
-	--- Test: .,1 ~~1 2 3 -> [((1,2),3)]
-	--- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
-	headOp("~", [0], [anyT,anyT], "\\a b->(a,b)"~>(\[a,b]->VMultRet a b), []),
+	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
+	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
+	-- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
+	headOp("~", [0], [fn (const VTuple0), fn (const VTuple0)], "\\a b->(a(),b())"~>(\[a,b]->VMultRet a b), []),
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),
@@ -77,7 +77,7 @@ ops = map convertNullNib [
 		-- (uncurry $ uncurry . iff)
 
 	-- todo (see todo in compile convertLambdas)
-	-- Test: testMutliFn 3 $ $ -> 3
+	--- Test: testMutliFn 3 $ 2 -> 3
 	op("testMutliFn", [], [int,fn a1,fn a1], "\\a b c->b (c a)"~>a1, []),
 
 	-- Desc: let

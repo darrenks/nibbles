@@ -17,7 +17,7 @@ import Parse
 compile :: (VT -> String) -> String -> Code -> Expr
 compile finishFn seperator input = Expr rep progImpl where
 	initialThunk = Thunk (consumeWhitespace input) []
-	exprs = takeOneMore codeAfter $ getValuesMemo initialThunk
+	exprs = takeOneMore codeAfter $ getValuesMemo False initialThunk
 	Thunk _ afterContext = fst $ last exprs
 	--todo could be empty program, no exprs
 	Expr rep body = foldl1 combineExprs $ map (applyFinish.snd) exprs
@@ -70,15 +70,15 @@ convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), 
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
 		bodyFn = if numRets == 0
 			then (\lambdaContext newArg -> let -- todo better dependent types
-				[(c1,a),(c2,b)] = take 2 $ getValuesMemo $ Thunk code lambdaContext
+				[(c1,a),(c2,b)] = take 2 $ getValuesMemo False $ Thunk code lambdaContext
 				(Arg (Impl (VPair t VRec) hs d) dep LambdaArg) = newArg
 				recType = VFn (flattenArg t) (getExprType b)
 				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
 				recContext = replaceArg newArg recArg lambdaContext
 				(Thunk recCode _) = c2
-				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo $ Thunk recCode recContext])
+				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo False $ Thunk recCode recContext])
 			else (\lambdaContext _ ->
-				take numRets $ getValuesMemo $ Thunk code lambdaContext)
+				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
 
 flattenArg VTuple0 = []
 flattenArg (VPair a b) = flattenArg a ++ flattenArg b
@@ -102,32 +102,31 @@ makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
 	
 
 -- Gets the arg list
-getValuesMemo :: Thunk -> [(Thunk, Expr)]
-getValuesMemo = (head ) . exprsByOffset
+getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
+getValuesMemo = (head.) . exprsByOffset
 
 -- Gets the arg list (given an arg from each possible offset after this one)
-getValues :: Thunk -> [[(Thunk, Expr)]] -> [(Thunk, Expr)]
-getValues thunk offsetExprs = (afterThunk, expr) : getValues afterThunk offsetAfterExprs where
-	(afterThunk,expr) = getValue thunk offsetExprs
+getValues :: Bool -> Thunk -> [[(Thunk, Expr)]] -> [(Thunk, Expr)]
+getValues firstInFn thunk offsetExprs = (afterThunk, expr) : getValues False afterThunk offsetAfterExprs where
+	(afterThunk,expr) = getValue firstInFn thunk offsetExprs
 	Thunk code context = thunk
 	Thunk after afterContext = afterThunk
 	offsetAfterExprs =
 		if afterContext == context
 		then drop (cp after-cp code) offsetExprs
-		else drop 1 $ exprsByOffset afterThunk
--- 
+		else drop 1 $ exprsByOffset False afterThunk
+
 -- Gets the arg lists from each possible offset
-exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
-exprsByOffset (Thunk code context) =
-	getValues (Thunk code context) rest : rest where
-		rest = exprsByOffset (Thunk (nextOffset code) context)
+exprsByOffset :: Bool -> Thunk -> [[(Thunk, Expr)]]
+exprsByOffset firstInFn (Thunk code context) =
+	getValues firstInFn (Thunk code context) rest : rest where
+		rest = exprsByOffset False (Thunk (nextOffset code) context)
 
-sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
-
-getValue :: Thunk -> [[(Thunk, Expr)]] -> (Thunk, Expr)
-getValue (Thunk code context) offsetExprs = fromMaybe fail $ msum $ map tryOp sortedOps where
+getValue :: Bool -> Thunk -> [[(Thunk, Expr)]] -> (Thunk, Expr)
+getValue firstInFn (Thunk code context) offsetExprs = fromMaybe fail $ msum $ map tryOp sortedOps where
+	sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
 	fail = parseError "no matching op" $ Thunk code context
-	tryOp (onlyAtBegin, lit, nib, op) = (if False || not onlyAtBegin then match code (lit, nib) else Nothing) >>= \afterOpCode -> let
+	tryOp (onlyAtBegin, lit, nib, op) = (if firstInFn || not onlyAtBegin then match code (lit, nib) else Nothing) >>= \afterOpCode -> let
 		afterOpThunk = (Thunk afterOpCode context)
 -- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) context
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
@@ -157,7 +156,7 @@ applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
 applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
 	(nextThunk, foldl applyExpr initExpr argValues) where
 		initExpr = Expr rep $ Impl to hs dep
-		args = take (length from) $ getValuesMemo $ thunk
+		args = take (length from) $ getValuesMemo False $ thunk
 		argValues = map snd args
 		nextThunk = fst $ last args
 
