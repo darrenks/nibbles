@@ -34,6 +34,19 @@ applyExpr :: Expr -> Expr -> Expr
 applyExpr (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl _ hs2 d2)) =
 	Expr (addRep r1 r2) (Impl t1 (HsApp hs1 hs2) (max d1 d2))
 
+makePair :: Expr -> Expr -> Expr
+makePair (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl t2 hs2 d2)) =
+	Expr (addRep r1 r2) (Impl (VPair t1 t2) (makePairHs hs1 hs2) (max d1 d2))
+makePairHs hs1 hs2 = (HsApp (app1 "(,)" hs1) hs2)
+
+makePairs :: [(Thunk, Expr)] -> (Thunk, Expr)
+makePairs [one] = one
+makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
+		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT restT) newHs (min fstDep restDep)))
+	where
+		(restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
+		newHs = makePairHs fstHs restHs
+	
 convertAutoType VAuto = VInt
 convertAutoType t = t
 
@@ -60,7 +73,7 @@ convertLambdas thunk estimatedArgs = (finalThunk, args) where
 -- todo mark rec snd pair as used since, it's already served a purpose
 
 convertLambda :: (Thunk, [VT]) -> (ArgMatchResult, (Thunk, Expr)) -> ((Thunk, [VT]), Expr)
-convertLambda (Thunk code origContext, argTypes) (ArgMatches, (memoThunk, memoExpr)) = -- todo could check memoThunk = thunk
+convertLambda (Thunk code origContext, argTypes) (ArgMatches, (memoThunk, memoExpr)) =
 	((memoThunk, argTypes ++ [getExprType memoExpr]), memoExpr)
 convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), _) = 
 	((finalThunk, argTypes ++ [fnRetType]), Expr rep (addLambda newArg body)) where
@@ -70,19 +83,18 @@ convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), 
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
 		bodyFn = if numRets == 0
 			then (\lambdaContext newArg -> let -- todo better dependent types
-				[(c1,a),(c2,b)] = take 2 $ getValuesMemo False $ Thunk code lambdaContext
+				[(c1,a)] = take 1 $ getValuesMemo False $ Thunk code lambdaContext
+				[(c2,b)] = take 1 $ getValuesMemo True $ c1
 				(Arg (Impl (VPair t VRec) hs d) dep LambdaArg) = newArg
-				recType = VFn (flattenArg t) (getExprType b)
+				toType = (getExprType b)
+				recType = VFn (flattenPair t) toType
 				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
 				recContext = replaceArg newArg recArg lambdaContext
 				(Thunk recCode _) = c2
-				in [(c1,a),(c2,b)] ++ [head $ getValuesMemo False $ Thunk recCode recContext])
+				in [(c1,a),(c2,b)] ++ [getNArgsExpr (length $ flattenPair toType) $ Thunk recCode recContext])
 			else (\lambdaContext _ ->
 				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
 
-flattenArg VTuple0 = []
-flattenArg (VPair a b) = flattenArg a ++ flattenArg b
-flattenArg a = [a]
 replaceArg old new = map (\arg-> if arg == old then new else arg)
 
 pushLambdaArg origContext argType f =
@@ -90,16 +102,6 @@ pushLambdaArg origContext argType f =
 		(lambdaContext, newArg) = newLambdaArg origContext argType
 		(Thunk afterFnCode afterFnContext, Expr rep body) = makePairs $ f lambdaContext newArg
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
-
-makePairs :: [(Thunk, Expr)] -> (Thunk, Expr)
-makePairs [one] = one
-makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
-		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT restT) newHs (min fstDep restDep)))
-	where
-		(restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
-		--newHs = (HsApp (app1 "(curry id)" fstHs) restHs)
-		newHs = HsAtom $ "(" ++ flatHs fstHs ++ "," ++ flatHs restHs ++ ")"
-	
 
 -- Gets the arg list
 getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
@@ -143,7 +145,7 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 		(rt, hs) = impl $ map retT argList
 		initExpr = Expr opRep $ Impl rt (HsAtom $ "("++hs++")") noArgsUsed
 		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
-		finalExpr = convertMultRetToPair $ convertPairToLet fullExpr
+		finalExpr = convertMultRet $ convertPairToLet fullExpr
 
 convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opRep afterOpThunk
 
@@ -151,17 +153,18 @@ convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opR
 -- todo coerce args
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
--- convertMultRetToPair
 applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
 applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
-	(nextThunk, foldl applyExpr initExpr argValues) where
+	convertMultRet $ convertPairToLet (nextThunk, applyExpr initExpr argsExpr) where
 		initExpr = Expr rep $ Impl to hs dep
-		args = take (length from) $ getValuesMemo False $ thunk
-		argValues = map snd args
-		nextThunk = fst $ last args
-
+		(nextThunk, argsExpr) = getNArgsExpr (length from) thunk
 applyFirstClassFn x = x
 
+getNArgsExpr n thunk = (nextThunk, argsExpr) where
+	args = take n $ getValuesMemo False $ thunk
+	argValues = map snd args
+	argsExpr = foldl1 makePair argValues
+	nextThunk = fst $ last args
 
 convertPairToLet :: (Thunk, Expr) -> (Thunk, Expr)
 convertPairToLet (Thunk code context, Expr rep impl)
@@ -176,7 +179,6 @@ convertPairToLet (Thunk code context, Expr rep impl)
 		
 convertPairToLet r = r
 
-convertMultRetToPair (thunk, Expr rep (Impl t hs dep)) =
-	(thunk, Expr rep (Impl (convertMultRetToPairH t) hs dep))
-convertMultRetToPairH (VMultRet a b) = VPair (convertMultRetToPairH a) (convertMultRetToPairH b)
-convertMultRetToPairH a = a
+convertMultRet (thunk, Expr rep (Impl (VMultRet t) hs dep)) =
+	(thunk, Expr rep (Impl t hs dep))
+convertMultRet a = a

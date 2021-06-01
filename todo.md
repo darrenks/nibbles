@@ -1,8 +1,6 @@
 for multipage quickref (coerce, etc)
 https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
-make first arg in let rec/fn be fn of () so can be a pair
-
 debug helpers
 	see current context
 	show type of arg and exit

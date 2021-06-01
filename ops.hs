@@ -24,7 +24,7 @@ ops = map convertNullNib [
 	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
 	-- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
-	headOp("~", [0], [fn (const VTuple0), fn (const VTuple0)], "\\a b->(a(),b())"~>(\[a,b]->VMultRet a b), []),
+	headOp("~", [0], [fn (const VTuple0), fn (const VTuple0)], "\\a b->(a(),b())"~>(\[a,b]->VMultRet $ VPair a b), []),
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),
@@ -61,25 +61,22 @@ ops = map convertNullNib [
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
 	-- Desc: let fn
 	-- Example: ;;2+$1 $4 -> 3,5
-
-	-- also add ()
-	
-	op(";;", [6,6], [anyT {-fn $ const VTuple0 -}, fn a1], "\\x f->(f $ x,f)" ~> (\args->VPair (last args) $ VFn (flattenArg $ head args) (last args)), []),
+	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
+	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
+	-- Test (mult args and rets): ;;~1 2 ~+~$+~@ $ @3 4 $ -> 2,3,4,5
+	op(";;", [6,6], [fn $ const VTuple0, fn a1], "\\x f->(f $ x(),f)" ~> (\[a1,a2]->VPair a2 $ VFn (flattenPair a1) a2), []),
 	-- Desc: let rec
 	-- todo coerce 3rd to frt
 	-- todo clean this mess up
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
+	-- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
+	-- Test (multiple rets): ;~ 1 $ ~1 2 4 5  $  @1$ -> 4,5,4,5
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
-	op(";~", [6,0], [anyT, Fn 0 (\[a1]->VPair a1 VRec)],
-	(\[a1,a2]->"\\x f -> let ff=fix (\\rec f x->let (a,(b,c))=f (x,rec f) in if "++truthy (fstOf a2)++" a then c else b) f in (ff x, ff)") ~> (\[a1,a2]->
-		let frt = sndOf3 a2 in VPair frt $ VFn [a1] frt
+	op(";~", [6,0], [fn $ const VTuple0, Fn 0 (\[a1]->VPair a1 VRec)],
+	(\[a1,a2]->"\\x f -> let ff=fix (\\rec f x->let (a,(b,c))=f (x,rec f) in if "++truthy (fstOf a2)++" a then c else b) f in (ff $ x(), ff)") ~> (\[a1,a2]->
+		let frt = sndOf3 a2 in VPair frt $ VFn (flattenPair a1) frt
 		), []),
-		-- (uncurry $ uncurry . iff)
-
-	-- todo (see todo in compile convertLambdas)
-	--- Test: testMutliFn 3 $ 2 -> 3
-	op("testMutliFn", [], [int,fn a1,fn a1], "\\a b c->b (c a)"~>a1, []),
-
+		-- todo is this simpler? (uncurry $ uncurry . iff) 
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -356,8 +353,3 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 
 testCoerceTo :: VT -> [VT] -> (VT, String)
 testCoerceTo to [a1] =  (to, coerceTo(to, a1))
-
-flattenArg VTuple0 = []
-flattenArg (VPair a b) = flattenArg a ++ flattenArg b
-flattenArg a = [a]
-
