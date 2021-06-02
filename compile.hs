@@ -80,7 +80,9 @@ convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), 
 		argType = argTypeFn argTypes
 		(newArg, finalThunk, Expr rep body) = pushLambdaArg origContext argType bodyFn
 		fnRetType = getImplType body
-		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined
+		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined.
+		-- It would very tricky to allow the the 3rd argument to do things like auto pair
+		-- without this (and do things like only add the recursive function to args for it.
 		bodyFn = if numRets == 0
 			then (\lambdaContext newArg -> let -- todo better dependent types
 				[(c1,a)] = take 1 $ getValuesMemo False $ Thunk code lambdaContext
@@ -102,6 +104,7 @@ pushLambdaArg origContext argType f =
 		(lambdaContext, newArg) = newLambdaArg origContext argType
 		(Thunk afterFnCode afterFnContext, Expr rep body) = makePairs $ f lambdaContext newArg
 		(finalContext, bodyWithLets) = popArg (getArgDepth newArg) afterFnContext body
+
 
 -- Gets the arg list
 getValuesMemo :: Bool -> Thunk -> [(Thunk, Expr)]
