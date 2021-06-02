@@ -64,13 +64,15 @@ ops = map convertNullNib [
 	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
 	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
 	-- Test (mult args and rets): ;;~1 2 ~+~$+~@ $ @3 4 $ -> 2,3,4,5
+	-- Test (coerce arg): ;;2+$1 $"4" -> 3,5
+	-- Test (coerce pair): ;;~1 2 +$@  $"5"2 -> 3,7
 	op(";;", [6,6], [fn $ const VTuple0, fn a1], "\\x f->(f $ x(),f)" ~> (\[a1,a2]->VPair a2 $ VFn (flattenPair a1) a2), []),
 	-- Desc: let rec
-	-- todo coerce 3rd to frt
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
 	-- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
+	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	op(";~", [6,0], [fn $ const VTuple0, Fn 0 (\[a1]->VPair a1 VRec)],
 	(\[a1,a2]->"\\x f -> let ff=fix (\\rec x->let (a,(b,c))=f (x,rec) in if "
 		++truthy (fstOf a2)++" a then c else b) in (ff $ x(), ff)") ~>

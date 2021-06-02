@@ -93,7 +93,7 @@ convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), 
 				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
 				recContext = replaceArg newArg recArg lambdaContext
 				(Thunk recCode _) = c2
-				in [(c1,a),(c2,b)] ++ [getNArgsExpr (length $ flattenPair toType) $ Thunk recCode recContext])
+				in [(c1,a),(c2,b)] ++ [getNArgsExpr (flattenPair toType) $ Thunk recCode recContext])
 			else (\lambdaContext _ ->
 				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
 
@@ -153,21 +153,23 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opRep afterOpThunk
 
 -- todo memoize the parse
--- todo coerce args
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
 applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
 applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
 	convertMultRet $ convertPairToLet (nextThunk, applyExpr initExpr argsExpr) where
 		initExpr = Expr rep $ Impl to hs dep
-		(nextThunk, argsExpr) = getNArgsExpr (length from) thunk
+		(nextThunk, argsExpr) = getNArgsExpr from thunk
 applyFirstClassFn x = x
 
-getNArgsExpr n thunk = (nextThunk, argsExpr) where
-	args = take n $ getValuesMemo False $ thunk
+getNArgsExpr argTypes thunk = (nextThunk, argsExpr) where
+	args = take (length argTypes) $ getValuesMemo False $ thunk
 	argValues = map snd args
-	argsExpr = foldl1 makePair argValues
+	argValuesCoerced = zipWith coerceExpr argValues argTypes
+	argsExpr = foldl1 makePair argValuesCoerced
 	nextThunk = fst $ last args
+
+coerceExpr (Expr rep (Impl et hs dep)) t = Expr rep (Impl t (app1 (coerceTo(t,et)) hs) dep)
 
 convertPairToLet :: (Thunk, Expr) -> (Thunk, Expr)
 convertPairToLet (Thunk code context, Expr rep impl)
