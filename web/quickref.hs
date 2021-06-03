@@ -51,7 +51,7 @@ main=do
 -- 				H.span "~" ! class_ "code"
 -- 				toHtml " = coerce"
 	where
-		isExtension ((_, lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op
+		isExtension ((_, lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 		isExtOpt (Op types _ _) = any (\t -> case t of
 			(Exact VAuto) -> True
 			otherwise -> False) types
