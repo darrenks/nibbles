@@ -1,14 +1,20 @@
 For alpha release:
 -tutorial (and auto test tutorial examples)
+	-library reference?
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
 -io
 -maybe
 
 minor things:
+-run the hs automatically
 -coerce after foldr
 -10 as leading 0 in int rep
 
 ------------------------------------------
+compile with wall on
+-------------------------------
+fyi instead of coerce in user fn, could skip it in context lookup
+
 for multipage quickref (coerce, etc)
 https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 

@@ -73,7 +73,7 @@ ops = map convertNullNib [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op(";~", [6,0], [fn $ const VTuple0, Fn 0 (\[a1]->VPair a1 VRec)],
+	op(";~", [6,0], [fn $ const VTuple0, Fn 0 (\[a1]->VPair a1 VTuple0)],
 	(\[a1,a2]->"\\x f -> let ff=fix (\\rec x->let (a,(b,c))=f (x,rec) in if "
 		++truthy (fstOf a2)++" a then c else b) in (ff $ x(), ff)") ~>
 	(\[a1,a2]-> VPair (sndOf3 a2) $ VFn (flattenPair a1) (sndOf3 a2)), []),

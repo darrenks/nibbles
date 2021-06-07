@@ -87,17 +87,19 @@ convertLambda (Thunk code origContext, argTypes) (ArgFn (Fn numRets argTypeFn), 
 			then (\lambdaContext newArg -> let -- todo better dependent types
 				[(c1,a)] = take 1 $ getValuesMemo False $ Thunk code lambdaContext
 				[(c2,b)] = take 1 $ getValuesMemo True $ c1
-				(Arg (Impl (VPair t VRec) hs d) dep LambdaArg) = newArg
+				(Arg (Impl (VPair t _) hs d) newArgDep LambdaArg) = newArg
 				toType = (getExprType b)
 				recType = VFn (flattenPair t) toType
-				recArg = Arg (Impl (VPair t recType) hs d) dep LambdaArg
-				recContext = replaceArg newArg recArg lambdaContext
+				recArg = Arg (Impl (VPair t recType) hs d) newArgDep LambdaArg
+				recContext = replaceArg newArgDep recArg lambdaContext
 				(Thunk recCode _) = c2
 				in [(c1,a),(c2,b)] ++ [getNArgsExpr (flattenPair toType) $ Thunk recCode recContext])
 			else (\lambdaContext _ ->
 				take numRets $ getValuesMemo True $ Thunk code lambdaContext)
 
-replaceArg old new = map (\arg-> if arg == old then new else arg)
+replaceArg oldDep new = map (\arg->
+	let (Arg _ dep _) = arg in 
+	if dep == oldDep then new else arg)
 
 pushLambdaArg origContext argType f =
 	(newArg, Thunk afterFnCode finalContext, Expr rep bodyWithLets) where
