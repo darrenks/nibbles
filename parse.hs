@@ -4,6 +4,7 @@ module Parse(
 	parseIntExpr,
 	parseStrExpr,
 	parseChrExpr,
+	parseCountTuple,
 	cp,
 	match,
 	parseError,
@@ -75,6 +76,14 @@ parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.Char char), rest)] -> (char, sLit rest (cp+length used))
 	otherwise -> error $ "unparsable char: " ++ s
 
+-- count the number of leading "auto" symbols.
+parseCountTuple :: Code -> (Int, Code)
+parseCountTuple (Nib (0:rest) cp) = (1+afterCount, afterCode)
+	where (afterCount, afterCode) = parseCountTuple $ Nib rest (cp+1)
+parseCountTuple (Lit ('~':rest) cp) = (1+afterCount, afterCode)
+	where (afterCount, afterCode) = parseCountTuple $ sLit rest (cp+1)
+parseCountTuple x = (0, x)
+
 cp (Nib _ cp) = cp
 cp (Lit _ cp) = cp
 empty (Nib [op] _) | op == uselessOp = True
@@ -109,19 +118,19 @@ consumeWhitespace (Lit (c:s) cp)
 	| otherwise = Lit (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-parseIntExpr :: Rep -> Thunk -> (Thunk, Expr)
+parseIntExpr :: Rep -> Thunk -> (Thunk, SExpr)
 parseIntExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ intToNib n) (' ':show n)) (Impl VInt (i n) noArgsUsed))
+	(Thunk rest vt, SExpr (Rep (b ++ intToNib n) (' ':show n)) (SImpl VInt (i n) noArgsUsed))
 		where (n, rest) = parseInt code
 
-parseStrExpr :: Rep -> Thunk -> (Thunk, Expr)
+parseStrExpr :: Rep -> Thunk -> (Thunk, SExpr)
 parseStrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr (app1 "sToA" (HsAtom $ show s)) noArgsUsed))
+	(Thunk rest vt, SExpr (Rep (b ++ strToNib s) (show s)) (SImpl vstr (app1 "sToA" (HsAtom $ show s)) noArgsUsed))
 		where (s, rest) = parseStr code
 
-parseChrExpr :: Rep -> Thunk -> (Thunk, Expr)
+parseChrExpr :: Rep -> Thunk -> (Thunk, SExpr)
 parseChrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr (app1 "ord" (HsAtom $ show s)) noArgsUsed))
+	(Thunk rest vt, SExpr (Rep (b ++ chrToNib s) (show s)) (SImpl VChr (app1 "ord" (HsAtom $ show s)) noArgsUsed))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]

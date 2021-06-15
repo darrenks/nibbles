@@ -9,22 +9,16 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [ArgSpec] ([VT]->(VT, String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr))
+data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (Rep -> Thunk -> (Thunk, SExpr))
 
-op(lit, nib, t, impl, autos) = (False, lit, nib, Op t (toImpl impl) autos)
-headOp(lit, nib, t, impl, autos) = (True, lit, nib, Op t (toImpl impl) autos)
-atom(lit, nib, impl) = (False, lit, nib, Atom impl)
+op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
+atom(lit, nib, impl) = (lit, nib, Atom impl)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
-ops :: [(Bool, String, [Int], Operation)]
+ops :: [(String, [Int], Operation)]
 ops = map convertNullNib [
-	-- Desc: return pair in fn
-	-- Example: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
-	-- Test: .,1 ~~1 2 3 -> [((1,2),3)]
-	-- Test: .,1 ~1 ~2 3 -> [(1,(2,3))]
-	headOp("~", [0], [fn (const VTuple0), fn (const VTuple0)], "\\a b->(a(),b())"~>(\[a,b]->VMultRet $ VPair a b), []),
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),
@@ -66,17 +60,25 @@ ops = map convertNullNib [
 	-- Test (mult args and rets): ;;~1 2 ~+~$+~@ $ @3 4 $ -> 2,3,4,5
 	-- Test (coerce arg): ;;2+$1 $"4" -> 3,5
 	-- Test (coerce pair): ;;~1 2 +$@  $"5"2 -> 3,7
-	op(";;", [6,6], [fn $ const VTuple0, fn a1], "\\x f->(f $ x(),f)" ~> (\[a1,a2]->VPair a2 $ VFn (flattenPair a1) a2), []),
+	op(";;", [6,6], [fn noArgs, fn $ ret.a1], 
+		(\[a1,a2]->
+			let a1L = length $ ret a1
+			    a2L = length $ ret a2 in
+			"\\x f->"++flattenTuples a2L 1 ++ "(" ++ uncurryN a1L ++ " f $ x(),f)" ~>
+			ret a2 ++ [VFn (ret a1) (ret a2)]
+			), []),
 	-- Desc: let rec
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
-	-- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
-	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
+	--- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
+	--- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op(";~", [6,0], [fn $ const VTuple0, Fn 0 (\[a1]->VPair a1 VTuple0)],
-	(\[a1,a2]->"\\x f -> let ff=fix (\\rec x->let (a,(b,c))=f (x,rec) in if "
-		++truthy (fstOf a2)++" a then c else b) in (ff $ x(), ff)") ~>
-	(\[a1,a2]-> VPair (sndOf3 a2) $ VFn (flattenPair a1) (sndOf3 a2)), []),
+	op(";~", [6,0], [fn noArgs, Fn 0 (\[a1]->ret a1++[undefined])],
+	(\[a1,a2]->
+		let a1L = length $ ret a1 in
+		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++" f x rec in if "
+		++truthy (fstOf3 $ ret a2)++" a then c else b) in (ff $ x(), "++ curryN a1L ++" ff)") ~>
+	(\[a1,a2]-> [sndOf3 $ ret a2] ++ [VFn (ret a1) [sndOf3 $ ret a2]]), []),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -91,14 +93,14 @@ ops = map convertNullNib [
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
-	op(":~", [7,0], [anyT], "(:[])" ~> VList .a1, [autoTodo]),
+	op(":~", [7,0], [anyT], "(:[])" ~> vList1 .a1, [autoTodo]),
 	-- Desc: cons
 	-- Example: :"a"~"b" -> ["a","b"]
 	-- Test (coerce, but pointless todo): :,2~ "34" -> "1234"
 	op(":", [7], [list, auto, anyT], cons, [impossibleAuto, impossibleAuto, autoTodo]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op(":", [7], [num, auto, anyT], "todo" ~> VList .a1, [autoTodo]),
+	op(":", [7], [num, auto, anyT], "todo" ~> vList1 .a1, [autoTodo]),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -120,7 +122,7 @@ ops = map convertNullNib [
 	-- Test empties: %" a  b "" " -> ["a","b"]
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
-	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> VList .a1, []),
+	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> vList1 .a1, []),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
@@ -150,7 +152,7 @@ ops = map convertNullNib [
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
-	op("&", [9], [list, fn (elemT.a1)], (\args -> "flip$filter.("++truthy (a2 args)++".)") ~> a1, [impossibleAuto, autoTodo {-reject?-}]),
+	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, autoTodo {-reject?-}]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
@@ -159,7 +161,7 @@ ops = map convertNullNib [
 	-- Example: /,3+$@ -> 6
 	-- todo make/test empty
 	-- todo coerce accum type?
-	op("/", [10], [list, fn (\[VList e]->VPair e e)], "flip$foldr1.curry" ~> a2, []),
+	op("/", [10], [list, fn $ dup.elemT.a1], "flip$foldr1" ~> ret.a2, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	op("st", [11, 11], [list], "sort" ~> a1, []),
@@ -171,7 +173,7 @@ ops = map convertNullNib [
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
-	op("/~", [11,0], [num, num], "divMod" ~> VPair VInt VInt, [2]),
+	op("/~", [11,0], [num, num], "divMod" ~> [VInt, VInt], [2]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
@@ -182,14 +184,14 @@ ops = map convertNullNib [
 	-- Desc: map accum L
 	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
 	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mac", [], [list, anyT, fn2 (\[VList e, x]->VPair x e)], "\\l i f->swap $ mapAccumL (curry f) i l" ~> (\[_, x, ft] -> VPair (VList $ sndT ft) x), [autoTodo]),
+	op("mac", [], [list, anyT, fn2 (\[VList e, x]->[x,todoAssumeFst e])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
-	op("sb", [13,12], [list, fn (elemT.a1)], "flip sortOn" ~> a1, []),	
+	op("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, fn (elemT.a1)], "flip map" ~> VList .a2, []),
+	op(".", [12], [list, fn ((:[]).elemT.a1)], "flip map" ~> VList .ret.a2, []),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -197,7 +199,7 @@ ops = map convertNullNib [
 	op(">", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
-	op("%~", [12,0], [num, num], "(swap.).divMod" ~> VPair VInt VInt, [2]),
+	op("%~", [12,0], [num, num], "(swap.).divMod" ~> [VInt,VInt], [2]),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives
@@ -210,7 +212,7 @@ ops = map convertNullNib [
 	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
-	op("rs", [13,9], [num, list], "reshape" ~> VList .a2, [2]),
+	op("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",^", [13,14], [int, list], "asdf" ~> VInt, [autoTodo]),
@@ -220,7 +222,7 @@ ops = map convertNullNib [
 	-- Desc: range from 1 to
 	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
-	op(",", [13], [num], "\\x->[1..x]" ~> VList .a1, [autoTodo]),
+	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [autoTodo]),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
@@ -240,7 +242,7 @@ ops = map convertNullNib [
 	op("=", [14], [list, num], "\\a i->a!!(fromIntegral (i-1)`mod`length a)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
-	op("z", [14], [list, list], "zip" ~>  VList .pairOf.(both elemT), []),
+	op("z", [14], [list, list], "zip" ~>  VList .(map elemT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [15,1], [anyT], "asdf" ~> VInt, [autoTodo]),
@@ -273,17 +275,17 @@ ops = map convertNullNib [
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
 	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
 	op("testCoerceToChr", [], [anyT], testCoerceTo VChr, []),
-	op("testCoerceToListInt", [], [anyT], testCoerceTo (VList VInt), []),
+	op("testCoerceToListInt", [], [anyT], testCoerceTo (VList [VInt]), []),
 	op("testCoerceToStr", [], [anyT], testCoerceTo vstr, []),
-	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList $ VList VInt), []),
-	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList vstr), []),
+	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList [VList [VInt]]), []),
+	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList [vstr]), []),
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
 
-infixr 8 ~>
+infixr 1 ~>
 a~>b = (b,a)
 
 -- 16 makes it so that parsing bin will never try it
-convertNullNib (h, lit, nib, op) = (h, lit, if null nib
+convertNullNib (lit, nib, op) = (lit, if null nib
 		then [16, error $ "attempt to convert "++lit++" to bin (it is only for literate mode)"]
 		else nib
 	, op)
@@ -292,37 +294,53 @@ a1 = head :: [VT] -> VT
 a2 = (!!1) :: [VT] -> VT
 a3 = (!!2) :: [VT] -> VT
 
-both f [a,b] = (f a, f b)
-pairOf = uncurry VPair
-fstOf (VPair a b) = a
-sndOf (VPair a b) = b
-sndOf3 (VPair (VPair a b) c) = b
-sndOf3 (VPair a (VPair b c)) = b
-sndOf3 a = error $ show a
+vList1 x = VList [x]
 
-dup a = VPair a a
+both f [a,b] = (f a, f b)
+-- pairOf = uncurry VPair
+-- fstOf (VPair a b) = a
+-- sndOf (VPair a b) = b
+-- sndOf3 (VPair (VPair a b) c) = b
+-- sndOf3 (VPair a (VPair b c)) = b
+-- sndOf3 a = error $ show a
+
+dup a = [a,a]
 
 xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr
 xorChr _ = VInt
 
 class OpImpl impl where
-	toImpl :: impl -> [VT] -> (VT, String)
+	toImpl :: impl -> [VT] -> ([VT], String)
 instance OpImpl ([VT] -> VT, [VT] -> String) where
-	toImpl (f1,f2) context = (f1 context, f2 context)
+	toImpl (f1,f2) context = ([f1 context], f2 context)
 instance OpImpl ([VT] -> VT, String) where
-	toImpl (f1,s) context = (f1 context, s)
+	toImpl (f1,s) context = ([f1 context], s)
 instance OpImpl (VT, [VT] -> String) where
-	toImpl (t,f2) context = (t, f2 context)
+	toImpl (t,f2) context = ([t], f2 context)
 instance OpImpl (VT, String) where
-	toImpl (t,s) context = (t, s)
+	toImpl (t,s) context = ([t], s)
 instance OpImpl ([VT] -> (VT, String)) where
+	toImpl f context = ([t],s) where (t, s) = f context
+
+instance OpImpl ([VT] -> [VT], [VT] -> String) where
+	toImpl (f1,f2) context = (f1 context, f2 context)
+instance OpImpl ([VT] -> [VT], String) where
+	toImpl (f1,s) context = (f1 context, s)
+instance OpImpl ([VT], [VT] -> String) where
+	toImpl (t,f2) context = (t, f2 context)
+instance OpImpl ([VT], String) where
+	toImpl (t,s) context = (t, s)
+instance OpImpl ([VT] -> ([VT], String)) where
 	toImpl f context = f context
+
 
 int = Exact VInt
 char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
+
+noArgs = const $ []
 
 fn = Fn 1
 fn2 = Fn 2
@@ -330,18 +348,24 @@ num = Cond "num" $ isNum . last
 vec = Cond "vec" $ isVec . last
 list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
-listOf (Exact t) =  Exact $ VList t
-listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> c [elemT $ last vts]
+listOf (Exact t) =  Exact $ VList [t]
+listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> c [elemT $ last vts] -- todo assumes that it is a list, could cause elemT pattern error
 
-elemT (VList e) = e
-fstT (VPair a _) = a
-sndT (VPair _ b) = b
+ret1 (VFn from [to]) = to
+ret (VFn from to) = to
+elemT (VList e) = todoAssumeFst e
+elemT s = error $ show s
+-- fstT (VPair a _) = a
+-- sndT (VPair _ b) = b
 
-elemOfA1 = Cond "a" (\[a1,a2]->VList a2==a1)
+fstOf3 [a,b,c] = b
+sndOf3 [a,b,c] = b
+
+elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
 
 cons [a,b,c] = (t, "\\a b c->"++code++"[a] b c") where
-	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList a,b,c]
+	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList [a],b,c]
 
 testCoerce2 :: [VT] -> String
 testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2

@@ -51,12 +51,12 @@ main=do
 -- 				H.span "~" ! class_ "code"
 -- 				toHtml " = coerce"
 	where
-		isExtension ((_, lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
+		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 		isExtOpt (Op types _ _) = any (\t -> case t of
 			(Exact VAuto) -> True
 			otherwise -> False) types
 		isExtOpt _ = False
-		convertToTdList ((_, lit, nib, impl), desc, [exI, exO]) =
+		convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ lit, -- styleCode
 			td $ styleCode $ toHex nib, -- styleCode
 			td $ toHtml desc] ++
@@ -86,8 +86,8 @@ typeToStr (Cond desc _) _ = desc
 -- typeToStr (Coerce t) n = "~"++typeToStr t n
 -- typeToStr (Vec t) n = "*"++typeToStr t n
 -- typeToStr (PromoteList t) n = "^"++typeToStr t n
-typeToStr (Exact (VList VChr)) _ = "str"
-typeToStr (Exact (VList t)) n = "["++typeToStr (Exact t) n++"]"
+typeToStr (Exact (VList [VChr])) _ = "str"
+typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
 typeToStr (Exact VInt) _ = "int"
 typeToStr (Exact VChr) _ = "chr"
 typeToStr (Exact VAuto) _ = "~"

@@ -8,67 +8,70 @@ import Parse (nextHex)
 import Data.List
 import Data.Maybe
 
-argStr n = "arg" ++ show n
+argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 
-newLambdaArg :: [Arg] -> VT -> ([Arg], Arg)
+newLambdaArg :: [Arg] -> [VT] -> ([Arg], Arg)
 newLambdaArg context argT = (newArg : context, newArg) where
-	depth = 1+foldr (const . getArgDepth) 0 context
-	impl = Impl argT (HsAtom $ argStr depth) depth
-	newArg = Arg impl depth LambdaArg
+	depth = 1 + length context
+	impls = zipWith (\t tn -> SImpl t (HsAtom $ argStr depth tn) depth) argT [1..]
+	newArg = Arg impls LambdaArg
 
-newLetArg :: [Arg] -> Impl -> VisibleFirst -> ([Arg], Arg)
-newLetArg context (Impl defType defHs defDepth) visible = (newArg : context, newArg) where
-	depth = 1+foldr (const . getArgDepth) 0 context
-	impl = Impl defType (HsAtom $ argStr depth) depth
-	newArg = Arg impl depth $ LetArg defDepth defHs visible
+newLetArg :: [Arg] -> Impl -> Arg
+newLetArg context (Impl defTypes defHs defDepth) = newArg where
+	depth = 1 + length context
+	impls = zipWith (\t tn -> SImpl t (HsAtom $ argStr depth tn) defDepth) defTypes [1..]
+	newArg = Arg impls $ LetArg defHs
 
-argn :: [Arg] -> Int -> Impl
+argn :: [Arg] -> Int -> SImpl
 argn context deBruijnIndex = 
 		fromMaybe (error "negative arg index todo better msg") $
 			at flattenedArgs deBruijnIndex
 	where
 		flattenedArgs = concatMap flattenArg context
-		flattenArg (Arg (Impl VTuple0 hs depth) _ k) = []
-		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
-			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
-			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)
-		flattenArg (Arg impl _ k)
-			| isVisible k = [impl]
-			| otherwise = []
+		-- flattenArg (Arg (Impl VTuple0 hs depth) _ k) = []
+-- 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
+-- 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
+-- 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)
+-- 		flattenArg (Arg (Impl (VP ts) hs depth) _ k) = zipWith (\t n->
+-- 			Impl t (HsAtom $ (flatHs hs) ++ "t" ++ show n) depth
+-- 			) ts [1..]
+		flattenArg (Arg impls (LambdaArg)) = impls
+		flattenArg (Arg impls (LetArg _)) = tail impls
 			
 		visibleArg = LambdaArg
-		isVisible (LetArg _ _ Hidden) = False
-		isVisible _ = True
 
-addLambda :: Arg -> Impl -> Impl
-addLambda arg (Impl t body d) = Impl t (HsFn (getCode arg) body) d
+addLambda :: Arg -> SImpl -> SImpl
+addLambda arg (SImpl t body d) = SImpl t (HsFn (argsLhs $ map (flatHs . getHs) $ getArgImpls arg) body) d
+	where
+		argsLhs [] = "()"
+		argsLhs hss = intercalate " " $ hss
 
-popArg :: Int -> [Arg] -> Impl -> ([Arg], Impl)
+-- Remove arg # and all its dependent let args (adding let statements for them).
+popArg :: Int -> [Arg] -> SImpl -> ([Arg], SImpl)
 popArg depth context impl = (concat finalContext, finalImpl) where
 	(finalImpl, finalContext) = mapAccumL maybePopIt impl context
 
-	maybePopIt :: Impl -> Arg -> (Impl, [Arg])
+	maybePopIt :: SImpl -> Arg -> (SImpl, [Arg])
 	maybePopIt impl eachArg
 		| getArgDepDepth eachArg >= depth = (popIt eachArg impl, [])
 		| otherwise = (impl, [eachArg])
 	
-	getArgDepDepth (Arg _ dep LambdaArg) = dep
-	getArgDepDepth (Arg _ _ (LetArg dep _ _)) = dep
+	getArgDepDepth (Arg (SImpl _ _ dep : _) _) = dep
+	getArgDepDepth (Arg [] _) = 0 --todo
 
-	popIt :: Arg -> Impl -> Impl
-	popIt (Arg _ _ LambdaArg) impl = impl
-	popIt (Arg (Impl _ varHs dep) _ (LetArg _ refHs _)) (Impl retT bodyHs _) =
-		Impl retT (HsApp (HsFn (getCode2 varHs) bodyHs) refHs) dep
+	popIt :: Arg -> SImpl -> SImpl
+	popIt (Arg _ LambdaArg) impl = impl
+	popIt (Arg varImpls (LetArg refHs)) (SImpl retT bodyHs dep) =
+		SImpl retT (HsApp (HsFn ("("++(intercalate "," $ map (flatHs . getHs) varImpls)++")") bodyHs) refHs) dep
 
-getCode (Arg (Impl _ (HsAtom hs) _) _ _) = hs
-getCode2 (HsAtom hs) = hs
+-- getCode (Arg (Impl _ (HsAtom hs) _) _ _) = hs
 
-getArg :: Int -> Rep -> Thunk -> (Thunk, Expr)
-getArg n r thunk = (thunk, Expr r $ argn (getContext thunk) n) where
+getArg :: Int -> Rep -> Thunk -> (Thunk, SExpr)
+getArg n r thunk = (thunk, SExpr r $ argn (getContext thunk) n) where
 	
-getArgN :: Rep -> Thunk -> (Thunk, Expr)
+getArgN :: Rep -> Thunk -> (Thunk, SExpr)
 getArgN r (Thunk code context) =
-	(Thunk afterSlashCode context, Expr rep impl) where
+	(Thunk afterSlashCode context, SExpr rep impl) where
 		rep = addRep r $ Rep [v] $ showHex v ""
 		impl = argn context v
 		(v, afterSlashCode) = nextHex code

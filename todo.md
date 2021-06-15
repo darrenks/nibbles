@@ -13,6 +13,9 @@ minor things:
 ------------------------------------------
 compile with wall on
 -------------------------------
+non empty list for many [VT]
+monad for expr/sexpr
+
 fyi instead of coerce in user fn, could skip it in context lookup
 
 for multipage quickref (coerce, etc)
