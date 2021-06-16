@@ -1,3 +1,9 @@
+debug features to add:
+	gather rest of program
+	show context values
+	show arg types
+	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
+
 For alpha release:
 -tutorial (and auto test tutorial examples)
 	-library reference?

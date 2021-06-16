@@ -303,17 +303,8 @@ convertNullNib (lit, nib, op) = (lit, if null nib
 	
 a1 = head :: [VT] -> VT
 a2 = (!!1) :: [VT] -> VT
-a3 = (!!2) :: [VT] -> VT
 
 vList1 x = VList [x]
-
-both f [a,b] = (f a, f b)
--- pairOf = uncurry VPair
--- fstOf (VPair a b) = a
--- sndOf (VPair a b) = b
--- sndOf3 (VPair (VPair a b) c) = b
--- sndOf3 (VPair a (VPair b c)) = b
--- sndOf3 a = error $ show a
 
 dup a = [a,a]
 
@@ -363,14 +354,10 @@ listOf (Exact t) =  Exact $ VList [t]
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> c [elemT $ last vts] -- todo assumes that it is a list, could cause elemT pattern error
 
 ret1 (VFn from [to]) = to
-ret (VFn from to) = to
 elemT (VList e) = todoAssumeFst e
 elemT s = error $ show s
--- fstT (VPair a _) = a
--- sndT (VPair _ b) = b
 
-halfOf a = take (length a `div` 2) a
-
+-- todo consider arg matching in opcode 15
 elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
 

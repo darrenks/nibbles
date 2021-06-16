@@ -28,15 +28,6 @@ argn context deBruijnIndex =
 			at flattenedArgs deBruijnIndex
 	where
 		flattenedArgs = concatMap flattenArg context
-		-- flattenArg (Arg (Impl VTuple0 hs depth) _ k) = []
--- 		flattenArg (Arg (Impl (VPair a b) hs depth) _ k) =
--- 			(flattenArg $ Arg (Impl a (app1 "fst" hs) depth) undefined k) ++
--- 			(flattenArg $ Arg (Impl b (app1 "snd" hs) depth) undefined visibleArg)
--- 		flattenArg (Arg (Impl (VP ts) hs depth) _ k) = zipWith (\t n->
--- 			Impl t (HsAtom $ (flatHs hs) ++ "t" ++ show n) depth
--- 			) ts [1..]
-			
--- 		visibleArg = LambdaArg
 
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
@@ -64,8 +55,6 @@ popArg depth context impl = (concat finalContext, finalImpl) where
 	popIt (Arg _ LambdaArg) impl = impl
 	popIt (Arg varImpls (LetArg refHs)) (SImpl retT bodyHs dep) =
 		SImpl retT (HsLet (map getHs varImpls) refHs bodyHs) dep
-
--- getCode (Arg (Impl _ (HsAtom hs) _) _ _) = hs
 
 getArg :: Int -> Rep -> Thunk -> (Thunk, SExpr)
 getArg n r thunk = (thunk, SExpr r $ argn (getContext thunk) n) where

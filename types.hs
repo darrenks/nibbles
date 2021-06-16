@@ -29,5 +29,7 @@ baseElem t = t
 isList (VList _) = True
 isList _ = False
 
+ret (VFn from to) = to
+
 -- flattenPair (VP a) = concatMap flattenPair a
 -- flattenPair a = [a]

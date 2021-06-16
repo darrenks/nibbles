@@ -29,6 +29,7 @@ sToExpr (SExpr r i) = Expr r (sToImpl i)
 
 data Thunk = Thunk Code [Arg]
 getContext (Thunk _ context) = context
+getCode (Thunk code _) = code
 
 --                                def
 data ArgKind = LambdaArg | LetArg HsCode deriving (Show,Eq)

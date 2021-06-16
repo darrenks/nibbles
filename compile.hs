@@ -37,35 +37,18 @@ sApplyExpr :: SExpr -> SExpr -> SExpr
 sApplyExpr (SExpr r1 (SImpl t1 hs1 d1)) (SExpr r2 (SImpl _ hs2 d2)) =
 	SExpr (addRep r1 r2) (SImpl t1 (HsApp hs1 hs2) (max d1 d2))
 
--- 
--- makePair :: Expr -> Expr -> Expr
--- makePair = undefined
--- -- makePair (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl t2 hs2 d2)) =
--- -- 	Expr (addRep r1 r2) (Impl (VPair t1 t2) (makePairHs hs1 hs2) (max d1 d2))
--- makePairHs hs1 hs2 = (HsApp (app1 "(,)" hs1) hs2)
-
 makePairs :: [VT] -> [(Thunk, SExpr)] -> (Thunk, SExpr)
--- makePairs _ [(thunk, expr)] = (thunk, expr)
 makePairs fromTypes args = (last thunks, foldl sApplyExpr initExpr exprs) where
 	thunks = map fst args
 	exprs = map snd args
 	toTypes = map getExprType exprs
-	--todo more ,,
-	initExpr = SExpr (Rep [] "") (SImpl (VFn fromTypes toTypes) (HsAtom initHs) 0 {-todo-})
+	initExpr = SExpr (Rep [] "") (SImpl (VFn fromTypes toTypes) (HsAtom initHs) 0)
 	-- todo instead of fold apply, build the (expr1, expr2), etc, cleaner hs
 	initHs = if length exprs == 1 then "" else "("++replicate (length $ tail exprs) ','++")"
-	
-	
--- makePairs ((_, Expr firstRep (Impl fstT fstHs fstDep)):rest) =
--- 		(restThunk, Expr (addRep firstRep restRep) (Impl (VPair fstT restT) newHs (min fstDep restDep)))
--- 	where
--- 		(restThunk, Expr restRep (Impl restT restHs restDep)) = makePairs rest
--- 		newHs = makePairHs fstHs restHs
 	
 convertAutoType VAuto = VInt
 convertAutoType t = t
 
--- todo make it use sexpr
 convertAuto (SExpr r (SImpl VAuto _ _)) auto =
 	SExpr r $ SImpl VInt (i $ fromIntegral auto) noArgsUsed
 convertAuto e _ = e
@@ -87,7 +70,6 @@ convertLambdas thunk estimatedArgs = (finalThunk, args) where
 	((finalThunk,vts),args) = mapAccumL convertLambda (thunk, []) estimatedArgs
 
 -- todo mark rec snd pair as used since, it's already served a purpose
-
 convertLambda :: (Thunk, [VT]) -> (ArgMatchResult, (Thunk, SExpr)) -> ((Thunk, [VT]), SExpr)
 convertLambda (Thunk code origContext, argTypes) (ArgMatches, (memoThunk, memoExpr)) =
 	((memoThunk, argTypes ++ [getExprType memoExpr]), memoExpr)
@@ -105,31 +87,20 @@ convertLambda (Thunk origCode origContext, argTypes) (ArgFn (Fn numRets argTypeF
 			then (\lambdaContext newArg -> let -- todo better dependent types
 				nonRecImpls = init $ getArgImpls newArg
 				contextWithoutRec = [Arg nonRecImpls LambdaArg] ++ tail lambdaContext
-				[(c1,a)] = take 1 $ getValuesMemo $ Thunk code contextWithoutRec
-				Thunk c1code ct = c1
+				[(c1@(Thunk c1code ct),a)] = take 1 $ getValuesMemo $ Thunk code contextWithoutRec
 				(bonusRets2, c1b) = parseCountTuple c1code
 				bonusRep2 = Rep (replicate bonusRets2 0) (replicate bonusRets2 '~')
-				(c2,bb) = makePairs undefined $ take (1+bonusRets2) $ getValuesMemo $ Thunk c1b ct
-				(SExpr repb ib) = bb
+				(c2,bb@(SExpr repb ib)) = makePairs undefined $ take (1+bonusRets2) $ getValuesMemo $ Thunk c1b ct
 				b = SExpr (addRep bonusRep2 repb) ib
--- 				c2 = fst $ last exprs
--- 				bs = map snd exprs
 				from = map getImplType2 nonRecImpls
-				ret (VFn from to) = to
 				toType = ret $ getExprType b
 				recType = VFn from toType
 				recImpl = setType recType $ last $ getArgImpls newArg
 				recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
 				recContext = [recArg] ++ tail lambdaContext
-				(Thunk recCode _) = c2
-				in [(c1,a)]++[(c2,b)] ++ [makePairs undefined (getNArgExprs toType $ Thunk recCode recContext)])
+				in [(c1,a)]++[(c2,b)] ++ [makePairs undefined (getNArgExprs toType $ Thunk (getCode c2) recContext)])
 			else (\lambdaContext _ ->
 				take (bonusRets + numRets) $ getValuesMemo $ Thunk code lambdaContext)
-
-
--- replaceArg oldDep new = map (\arg->
--- 	let (Arg _ dep _) = arg in 
--- 	if dep == oldDep then new else arg)
 
 pushLambdaArg origContext argType f =
 	(newArg, Thunk afterFnCode finalContext, SExpr rep bodyWithLets) where
@@ -200,7 +171,7 @@ getNArgExprs argTypes thunk = zip (map fst args) argValuesCoerced where
 	argValues = map snd args
 	argValuesCoerced = zipWith coerceExpr argValues argTypes
 
-coerceExpr (SExpr rep (SImpl et hs dep)) t = SExpr rep (SImpl t (app1 (coerceTo(t,et)) hs) dep) -- todo assumes 1 t and et
+coerceExpr (SExpr rep (SImpl et hs dep)) t = SExpr rep (SImpl t (app1 (coerceTo(t,et)) hs) dep)
 
 convertPairToLet :: (Thunk, Expr) -> (Thunk, SExpr)
 convertPairToLet (thunk, Expr rep (Impl [t] hs dep)) = (thunk, SExpr rep $ SImpl t hs dep)
