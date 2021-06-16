@@ -40,7 +40,7 @@ main=do
 				where (basename, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
-	let SExpr (Rep b lit) (SImpl t hs _) = compileIt $ case parseMode of
+	let Expr (Rep b lit) (Impl t hs _) = compileIt $ case parseMode of
 		FromLit -> Lit contents
 		FromBytes -> Nib (concatMap fromByte contents)
 	-- todo for adding args, need to add types, depth, and hs setters
@@ -67,7 +67,7 @@ main=do
 	where isOpt = isPrefixOf "-"
 	      toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
 	      compileIt rep = compile finish "" (rep 0)
-	      getLit (SExpr (Rep _ lit) _) = lit
+	      getLit (Expr (Rep _ lit) _) = lit
 	      noOnlyLits b = all (/=16) b
 
 --   hSetBuffering stdout NoBuffering

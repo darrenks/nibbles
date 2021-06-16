@@ -11,21 +11,13 @@ type Nibble = Int
 data Rep = Rep [Nibble] NibLit deriving Show
 addRep (Rep b1 l1) (Rep b2 l2) = Rep (b1++b2) (l1++l2)
 
-data SImpl = SImpl VT HsCode Int deriving (Eq, Show)
 --                           min used depth
-data Impl = Impl [VT] HsCode Int deriving (Eq, Show)
+data Impl = Impl VT HsCode Int deriving (Eq, Show)
 noArgsUsed = 0 :: Int
 getImplType (Impl t _ _) = t
-getImplType2 (SImpl t _ _) = t
-getHs (SImpl _ hs _) = hs
-data SExpr = SExpr Rep SImpl deriving Show
+getHs (Impl _ hs _) = hs
 data Expr = Expr Rep Impl deriving Show
-getRep (Expr rep _) = rep
-getExprImpl (Expr _ impl) = impl
-getExprType (SExpr _ impl) = getImplType2 impl
-
-sToImpl (SImpl t hs dep) = Impl [t] hs dep
-sToExpr (SExpr r i) = Expr r (sToImpl i)
+getExprType (Expr _ impl) = getImplType impl
 
 data Thunk = Thunk Code [Arg]
 getContext (Thunk _ context) = context
@@ -33,7 +25,7 @@ getCode (Thunk code _) = code
 
 --                                def
 data ArgKind = LambdaArg | LetArg HsCode deriving (Show,Eq)
-data Arg = Arg [SImpl] ArgKind deriving (Show,Eq)
+data Arg = Arg [Impl] ArgKind deriving (Show,Eq)
 -- getArgType (Arg impl _ _) | getType impl==VPair= impl
 -- getArgData (Arg _ kind _ ) = kind
 -- getArgDepth (Arg _ depth _) = depth
@@ -50,15 +42,13 @@ uselessOp = 6 :: Int -- for padding odd nibbles into bytes
 app1 :: String -> HsCode -> HsCode
 app1 = HsApp . HsAtom
 
-app1Hs :: String -> SImpl -> SImpl
-app1Hs s (SImpl t hs d) = SImpl t (app1 s hs) d
+app1Hs :: String -> Impl -> Impl
+app1Hs s (Impl t hs d) = Impl t (app1 s hs) d
 
 retT (Expr _ (Impl t _ _)) = t
-retT2 (SExpr _ (SImpl t _ _)) = t
-setImpl (Expr r _) impl = Expr r impl
-modifyImpl f (SExpr r i) = SExpr r (f i)
+modifyImpl f (Expr r i) = Expr r (f i)
 
-setType newT (SImpl t hs d) = SImpl newT hs d
+setType newT (Impl t hs d) = Impl newT hs d
 
 -- toArgList [arg] = arg
 -- toArgList args = "(" ++ intercalate "," args ++ ")"

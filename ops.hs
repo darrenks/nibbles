@@ -9,7 +9,7 @@ import Parse
 import Args
 import Parse
 
-data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (Rep -> Thunk -> (Thunk, SExpr))
+data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr))
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -272,6 +272,7 @@ ops = map convertNullNib [
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
+	-- todo put in quickref
 	atom("ct", [], \_ (Thunk _ context) -> error $ debugContext context),
 	op("error", [], [str], "error.aToS" ~> vstr, []),
 	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
@@ -286,7 +287,7 @@ ops = map convertNullNib [
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
 
 debugContext context = "\nContext:\n" ++ (unlines $ map (\arg ->
-	unlines $ showArgType arg : map (("  "++).show.getImplType2) (flattenArg arg)
+	unlines $ showArgType arg : map (("  "++).show.getImplType) (flattenArg arg)
 	) context)
 
 showArgType (Arg _ LambdaArg) = "LambdaArg"
