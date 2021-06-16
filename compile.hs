@@ -106,15 +106,23 @@ convertLambda (Thunk origCode origContext, argTypes) (ArgFn (Fn numRets argTypeF
 				nonRecImpls = init $ getArgImpls newArg
 				contextWithoutRec = [Arg nonRecImpls LambdaArg] ++ tail lambdaContext
 				[(c1,a)] = take 1 $ getValuesMemo $ Thunk code contextWithoutRec
-				[(c2,b)] = take 1 $ getValuesMemo $ c1 --todo plus bonus
+				Thunk c1code ct = c1
+				(bonusRets2, c1b) = parseCountTuple c1code
+				bonusRep2 = Rep (replicate bonusRets2 0) (replicate bonusRets2 '~')
+				(c2,bb) = makePairs undefined $ take (1+bonusRets2) $ getValuesMemo $ Thunk c1b ct
+				(SExpr repb ib) = bb
+				b = SExpr (addRep bonusRep2 repb) ib
+-- 				c2 = fst $ last exprs
+-- 				bs = map snd exprs
 				from = map getImplType2 nonRecImpls
-				toType = [getExprType b]
-				recType = VFn from toType --todo
+				ret (VFn from to) = to
+				toType = ret $ getExprType b
+				recType = VFn from toType
 				recImpl = setType recType $ last $ getArgImpls newArg
 				recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
 				recContext = [recArg] ++ tail lambdaContext
 				(Thunk recCode _) = c2
-				in [(c1,a),(c2,b)] ++ (getNArgExprs toType $ Thunk recCode recContext))
+				in [(c1,a)]++[(c2,b)] ++ [makePairs undefined (getNArgExprs toType $ Thunk recCode recContext)])
 			else (\lambdaContext _ ->
 				take (bonusRets + numRets) $ getValuesMemo $ Thunk code lambdaContext)
 

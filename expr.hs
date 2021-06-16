@@ -1,9 +1,10 @@
 module Expr where
 
 import Types
+import Data.List (intercalate)
 
 -- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
-data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn String HsCode deriving (Eq, Show)
+data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn String HsCode | HsLet [HsCode] HsCode HsCode deriving (Eq, Show)
 
 type NibLit = String
 type Nibble = Int
@@ -30,8 +31,8 @@ data Thunk = Thunk Code [Arg]
 getContext (Thunk _ context) = context
 
 --                                def
-data ArgKind = LambdaArg | LetArg HsCode deriving Eq
-data Arg = Arg [SImpl] ArgKind deriving Eq
+data ArgKind = LambdaArg | LetArg HsCode deriving (Show,Eq)
+data Arg = Arg [SImpl] ArgKind deriving (Show,Eq)
 -- getArgType (Arg impl _ _) | getType impl==VPair= impl
 -- getArgData (Arg _ kind _ ) = kind
 -- getArgDepth (Arg _ depth _) = depth
@@ -70,6 +71,7 @@ flatHs (HsAtom s) = s
 -- flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
 flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
 flatHs (HsFn arg body) = "(\\" ++ arg ++ "->" ++ flatHs body ++ ")"
+flatHs (HsLet vars def body) = "(let ("++ intercalate "," (map flatHs vars) ++ ")="++flatHs def++" in "++ flatHs body ++ ")"
 
 i :: Integer -> HsCode
 i s = HsAtom $ "(" ++ show s ++ ")" -- "::Integer)"

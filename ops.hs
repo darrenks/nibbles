@@ -69,16 +69,17 @@ ops = map convertNullNib [
 			), []),
 	-- Desc: let rec
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
-	--- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
-	--- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
+	-- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
+	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	op(";~", [6,0], [fn noArgs, Fn 0 (\[a1]->ret a1++[undefined])],
 	(\[a1,a2]->
-		let a1L = length $ ret a1 in
-		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++" f x rec in if "
-		++truthy (fstOf3 $ ret a2)++" a then c else b) in (ff $ x(), "++ curryN a1L ++" ff)") ~>
-	(\[a1,a2]-> [sndOf3 $ ret a2] ++ [VFn (ret a1) [sndOf3 $ ret a2]]), []),
+		let a1L = length $ ret a1
+		    rt = ret $ head $ tail $ ret a2 in
+		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++"f x ("++ curryN a1L ++"rec) in if "
+		++truthy (head $ ret a2)++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
+		rt ++ [VFn (ret a1) rt]), []),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -271,6 +272,9 @@ ops = map convertNullNib [
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
+	atom("ct", [], \_ (Thunk _ context) -> error $ debugContext context),
+	op("error", [], [str], "error.aToS" ~> vstr, []),
+	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
 	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
@@ -280,6 +284,13 @@ ops = map convertNullNib [
 	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList [VList [VInt]]), []),
 	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList [vstr]), []),
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
+
+debugContext context = "\nContext:\n" ++ (unlines $ map (\arg ->
+	unlines $ showArgType arg : map (("  "++).show.getImplType2) (flattenArg arg)
+	) context)
+
+showArgType (Arg _ LambdaArg) = "LambdaArg"
+showArgType (Arg _ (LetArg _)) = "LetArg"
 
 infixr 1 ~>
 a~>b = (b,a)
@@ -358,8 +369,7 @@ elemT s = error $ show s
 -- fstT (VPair a _) = a
 -- sndT (VPair _ b) = b
 
-fstOf3 [a,b,c] = b
-sndOf3 [a,b,c] = b
+halfOf a = take (length a `div` 2) a
 
 elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))

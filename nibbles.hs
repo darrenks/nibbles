@@ -52,8 +52,8 @@ main=do
  		[] -> do
 --  			putStrLn $ show t
  			hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
- 			print hs
- 			putStrLn $ lit ++ "\n" ++ flatHs hs
+ 			putStrLn lit
+ 			putStrLn $ flatHs hs
  			header <- readFile "header.hs"
  			writeFile "out.hs" $ header ++ "\nmain=putStrLn$aToS$"++ flatHs hs
 		["-c"] -> do

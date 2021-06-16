@@ -1,4 +1,4 @@
-module Args(getArg, getArgN, newLambdaArg, addLambda, newLetArg, popArg) where
+module Args(getArg, getArgN, newLambdaArg, addLambda, newLetArg, popArg, flattenArg) where
 
 import Expr
 import Types
@@ -35,10 +35,11 @@ argn context deBruijnIndex =
 -- 		flattenArg (Arg (Impl (VP ts) hs depth) _ k) = zipWith (\t n->
 -- 			Impl t (HsAtom $ (flatHs hs) ++ "t" ++ show n) depth
 -- 			) ts [1..]
-		flattenArg (Arg impls (LambdaArg)) = impls
-		flattenArg (Arg impls (LetArg _)) = tail impls
 			
-		visibleArg = LambdaArg
+-- 		visibleArg = LambdaArg
+
+flattenArg (Arg impls (LambdaArg)) = impls
+flattenArg (Arg impls (LetArg _)) = tail impls
 
 addLambda :: Arg -> SImpl -> SImpl
 addLambda arg (SImpl t body d) = SImpl t (HsFn (argsLhs $ map (flatHs . getHs) $ getArgImpls arg) body) d
@@ -62,7 +63,7 @@ popArg depth context impl = (concat finalContext, finalImpl) where
 	popIt :: Arg -> SImpl -> SImpl
 	popIt (Arg _ LambdaArg) impl = impl
 	popIt (Arg varImpls (LetArg refHs)) (SImpl retT bodyHs dep) =
-		SImpl retT (HsApp (HsFn ("("++(intercalate "," $ map (flatHs . getHs) varImpls)++")") bodyHs) refHs) dep
+		SImpl retT (HsLet (map getHs varImpls) refHs bodyHs) dep
 
 -- getCode (Arg (Impl _ (HsAtom hs) _) _ _) = hs
 
