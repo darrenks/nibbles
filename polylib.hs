@@ -80,6 +80,9 @@ vectorize op rtf [t1, VList t2] = (VList [rt], rop) where
 	(rt, rop) = vectorize ("(\\a1->map ("++op++" a1))") rtf [t1, todoAssumeFst t2]
 vectorize op rtf [t1, t2] = (rtf [t1, t2], op)
 
+baseElem (VList e) = baseElem $ todoAssumeFst e
+baseElem t = t
+
 coerce2 :: (VT, VT) -> VT
 coerce2(VChr, VChr) = VChr
 coerce2(a, b) | isNum a && isNum b = VInt

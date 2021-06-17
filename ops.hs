@@ -185,7 +185,7 @@ ops = map convertNullNib [
 	-- Desc: map accum L
 	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
 	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mac", [], [list, anyT, fn2 (\[VList e, x]->[x,todoAssumeFst e])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
+	op("mac", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -272,9 +272,14 @@ ops = map convertNullNib [
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
-	-- todo put in quickref
+	-- Desc: debug context types
+	-- Example: ;5 ct -> error "LetArg VInt"
 	atom("ct", [], \_ (Thunk _ context) -> error $ debugContext context),
+	-- Desc: error
+	-- Example: error "asdf" -> error "asdf"
 	op("error", [], [str], "error.aToS" ~> vstr, []),
+	-- Desc: undefined
+	-- Example: un -> error "undefined"
 	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
@@ -288,7 +293,7 @@ ops = map convertNullNib [
 
 debugContext context = "\nContext:\n" ++ (unlines $ map (\arg ->
 	unlines $ showArgType arg : map (("  "++).show.getImplType) (flattenArg arg)
-	) context)
+	) $ filter (not.null.flattenArg) context)
 
 showArgType (Arg _ LambdaArg) = "LambdaArg"
 showArgType (Arg _ (LetArg _)) = "LetArg"
@@ -348,11 +353,13 @@ noArgs = const $ []
 fn = Fn 1
 fn2 = Fn 2
 num = Cond "num" $ isNum . last
-vec = Cond "vec" $ isVec . last
+vec = Cond "vec" $ const True
 list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
 listOf (Exact t) =  Exact $ VList [t]
-listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> c [elemT $ last vts] -- todo assumes that it is a list, could cause elemT pattern error
+listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
+	t@(VList _) -> c [elemT $ t]
+	otherwise -> False
 
 ret1 (VFn from [to]) = to
 elemT (VList e) = todoAssumeFst e

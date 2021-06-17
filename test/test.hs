@@ -23,6 +23,7 @@ getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (
 	)
 getExample _ = Nothing
 
+isErrorResult (_, output, _) = isPrefixOf "error" output
 
 getTestsFromAnnotations = do
 	ops1 <- readFile "ops.hs"
@@ -61,7 +62,7 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 
 main=do
 	testCases <- getTestsFromAnnotations
-	let tests = map toTest $ take 1000 testCases
+	let tests = map toTest $ take 1000 $ filter (not.isErrorResult) testCases
 	let (_,(_,_,x,_,_,_,_)) = last tests
 	putStrLn $ show $ x
 	header <- readFile "header.hs"
