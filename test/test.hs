@@ -10,7 +10,8 @@ import System.IO
 import Data.Maybe
 import Data.List
 import Data.Char (isSpace)
-import Data.List.Split -- needs cabal install -lib split
+import Data.List.Split -- needs cabal install --lib split
+import Hs(flatHs)
 
 getExample (c:s) | isSpace c = getExample s
 getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (

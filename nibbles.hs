@@ -9,6 +9,7 @@ import Header
 import Polylib
 import Expr
 import Parse (toByte, fromByte)
+import Hs(flatHs)
 
 usage = "\
 \Usage: nibbles [-c|-e|-v] [filename]\n\

@@ -1,10 +1,7 @@
 module Expr where
 
 import Types
-import Data.List (intercalate)
-
--- assume HsCode is parenthesized if precedence is less than apply (only need parens for rhs)
-data HsCode = HsAtom String | HsApp HsCode HsCode | HsFn String HsCode | HsLet [HsCode] HsCode HsCode deriving (Eq, Show)
+import Hs
 
 type NibLit = String
 type Nibble = Int
@@ -34,27 +31,10 @@ data Code = Lit NibLit Int | Nib [Nibble] Int deriving Show
 
 uselessOp = 6 :: Int -- for padding odd nibbles into bytes
 
-app1 :: String -> HsCode -> HsCode
-app1 = HsApp . HsAtom
-
 app1Hs :: String -> Impl -> Impl
-app1Hs s (Impl t hs d) = Impl t (app1 s hs) d
+app1Hs s (Impl t hs d) = Impl t (hsApp (hsAtom s) hs) d
 
 retT (Expr _ (Impl t _ _)) = t
 modifyImpl f (Expr r i) = Expr r (f i)
 
 setType newT (Impl t hs d) = Impl newT hs d
-
--- We didn't need to generate an AST first afterall, but could be useful if wanted
--- an O(n) code gen, could avoid the ++
-flatHs :: HsCode -> String
-flatHs (HsAtom s) = s
--- flatHs (HsApp (HsApp a (HsLet b)) c) =
--- 	"(let arg0 = " ++ flatHs b ++ " in " ++ flatHs (HsApp (HsApp a (HsAtom "arg0")) c) ++ ")"
--- flatHs (HsApp a (HsApp b c)) = flatHs a ++ " (" ++ flatHs (HsApp b c) ++ ")"
-flatHs (HsApp a b) = "(" ++ flatHs a ++ " " ++ flatHs b ++ ")"
-flatHs (HsFn arg body) = "(\\" ++ arg ++ "->" ++ flatHs body ++ ")"
-flatHs (HsLet vars def body) = "(let ("++ intercalate "," (map flatHs vars) ++ ")="++flatHs def++" in "++ flatHs body ++ ")"
-
-i :: Integer -> HsCode
-i s = HsAtom $ "(" ++ show s ++ ")" -- "::Integer)"

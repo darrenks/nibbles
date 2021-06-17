@@ -17,6 +17,7 @@ module Parse(
 
 import Expr
 import Types
+import Hs
 
 import Data.Char
 import Numeric (showOct, readDec, readHex, showHex)
@@ -125,12 +126,12 @@ parseIntExpr (Rep b _) (Thunk code vt) =
 
 parseStrExpr :: Rep -> Thunk -> (Thunk, Expr)
 parseStrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr (app1 "sToA" (HsAtom $ show s)) noArgsUsed))
+	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr (hsParen $ hsAtom $ "sToA " ++ show s) noArgsUsed))
 		where (s, rest) = parseStr code
 
 parseChrExpr :: Rep -> Thunk -> (Thunk, Expr)
 parseChrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr (app1 "ord" (HsAtom $ show s)) noArgsUsed))
+	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr (hsParen $ hsAtom $ "ord " ++ show s) noArgsUsed))
 		where (s, rest) = parseChr code
 
 intToNib :: Integer -> [Nibble]

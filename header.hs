@@ -4,7 +4,7 @@ import Data.List
 import Data.Char (chr,ord,isAlpha)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
-import Data.List.Split (splitOn) -- needs cabal install -lib split
+import Data.List.Split (splitOn) -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 

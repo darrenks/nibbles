@@ -13,6 +13,7 @@ import Types
 import Expr
 import Args
 import Parse
+import Hs
 
 compile :: (VT -> String) -> String -> Code -> Expr
 compile finishFn seperator input = Expr rep progImpl where
@@ -31,14 +32,14 @@ compile finishFn seperator input = Expr rep progImpl where
 
 applyExpr :: Expr -> Expr -> Expr
 applyExpr (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl _ hs2 d2)) =
-	Expr (addRep r1 r2) (Impl t1 (HsApp hs1 hs2) (max d1 d2))
+	Expr (addRep r1 r2) (Impl t1 (hsApp hs1 hs2) (max d1 d2))
 
 makePairs :: [VT] -> [(Thunk, Expr)] -> (Thunk, Expr)
 makePairs fromTypes args = (last thunks, foldl applyExpr initExpr exprs) where
 	thunks = map fst args
 	exprs = map snd args
 	toTypes = map getExprType exprs
-	initExpr = Expr (Rep [] "") (Impl (VFn fromTypes toTypes) (HsAtom initHs) 0)
+	initExpr = Expr (Rep [] "") (Impl (VFn fromTypes toTypes) (hsAtom initHs) 0)
 	-- todo instead of fold apply, build the (expr1, expr2), etc, cleaner hs
 	initHs = if length exprs == 1 then "" else "("++replicate (length $ tail exprs) ','++")"
 	
@@ -144,7 +145,7 @@ convertOp opRep afterOpThunk valList (Op ats impl autos) =
 		isFns = map fromJust typeMatch
 		(nextThunk, argList) = convertLambdas afterOpThunk $ zip isFns valList
 		(rt, hs) = impl $ map retT argList
-		initExpr = Expr opRep $ Impl undefined (HsAtom $ "("++hs++")") noArgsUsed
+		initExpr = Expr opRep $ Impl undefined (hsParen $ hsAtom hs) noArgsUsed
 		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
 		finalExpr = convertPairToLet fullExpr rt
 
@@ -167,7 +168,7 @@ getNArgExprs argTypes thunk = zip (map fst args) argValuesCoerced where
 	argValues = map snd args
 	argValuesCoerced = zipWith coerceExpr argValues argTypes
 
-coerceExpr (Expr rep (Impl et hs dep)) t = Expr rep (Impl t (app1 (coerceTo(t,et)) hs) dep)
+coerceExpr (Expr rep (Impl et hs dep)) t = Expr rep (Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep)
 
 convertPairToLet :: (Thunk, Expr) -> [VT] -> (Thunk, Expr)
 convertPairToLet (thunk, Expr rep (Impl _ hs dep)) [t] = (thunk, Expr rep $ Impl t hs dep)
