@@ -8,11 +8,12 @@ For alpha release:
 -tutorial (and auto test tutorial examples)
 	-library reference?
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
+	-but should it default to using first or both?
 -io
 -maybe
 
 minor things:
--run the hs automatically
+-run the hs automatically (or interpret)
 -coerce after foldr
 -10 as leading 0 in int rep
 
