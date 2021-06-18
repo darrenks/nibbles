@@ -7,7 +7,6 @@ import Polylib
 import Expr
 import Parse
 import Args
-import Parse
 
 data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr))
 

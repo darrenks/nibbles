@@ -3,8 +3,6 @@ import Expr
 import Types
 import Polylib
 
-import System.Environment (getArgs)
-import System.Console.GetOpt
 import System.Process
 import System.IO
 import Data.Maybe

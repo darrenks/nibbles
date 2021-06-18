@@ -1,13 +1,11 @@
 module Compile(compile) where
 
 import Data.List
-import Data.Char
 import Control.Monad (msum)
 import Data.Maybe
-import Data.Tuple
 
 import Header
-import Polylib
+import Polylib(coerceTo)
 import Ops
 import Types
 import Expr

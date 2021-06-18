@@ -13,7 +13,6 @@ module Polylib(
 	flattenTuples,
 	promoteList) where
 
-import Data.Char
 import Types
 import Data.List
 

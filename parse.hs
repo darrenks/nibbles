@@ -1,4 +1,5 @@
--- Todo hide Lit to enforce whitespace always consumed
+-- todo inversable parser techniques could simplify this
+-- todo hide Lit to enforce whitespace always consumed
 -- convention is parse consumes up until next non ignorable code
 module Parse(
 	parseIntExpr,
