@@ -13,7 +13,6 @@ For alpha release:
 -maybe
 
 minor things:
--run the hs automatically (or interpret)
 -coerce after foldr
 -10 as leading 0 in int rep
 
@@ -21,7 +20,6 @@ minor things:
 compile with wall on
 -------------------------------
 non empty list for many [VT]
-monad for expr/sexpr
 
 fyi instead of coerce in user fn, could skip it in context lookup
 
