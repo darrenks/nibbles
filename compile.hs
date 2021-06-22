@@ -14,22 +14,22 @@ import Args
 import Parse
 import Hs
 
-compile :: (VT -> String) -> String -> Code -> (Impl, ParseData)
-compile finishFn separator input = runState doCompile $ blankRep (consumeWhitespace input) [] where
+compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
+compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) [] where
 	doCompile = do
 	impls <- getAllValues
 	let finishedImpls = map (\impl -> app1Hs (finishFn $ implType impl) impl) impls
 	let body = foldl1 (flip$applyImpl.app1Hs("++sToA"++show separator++"++")) finishedImpls
-	popArg 0 body
+	impl <- popArg 0 body
+	nib <- gets getNib
+	lit <- gets getLit
+	return (impl, nib, lit)
 	
 getAllValues = do
 	ParseData code _ _ _ <- get
 	if empty code then return [] else do
 		impl1 <- getValuesMemo 1
 		getAllValues >>= return.(impl1++)
-
-blankRep :: Code -> [Arg] -> ParseData
-blankRep code context = ParseData code context [] ""
 
 applyImpl :: Impl -> Impl -> Impl
 applyImpl (Impl t1 hs1 d1) (Impl _ hs2 d2) = Impl t1 (hsApp hs1 hs2) (max d1 d2)
@@ -61,8 +61,8 @@ simplifyArgSpecs = map simplifyArgSpec where
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
 putAddRep partialFinalState@(ParseData code context nib lit) = do
-	ParseData _ _ beforeNib beforeLit <- get
-	put $ ParseData code context (beforeNib++nib) (beforeLit++lit)
+	appendRepH (nib,lit)
+	modify $ \s -> s { pdCode=code, pdContext=context }
 
 convertLambdas :: [VT] -> [(ArgMatchResult, (Impl, ParseData))] -> ParseState [Impl]
 convertLambdas _ [] = return []

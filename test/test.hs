@@ -41,8 +41,8 @@ toTest(origLit, expect, size) =
 	flatHs hsFromNib, flatHs hs))
 	where
 		cc = compile inspect ","
-		(Impl t hs _, ParseData _ _ nib outLit) =  cc $ Lit origLit 0
-		(Impl _ hsFromNib _, _) = cc $ Nib nib 0
+		(Impl t hs _, nib, outLit) =  cc $ Lit origLit 0
+		(Impl _ hsFromNib _, _, _) = cc $ Nib nib 0
 
 removeSpaces = filter (not.isSpace)
 
