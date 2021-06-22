@@ -3,6 +3,7 @@ module Compile(compile) where
 import Data.List
 import Control.Monad (msum)
 import Data.Maybe
+import State
 
 import Header
 import Polylib(coerceTo)
@@ -13,164 +14,178 @@ import Args
 import Parse
 import Hs
 
-compile :: (VT -> String) -> String -> Code -> Expr
-compile finishFn seperator input = Expr rep progImpl where
-	initialThunk = Thunk (consumeWhitespace input) []
-	exprs = takeOneMore codeAfter $ getValuesMemo initialThunk
-	Thunk _ afterContext = fst $ last exprs
-	--todo could be empty program, no exprs
-	Expr rep body = foldl1 combineExprs $ map (applyFinish.snd) exprs
-	(_, progImpl) = popArg 0 afterContext body
+compile :: (VT -> String) -> String -> Code -> (Impl, ParseData)
+compile finishFn separator input = runState doCompile $ blankRep (consumeWhitespace input) [] where
+	doCompile = do
+	impls <- getAllValues
+	let finishedImpls = map (\impl -> app1Hs (finishFn $ implType impl) impl) impls
+	let body = foldl1 (flip$applyImpl.app1Hs("++sToA"++show separator++"++")) finishedImpls
+	popArg 0 body
 	
-	combineExprs a v = applyExpr (modifyImpl (app1Hs $"(\\a b-> a++"++(show$sToA seperator)++"++b)") a) v
-	applyFinish (Expr rep impl) =
-		Expr rep $ app1Hs (finishFn $ getImplType impl) impl
-	codeAfter (Thunk code _, _) = not $ empty code
-	takeOneMore f l = a++[b] where (a,(b:c)) = span f l
+getAllValues = do
+	ParseData code _ _ _ <- get
+	if empty code then return [] else do
+		impl1 <- getValuesMemo 1
+		getAllValues >>= return.(impl1++)
 
-applyExpr :: Expr -> Expr -> Expr
-applyExpr (Expr r1 (Impl t1 hs1 d1)) (Expr r2 (Impl _ hs2 d2)) =
-	Expr (addRep r1 r2) (Impl t1 (hsApp hs1 hs2) (max d1 d2))
+blankRep :: Code -> [Arg] -> ParseData
+blankRep code context = ParseData code context [] ""
 
-makePairs :: [VT] -> [(Thunk, Expr)] -> (Thunk, Expr)
-makePairs fromTypes args = (last thunks, foldl applyExpr initExpr exprs) where
-	thunks = map fst args
-	exprs = map snd args
-	toTypes = map getExprType exprs
-	initExpr = Expr (Rep [] "") (Impl (VFn fromTypes toTypes) (hsAtom initHs) 0)
+applyImpl :: Impl -> Impl -> Impl
+applyImpl (Impl t1 hs1 d1) (Impl _ hs2 d2) = Impl t1 (hsApp hs1 hs2) (max d1 d2)
+	
+makePairs :: [VT] -> [Impl] -> Impl
+makePairs fromTypes args = foldl applyImpl initImpl args where
+	toTypes = map implType args
+	initImpl = noArgsUsed { implType=VFn fromTypes toTypes, implCode=hsAtom pairMakerHs }
 	-- todo instead of fold apply, build the (expr1, expr2), etc, cleaner hs
-	initHs = if length exprs == 1 then "" else "("++replicate (length $ tail exprs) ','++")"
+	pairMakerHs = if length args == 1 then "" else "("++replicate (length $ tail args) ','++")"
 	
 convertAutoType VAuto = VInt
 convertAutoType t = t
 
-convertAuto (Expr r (Impl VAuto _ _)) auto =
-	Expr r $ Impl VInt (i $ fromIntegral auto) noArgsUsed
-convertAuto e _ = e
+convertAuto (Impl VAuto _ _) auto = noArgsUsed { implType=VInt, implCode=i $ fromIntegral auto }
+convertAuto impl _ = impl
 
-convertAutos :: [Expr] -> [Int] -> [Expr]
-convertAutos l autos = zipWith (\(e) a -> (convertAuto e a)) l (autos ++ repeat undefined)
+convertAutos :: [Impl] -> [Int] -> [Impl]
+convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
 
 simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
-simplifyArgSpecs = map simplifyArgSpec
-simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
-simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
-simplifyArgSpec (Fn numRets f) vts = Just $ ArgFn (Fn numRets f)
-simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
+simplifyArgSpecs = map simplifyArgSpec where
+	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
+	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
+	simplifyArgSpec (Fn numRets f) vts = Just $ ArgFn (Fn numRets f)
+	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
+	maybeMatch b = if b then Just ArgMatches else Nothing
 
-maybeMatch b = if b then Just ArgMatches else Nothing
+-- add the current rep to the partialFinalState
+putAddRep :: ParseData -> ParseState ()
+putAddRep partialFinalState@(ParseData code context nib lit) = do
+	ParseData _ _ beforeNib beforeLit <- get
+	put $ ParseData code context (beforeNib++nib) (beforeLit++lit)
 
-convertLambdas :: Thunk -> [(ArgMatchResult, (Thunk, Expr))] -> (Thunk, [Expr])
-convertLambdas thunk estimatedArgs = (finalThunk, args) where
-	((finalThunk,vts),args) = mapAccumL convertLambda (thunk, []) estimatedArgs
+convertLambdas :: [VT] -> [(ArgMatchResult, (Impl, ParseData))] -> ParseState [Impl]
+convertLambdas _ [] = return []
+convertLambdas soFar (estArg:rest) = do
+	impl <- convertLambda soFar estArg
+	restConverted <- convertLambdas (soFar ++ [implType impl]) rest
+	return $ impl : restConverted
 
--- todo mark rec snd pair as used since, it's already served a purpose
-convertLambda :: (Thunk, [VT]) -> (ArgMatchResult, (Thunk, Expr)) -> ((Thunk, [VT]), Expr)
-convertLambda (Thunk code origContext, argTypes) (ArgMatches, (memoThunk, memoExpr)) =
-	((memoThunk, argTypes ++ [getExprType memoExpr]), memoExpr)
-convertLambda (Thunk origCode origContext, argTypes) (ArgFn (Fn numRets argTypeFn), _) = 
-	((finalThunk, argTypes ++ [fnRetType]), Expr (addRep bonusRep rep) (addLambda newArg body)) where
-		(bonusRets, code) = parseCountTuple origCode
-		bonusRep = Rep (replicate bonusRets 0) (replicate bonusRets '~') -- todo const
-		argType = argTypeFn argTypes
-		(newArg, finalThunk, Expr rep body) = pushLambdaArg origContext argType bodyFn
-		fnRetType = getImplType body
-		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type with its real Fn type which can only be known after 2nd arg type is determined.
+-- -- todo mark rec snd pair as used since, it's already served a purpose
+convertLambda :: [VT] -> (ArgMatchResult, (Impl, ParseData)) -> ParseState Impl
+convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
+	putAddRep memoState
+	return memoImpl
+convertLambda argTypes (ArgFn (Fn numRets argTypeFn), _) = do
+	(newArg,body) <- pushLambdaArg argType $ \newArg -> do
+		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
+		-- with its real Fn type which can only be known after 2nd arg type is determined.
 		-- It would very tricky to allow the the 3rd argument to do things like auto pair
 		-- without this (and do things like only add the recursive function to args for it.
-		bodyFn = if numRets == 0
-			then (\lambdaContext newArg -> let -- todo better dependent types
-				nonRecImpls = init $ getArgImpls newArg
-				contextWithoutRec = [Arg nonRecImpls LambdaArg] ++ tail lambdaContext
-				[(c1@(Thunk c1code ct),a)] = take 1 $ getValuesMemo $ Thunk code contextWithoutRec
-				(bonusRets2, c1b) = parseCountTuple c1code
-				bonusRep2 = Rep (replicate bonusRets2 0) (replicate bonusRets2 '~')
-				(c2,bb@(Expr repb ib)) = makePairs undefined $ take (1+bonusRets2) $ getValuesMemo $ Thunk c1b ct
-				b = Expr (addRep bonusRep2 repb) ib
-				from = map getImplType nonRecImpls
-				toType = ret $ getExprType b
-				recType = VFn from toType
-				recImpl = setType recType $ last $ getArgImpls newArg
-				recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
-				recContext = [recArg] ++ tail lambdaContext
-				in [(c1,a)]++[(c2,b)] ++ [makePairs undefined (getNArgExprs toType $ Thunk (getCode c2) recContext)])
-			else (\lambdaContext _ ->
-				take (bonusRets + numRets) $ getValuesMemo $ Thunk code lambdaContext)
+		if numRets == 0 then do
+			let nonRecImpls = init $ argImpls newArg
+			modify $ \s -> s { pdContext=Arg nonRecImpls LambdaArg : tail (pdContext s) }
+			a <- getValuesMemo 1
+			bonus <- parseCountTuple
+			b <- getValuesMemo (1+bonus)
+			let from = map implType nonRecImpls
+			let toType = map implType b
+			let recType = VFn from toType
+			let recImpl = (last $ argImpls newArg) { implType=recType }
+			let recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
+			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
+			c <- getNArgs toType
+			return $ a++[makePairs argType b]++[makePairs argType c]
+		else do
+			bonus <- parseCountTuple
+			getValuesMemo (bonus + numRets)
+	return $ addLambda newArg body
+	where argType = argTypeFn argTypes
 
-pushLambdaArg origContext argType f =
-	(newArg, Thunk afterFnCode finalContext, Expr rep bodyWithLets) where
-		(lambdaContext, newArg) = newLambdaArg origContext argType
-		(Thunk afterFnCode afterFnContext, Expr rep body) = makePairs argType $ f lambdaContext newArg
-		(finalContext, bodyWithLets) = popArg (length lambdaContext) afterFnContext body
+pushLambdaArg :: [VT] -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
+pushLambdaArg argType f = do
+	newArg <- newLambdaArg argType
+	depth <- gets pdContext >>= return.length
+	rets <- f newArg
+	let body = makePairs argType rets
+	bodyWithLets <- popArg depth body
+	return (newArg, bodyWithLets)
 
 -- Gets the arg list
-getValuesMemo :: Thunk -> [(Thunk, Expr)]
-getValuesMemo = head . exprsByOffset
+getValuesMemo :: Int -> ParseState [Impl]
+getValuesMemo n = do
+	ParseData code context _ _ <- get
+	let exprs = take n $ head $ exprsByOffset $ Thunk code context
+	mapM (putAddRep.snd) exprs
+	return $ map fst exprs
+
+data Thunk = Thunk Code [Arg]
 
 -- Gets the arg list (given an arg from each possible offset after this one)
-getValues :: Thunk -> [[(Thunk, Expr)]] -> [(Thunk, Expr)]
-getValues thunk offsetExprs = (afterThunk, expr) : getValues afterThunk offsetAfterExprs where
-	(afterThunk,expr) = getValue thunk offsetExprs
-	Thunk code context = thunk
-	Thunk after afterContext = afterThunk
+getValues :: Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
+getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
+	(impl, after@(ParseData afterCode afterContext _ _))=
+		runState (getValue offsetExprs) $ blankRep code context
+	afterThunk = Thunk afterCode afterContext
 	offsetAfterExprs =
 		if afterContext == context
-		then drop (cp after-cp code) offsetExprs
+		then drop (cp afterCode-cp code) offsetExprs
 		else drop 1 $ exprsByOffset afterThunk
 
 -- Gets the arg lists from each possible offset
-exprsByOffset :: Thunk -> [[(Thunk, Expr)]]
+exprsByOffset :: Thunk -> [[(Impl, ParseData)]]
 exprsByOffset (Thunk code context) =
 	getValues (Thunk code context) rest : rest where
 		rest = exprsByOffset (Thunk (nextOffset code) context)
 
-getValue :: Thunk -> [[(Thunk, Expr)]] -> (Thunk, Expr)
-getValue (Thunk code context) offsetExprs = fromMaybe fail $ msum $ map tryOp sortedOps where
-	sortedOps = ops -- sortOn (\(_,b,_)-> -length b) ops
-	fail = parseError "no matching op" $ Thunk code context
-	tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
-		afterOpThunk = (Thunk afterOpCode context)
--- 		valList = toExprList $ Thunk (foldr (\_ c->nextOffset c) code [1..(cp afterOpCode - cp code)]) context
+getValue :: [[(Impl, ParseData)]] -> ParseState Impl
+getValue offsetExprs = do
+	ParseData code context nibSoFar litSoFar <- get	
+	let fail = parseError "no matching op"
+	let tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
-		opRep = Rep nib lit
-		in convertOp opRep afterOpThunk valList op
+		in convertOp valList op >>= \f -> Just $
+			appendRep (nib,lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
+	fromMaybe fail $ msum $ map tryOp ops
 
-convertOp :: Rep -> Thunk -> [(Thunk, Expr)] -> Operation -> Maybe (Thunk, Expr)
-convertOp opRep afterOpThunk valList (Op ats impl autos) = 
-	if all isJust typeMatch then Just finalExpr else Nothing where
-		valTypes = map (retT.snd) valList
+convertOp :: [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
+convertOp valList (Op ats impl autos) = 
+	if all isJust typeMatch then Just $ do
+		let isFns = map fromJust typeMatch
+		argList <- convertLambdas [] $ zip isFns valList
+		let (rt, hs) = impl $ map implType argList
+		let initImpl = noArgsUsed { implCode=hsParen $ hsAtom hs }
+		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
+		convertPairToLet fullImpl rt
+	else Nothing where	
+		valTypes = map (implType.fst) valList
 		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits valTypes)
-		isFns = map fromJust typeMatch
-		(nextThunk, argList) = convertLambdas afterOpThunk $ zip isFns valList
-		(rt, hs) = impl $ map retT argList
-		initExpr = Expr opRep $ Impl undefined (hsParen $ hsAtom hs) noArgsUsed
-		fullExpr = (nextThunk, foldl applyExpr initExpr (convertAutos argList autos))
-		finalExpr = convertPairToLet fullExpr rt
 
-convertOp opRep afterOpThunk _ (Atom impl) = Just $ applyFirstClassFn $ impl opRep afterOpThunk
+convertOp _ (Atom impl) = Just $ do
+	impl >>= applyFirstClassFn
 
 -- todo memoize the parse
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
-applyFirstClassFn :: (Thunk, Expr) -> (Thunk, Expr)
-applyFirstClassFn (thunk, Expr rep (Impl (VFn from to) hs dep)) =
-	convertPairToLet (nextThunk, foldl applyExpr initExpr argExprs) to where
-		initExpr = Expr rep $ Impl undefined hs dep
-		exprs = getNArgExprs from thunk
-		nextThunk = fst $ last exprs
-		argExprs = map snd exprs
-applyFirstClassFn x = x
+applyFirstClassFn :: Impl -> ParseState Impl
+applyFirstClassFn (Impl (VFn from to) hs dep) = getNArgs from >>= \impls -> do
+	let initImpl = Impl undefined hs dep
+	convertPairToLet (foldl applyImpl initImpl impls) to
+applyFirstClassFn x = return x
 
-getNArgExprs argTypes thunk = zip (map fst args) argValuesCoerced where
-	args = take (length argTypes) $ getValuesMemo $ thunk
-	argValues = map snd args
-	argValuesCoerced = zipWith coerceExpr argValues argTypes
+getNArgs :: [VT] -> ParseState [Impl]
+getNArgs argTypes = do -- todo clean
+	argImpls <- getValuesMemo (length argTypes)
+	return $ zipWith coerceImpl argImpls argTypes
 
-coerceExpr (Expr rep (Impl et hs dep)) t = Expr rep (Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep)
+coerceImpl :: Impl -> VT -> Impl
+coerceImpl (Impl et hs dep) t = Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep
 
-convertPairToLet :: (Thunk, Expr) -> [VT] -> (Thunk, Expr)
-convertPairToLet (thunk, Expr rep (Impl _ hs dep)) [t] = (thunk, Expr rep $ Impl t hs dep)
-convertPairToLet (Thunk code context, Expr rep impl) implTypes =
-	(Thunk code $ letArg:context, Expr rep firstImpl) where
-		letArg = newLetArg context impl implTypes
-		firstImpl = head $ getArgImpls letArg	
+convertPairToLet :: Impl -> [VT] -> ParseState Impl
+convertPairToLet (Impl _ hs dep) [t] = return $ Impl t hs dep
+convertPairToLet impl implTypes = do
+	context <- gets pdContext
+	let letArg = newLetArg context impl implTypes
+	modify $ \s -> s { pdContext=letArg:context }
+	return $ head $ argImpls letArg
+		

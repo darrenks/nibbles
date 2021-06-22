@@ -57,17 +57,19 @@ main=do
 			otherwise -> False) types
 		isExtOpt _ = False
 		convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
-			[td $ styleCode $ lit, -- styleCode
-			td $ styleCode $ toHex nib, -- styleCode
+			[td $ styleCode $ renameIntLit lit,
+			td $ styleCode $ toHex nib,
 			td $ toHtml desc] ++
 			toQuickRef impl ++
-			[td $ styleCode $ do -- styleCode
+			[td $ styleCode $ do
 				toHtml exI
 				preEscapedToHtml " &#8594; "
 				toHtml exO]
 		toHex (16:_) = ""
 		toHex s = map intToDigit s
 		styleCode html = H.div (toHtml html) ! class_ "code"
+		renameIntLit " " = "0-9"
+		renameIntLit l = l
 
 toQuickRef (Op types impl autos) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do

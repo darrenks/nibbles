@@ -8,7 +8,9 @@ import Expr
 import Parse
 import Args
 
-data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (Rep -> Thunk -> (Thunk, Expr))
+import State
+
+data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (ParseState Impl)
 
 op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
 atom(lit, nib, impl) = (lit, nib, Atom impl)
@@ -26,7 +28,7 @@ ops = map convertNullNib [
 	-- Test (size 3): 8 -> 8
 	-- Test (size 4): 100 -> 100
 	-- Test negative one (special case) (size 2): -1 -> -1
-	atom("0-9", [1], parseIntExpr), 
+	atom(" ", [1], parseIntExpr), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
 	-- Test space (size 2): " " -> " "
@@ -42,13 +44,13 @@ ops = map convertNullNib [
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
-	atom("$", [3], getArg 0),
+	atom("$", [3], argn 0),
 	-- Desc: 2nd arg
 	-- Example: ;1;2;3 @ -> 1,2,3,2
-	atom("@", [4], getArg 1),
+	atom("@", [4], argn 1),
 	-- Desc: nth arg
 	-- Example: ;1;2;3 `2 -> 1,2,3,1
-	atom("`", [5], getArgN), -- todo make it 3 to f instead of 2 to f
+	atom("`", [5], nextHex >>= argn), -- todo make it 3 to f instead of 2 to f
 	-- Desc: tbd (@ too)
 	-- Example: 0 -> 0
 	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
@@ -273,7 +275,7 @@ ops = map convertNullNib [
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
 	-- Desc: debug context types
 	-- Example: ;5 ct -> error "LetArg VInt"
-	atom("ct", [], \_ (Thunk _ context) -> error $ debugContext context),
+	atom("ct", [], gets pdContext >>= error . debugContext),
 	-- Desc: error
 	-- Example: error "asdf" -> error "asdf"
 	op("error", [], [str], "error.aToS" ~> vstr, []),
@@ -291,7 +293,7 @@ ops = map convertNullNib [
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
 
 debugContext context = "\nContext:\n" ++ (unlines $ map (\arg ->
-	unlines $ showArgType arg : map (("  "++).show.getImplType) (flattenArg arg)
+	unlines $ showArgType arg : map (("  "++).show.implType) (flattenArg arg)
 	) $ filter (not.null.flattenArg) context)
 
 showArgType (Arg _ LambdaArg) = "LambdaArg"

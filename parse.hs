@@ -1,5 +1,6 @@
 -- todo inversable parser techniques could simplify this
 -- todo hide Lit to enforce whitespace always consumed
+-- todo use monad for parseInt, etc
 -- convention is parse consumes up until next non ignorable code
 module Parse(
 	parseIntExpr,
@@ -16,12 +17,14 @@ module Parse(
 	fromByte,
 	toByte) where
 
+
 import Expr
 import Types
 import Hs
 
 import Data.Char
 import Numeric (showOct, readDec, readHex, showHex)
+import State
 
 import Text.ParserCombinators.ReadP (gather, readP_to_S)
 import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String), Lexeme(Char))
@@ -79,12 +82,27 @@ parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
 	otherwise -> error $ "unparsable char: " ++ s
 
 -- count the number of leading "auto" symbols.
-parseCountTuple :: Code -> (Int, Code)
-parseCountTuple (Nib (0:rest) cp) = (1+afterCount, afterCode)
-	where (afterCount, afterCode) = parseCountTuple $ Nib rest (cp+1)
-parseCountTuple (Lit ('~':rest) cp) = (1+afterCount, afterCode)
-	where (afterCount, afterCode) = parseCountTuple $ sLit rest (cp+1)
-parseCountTuple x = (0, x)
+-- parseCountTuple :: Code -> (Int, Code)
+-- parseCountTuple (Nib (0:rest) cp) = (1+afterCount, afterCode)
+-- 	where (afterCount, afterCode) = parseCountTuple $ Nib rest (cp+1)
+-- parseCountTuple (Lit ('~':rest) cp) = (1+afterCount, afterCode)
+-- 	where (afterCount, afterCode) = parseCountTuple $ sLit rest (cp+1)
+-- parseCountTuple x = (0, x)
+
+parseCountTuple :: ParseState Int
+parseCountTuple = do
+	code <- gets pdCode
+	case code of
+		(Nib (0:rest) cp) -> do
+			modify $ \st -> st { pdCode=Nib rest (cp+1) }
+			doAppendRep 
+			parseCountTuple >>= return.(+1)
+		(Lit ('~':rest) cp) -> do
+			modify $ \st -> st { pdCode=sLit rest (cp+1) }
+			doAppendRep 
+			parseCountTuple >>= return.(+1)
+		otherwise -> return 0
+	where doAppendRep = appendRep ([0],"~")
 
 cp (Nib _ cp) = cp
 cp (Lit _ cp) = cp
@@ -94,22 +112,38 @@ empty (Lit [] _) = True
 empty _ = False
 nextOffset (Nib (c:s) cp) = Nib s (cp+1)
 nextOffset (Lit (c:s) cp) = Lit s (cp+1)
-nextHex (Nib (c:s) cp) = (c, Nib s (cp+1))
-nextHex (Lit (c:s) cp) = (h, sLit s (cp+1)) where [(h, _)] = readHex [c]
+nextHex :: ParseState Int
+nextHex = do
+	code <- gets pdCode
+	v <- case code of
+		(Nib (c:s) cp) -> do
+			modify $ \st -> st { pdCode=Nib s (cp+1) }
+			return c
+		(Lit (c:s) cp) -> do
+			let [(h, _)] = readHex [c]
+			modify $ \st -> st { pdCode=sLit s (cp+1) }
+			return h
+	appendRep ([v],showHex v "")
+	return v
+
 
 match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
 
 match (Lit s cp) (needle, _)
-	| needle == "0-9" && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit s cp
+	| needle == " " && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit s cp
 	| needle == "\"" && '"' == head s = Just $ Lit s cp
 	| needle == "\'" && '\'' == head s = Just $ Lit s cp
 	| isPrefixOf needle s = Just $ sLit (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
-parseError msg (Thunk (Lit s _) context) = error $ msg ++ "\n" ++ head (lines s)
-parseError msg (Thunk (Nib s _) context) = error $ msg ++ "\n" ++ show s
+parseError :: String -> ParseState Impl
+parseError msg = do
+	s <- gets pdCode
+	return $ error $ msg ++ "\n" ++ case s of
+		Lit s _ -> head (lines s)
+		Nib s _ -> show s
 
 consumeWhitespace :: Code -> Code
 consumeWhitespace (Nib n cp) = Nib n cp
@@ -120,27 +154,33 @@ consumeWhitespace (Lit (c:s) cp)
 	| otherwise = Lit (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-parseIntExpr :: Rep -> Thunk -> (Thunk, Expr)
-parseIntExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ intToNib n) (' ':show n)) (Impl VInt (i n) noArgsUsed))
-		where (n, rest) = parseInt code
+parseIntExpr :: ParseState Impl
+parseIntExpr = do
+	(n, rest) <- gets $ parseInt . pdCode
+	modify $ \st -> st { pdCode=rest }
+	appendRep (intToNib n,show n)
+	return $ noArgsUsed { implType=VInt, implCode=i n }
 
-parseStrExpr :: Rep -> Thunk -> (Thunk, Expr)
-parseStrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ strToNib s) (show s)) (Impl vstr (hsParen $ hsAtom $ "sToA " ++ show s) noArgsUsed))
-		where (s, rest) = parseStr code
+parseStrExpr :: ParseState Impl
+parseStrExpr = do
+	(s, rest) <- gets $ parseStr . pdCode
+	modify $ \st -> st { pdCode=rest }
+	appendRep (strToNib s,tail $ show s)
+	return $ noArgsUsed { implType=vstr, implCode=hsParen $ hsAtom $ "sToA " ++ show s }
 
-parseChrExpr :: Rep -> Thunk -> (Thunk, Expr)
-parseChrExpr (Rep b _) (Thunk code vt) =
-	(Thunk rest vt, Expr (Rep (b ++ chrToNib s) (show s)) (Impl VChr (hsParen $ hsAtom $ "ord " ++ show s) noArgsUsed))
-		where (s, rest) = parseChr code
+parseChrExpr :: ParseState Impl
+parseChrExpr = do
+	(s, rest) <- gets $ parseChr . pdCode
+	modify $ \st -> st { pdCode=rest }
+	appendRep (chrToNib s,tail $ show s)
+	return $ noArgsUsed { implType=VChr, implCode=hsParen $ hsAtom $ "ord " ++ show s }
 
-intToNib :: Integer -> [Nibble]
+intToNib :: Integer -> [Int]
 intToNib (-1)=[0]
 intToNib n=init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
-strToNib :: String -> [Nibble]
+strToNib :: String -> [Int]
 strToNib "" = [2,0]
 strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	'\n' -> [last]
@@ -149,7 +189,7 @@ strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	otherwise -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
 
-chrToNib :: Char -> [Nibble]
+chrToNib :: Char -> [Int]
 chrToNib c
 	| c >= chr 128 = 8 : fromByte c
 	| otherwise = case elemIndex c specialChars of
