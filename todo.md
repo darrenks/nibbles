@@ -15,6 +15,7 @@ For alpha release:
 minor things:
 -coerce after foldr
 -10 as leading 0 in int rep
+-use char type in haskell instead of Int
 
 ------------------------------------------
 compile with wall on

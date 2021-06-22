@@ -15,7 +15,18 @@ import Parse
 import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
-compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) [] where
+compile = compileH
+	[ Arg [noArgsUsed { implType=vstr, implCode=hsAtom"input" }] LambdaArg
+	, Arg (noArgsUsed { implType=undefined, implCode=hsAtom"_"}:letArgs)
+		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
+	mainLets =
+		[ ("asInts", VList [VInt], "map read $ words $ aToS input :: [Integer]")
+		, ("asLines", VList [vstr], "map sToA $ lines $ aToS input")
+		]
+	letArgs = map (\(name, vt, _) -> noArgsUsed { implType=vt, implCode=hsAtom name }) mainLets
+	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
+
+compileH args finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	doCompile = do
 	impls <- getAllValues
 	let finishedImpls = map (\impl -> app1Hs (finishFn $ implType impl) impl) impls
