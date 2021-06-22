@@ -16,8 +16,8 @@ import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile = compileH
-	[ Arg [noArgsUsed { implType=vstr, implCode=hsAtom"input" }] LambdaArg
-	, Arg (noArgsUsed { implType=undefined, implCode=hsAtom"_"}:letArgs)
+	[ Arg [Impl vstr (hsAtom"input" ) 0] LambdaArg
+	, Arg (Impl undefined (hsAtom"_") 0:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
 		[ ("asInts", VList [VInt], "map read $ words $ aToS input :: [Integer]")
@@ -139,7 +139,7 @@ getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThun
 		runState (getValue offsetExprs) $ blankRep code context
 	afterThunk = Thunk afterCode afterContext
 	offsetAfterExprs =
-		if afterContext == context
+		if length afterContext == length context
 		then drop (cp afterCode-cp code) offsetExprs
 		else drop 1 $ exprsByOffset afterThunk
 

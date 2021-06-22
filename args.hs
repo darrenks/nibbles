@@ -33,7 +33,7 @@ argn deBruijnIndex = do
 	let flattenedArgs = concatMap flattenArg context
 	return $ fromMaybe (error "negative arg index todo better msg") $
 			at flattenedArgs deBruijnIndex
-		
+
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
 

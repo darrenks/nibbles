@@ -13,6 +13,10 @@ pass &&= $?.exitstatus==0
 puts `ruby test/integration_test.rb`
 pass &&= $?.exitstatus==0
 
+# input integration test
+puts `ruby test/input_integration_test.rb`
+pass &&= $?.exitstatus==0
+
 # test generate quickref
 puts 'generating quickref'
 `runhaskell --ghc-arg=-Wno-tabs web/quickref.hs > web/site/quickref.html`

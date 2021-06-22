@@ -61,7 +61,7 @@ main=do
 --  			hPutStrLn stderr $ flatHs hs
  			header <- readFile "header.hs"
  			-- todo newline
- 			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->aToS$"++ flatHs hs ++ ").sToA)"
+ 			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs hs ++ ").sToA)"
  			if ops /= ["-norun"] then do
  				(_, Just hout, _, _) <- createProcess (proc "runhaskell" ["out.hs"]){ std_out = CreatePipe }
  				progOut <- hGetContents hout

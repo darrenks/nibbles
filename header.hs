@@ -25,3 +25,7 @@ reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a
 
 iff :: Bool -> a -> a -> a
 iff c b1 b2 = if c then b1 else b2
+
+finishLn "\n" = "\n"
+finishLn "" = "\n"
+finishLn (x:xs) = x:finishLn xs

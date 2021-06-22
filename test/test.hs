@@ -65,7 +65,7 @@ main=do
 	let (_,(_,_,x,_,_,_,_)) = last tests
 	putStrLn $ show $ x
 	header <- readFile "header.hs"
-	let prog = header ++ "\nmain=do;" ++ concatMap fst tests
+	let prog = header ++ "\ninput=[]\nmain=do;" ++ concatMap fst tests
 	result <- runHs prog
 	-- todo check result size matches
 	mapM printTestResult $ zip (lines result) (map snd tests)
