@@ -44,12 +44,12 @@ ops = map convertNullNib [
 	atom("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
-	atom("$", [3], argn 0),
+	atom("$", [3], argn 1),
 	-- Desc: 2nd arg
 	-- Example: ;1;2;3 @ -> 1,2,3,2
-	atom("@", [4], argn 1),
+	atom("@", [4], argn 2),
 	-- Desc: nth arg
-	-- Example: ;1;2;3 `2 -> 1,2,3,1
+	-- Example: ;1;2;3 `3 -> 1,2,3,1
 	atom("`", [5], nextHex >>= argn), -- todo make it 3 to f instead of 2 to f
 	-- Desc: tbd (@ too)
 	-- Example: 0 -> 0
@@ -70,7 +70,7 @@ ops = map convertNullNib [
 			), []),
 	-- Desc: let rec
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
-	-- Test (multiple args): ;~ ~3 4 $ 0 +@`2 -$1 @   $ 5 6 -> 12,30
+	-- Test (multiple args): ;~ ~3 4 $ 0 +@`3 -$1 @   $ 5 6 -> 12,30
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
@@ -86,7 +86,7 @@ ops = map convertNullNib [
 	-- Test: ++; 3 ; 2 $ -> 7
 	-- Test: ++; 3 ; 2 @ -> 8
 	-- Test: ++; 5 /,1 $ $ -> 11
-	-- Test: ++; 5 /,2 `2 $ -> 15
+	-- Test: ++; 5 /,2 `3 $ -> 15
 	-- Test: ++; 5 /,1 ;7 $ -> 13
 	-- Test: ++; 5 /,1 ;+0$ $ -> 11
 	-- Test: +;1 + ;2 @ -> 4

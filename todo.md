@@ -4,9 +4,11 @@ debug features to add:
 	show arg types
 	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
 
+better ct debugging
+better error msgs
+
 For alpha release:
 -tutorial (and auto test tutorial examples)
-	-library reference?
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
 	-but should it default to using first or both?
 -io
@@ -20,6 +22,9 @@ minor things:
 ------------------------------------------
 compile with wall on
 -------------------------------
+auto input types
+library reference?
+
 non empty list for many [VT]
 
 fyi instead of coerce in user fn, could skip it in context lookup

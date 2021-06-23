@@ -32,7 +32,7 @@ argn deBruijnIndex = do
 	context <- gets pdContext
 	let flattenedArgs = concatMap flattenArg context
 	return $ fromMaybe (error "negative arg index todo better msg") $
-			at flattenedArgs deBruijnIndex
+			at flattenedArgs (deBruijnIndex-1)
 
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
