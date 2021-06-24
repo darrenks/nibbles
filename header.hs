@@ -1,7 +1,7 @@
 module Header where
 
 import Data.List
-import Data.Char (chr,ord,isAlpha,isDigit)
+import Data.Char (chr,ord,isAlpha,isDigit,isSpace)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
 import Data.List.Split (splitOn,splitWhen) -- needs cabal install --lib split

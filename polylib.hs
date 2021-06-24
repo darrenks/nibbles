@@ -17,7 +17,7 @@ import Types
 import Data.List
 
 truthy VInt = "(>0)"
-truthy VChr = "(>0)"
+truthy VChr = "(not.isSpace.chr)"
 truthy (VList _) = "(not.null)"
 
 inspect VInt = "(sToA.show)"

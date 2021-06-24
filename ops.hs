@@ -154,6 +154,8 @@ ops = map convertNullNib [
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
+	-- Test chr truthy: &"a b\nc"$ -> "abc"
+	-- Test list truthy: &:""~"b"$ -> ["b"]
 	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, autoTodo {-reject?-}]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
