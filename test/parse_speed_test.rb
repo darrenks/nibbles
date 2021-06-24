@@ -3,9 +3,9 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
-n=8000
+n=12000
 pass = true
-`ghc nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
+`ghc -O nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
 t=Time.now
 `echo nested expressions 1>&2
@@ -35,5 +35,5 @@ time echo '#{'1'*n}' | nibbles -c`; pass &&= $?.exitstatus==0
 `time nibbles -norun  a.nbb`; pass &&= $?.exitstatus==0
 
 raise 'errors in runs' if !pass
-raise 'fail, parse too slow' if Time.now - t > 3
+raise 'fail, parse too slow' if Time.now - t > 2
 puts 'pass parse speed test (in %f)' % (Time.now - t)

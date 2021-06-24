@@ -275,7 +275,7 @@ ops = map convertNullNib [
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
 	-- Desc: debug context types
-	-- Example: ;5 ct -> error "LetArg VInt"
+	-- Example: ;5 ct -> error "$ LetArg VInt ..."
 	atom("ct", [], gets pdContext >>= parseError . debugContext),
 	-- Desc: error
 	-- Example: error "asdf" -> error "asdf"

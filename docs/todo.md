@@ -4,9 +4,6 @@ debug features to add:
 	show arg types
 	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
 
-better ct debugging
-better error msgs
-
 For alpha release:
 -tutorial (and auto test tutorial examples)
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
@@ -17,7 +14,6 @@ For alpha release:
 minor things:
 -coerce after foldr
 -10 as leading 0 in int rep
--use char type in haskell instead of Int
 
 multiple values makes special behavior (i.e. if int constant, range map?)?
 ------------------------------------------
@@ -43,8 +39,6 @@ website design
 better op not found error message (hard because memoize of arg types is lazy)
 aliases so don't have to use ~ in middle of extensions type : "1" ~
 helpful error if communitive backwards (use aliases)
-
-is white space truthiness for chars
 
 either instead of bool/maybe
 maybe id, maybe nothing

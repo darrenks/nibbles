@@ -17,9 +17,11 @@ pass &&= $?.exitstatus==0
 puts `ruby test/input_integration_test.rb`
 pass &&= $?.exitstatus==0
 
-# test generate quickref
-puts 'generating quickref'
-`runhaskell --ghc-arg=-Wno-tabs web/quickref.hs > web/site/quickref.html`
-pass &&= $?.exitstatus==0
+# test generate quickref (not in distributed code)
+if Dir.exist?('web')
+	puts 'testing quickref compile'
+	`ghc -Wno-tabs web/quickref.hs`
+	pass &&= $?.exitstatus==0
+end
 
 puts pass ? 'all tests pass' : 'FAIL'
