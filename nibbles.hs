@@ -4,6 +4,7 @@ import System.IO
 import GHC.IO.Encoding
 import System.FilePath
 import System.Process
+import System.Exit
 
 import Compile
 import Header
@@ -59,13 +60,20 @@ main=do
 	 			else return ()
 --  			hPutStrLn stderr lit
 --  			hPutStrLn stderr $ flatHs hs
- 			header <- readFile "header.hs"
- 			-- todo newline
+ 			headerRaw <- readFile "header.hs"
+ 			let header = unlines $ tail $ lines headerRaw -- remove "module Header"
  			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs hs ++ ").sToA)"
  			if ops /= ["-norun"] then do
- 				(_, Just hout, _, _) <- createProcess (proc "runhaskell" ["out.hs"]){ std_out = CreatePipe }
- 				progOut <- hGetContents hout
- 				putStr progOut
+ 				-- Compile with -O for full laziness rather than using runhaskell
+ 				(_, _, Just hsErr, p) <- createProcess (proc "ghc" ["-O", "out.hs"]){ std_out = CreatePipe, std_err = CreatePipe }
+ 				ex <- waitForProcess p
+ 				case ex of
+ 					ExitSuccess -> do
+ 						(_, Just hout, _, _) <- createProcess (proc "out" []){ std_out = CreatePipe }
+ 						hGetContents hout >>= putStr
+ 					ExitFailure r -> do
+ 						hGetContents hsErr >>= hPutStr stderr
+	 					error "failed to compile hs"
  			else do return ()
 		["-c"] -> do
 			let bytes = toBytes b
@@ -80,5 +88,3 @@ main=do
 		toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
 		compileIt = compile finish ""
 		noOnlyLits b = all (/=16) b
-
---   hSetBuffering stdout NoBuffering

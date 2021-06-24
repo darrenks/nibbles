@@ -7,13 +7,14 @@ import Data.Tuple (swap)
 import Data.List.Split (splitOn) -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
+import System.IO
 
 safeChr = chr.(`mod`256)
 sToA = map ord
 aToS = map$safeChr.fromIntegral
 bToI b = if b then 1 else 0
 
-at :: [a] -> Int -> Maybe a
+at :: Integral i => [a] -> i -> Maybe a
 at [] _ = Nothing
 at (x:xs) n
  | n < 0     = Nothing
@@ -29,3 +30,8 @@ iff c b1 b2 = if c then b1 else b2
 finishLn "\n" = "\n"
 finishLn "" = "\n"
 finishLn (x:xs) = x:finishLn xs
+
+lazyAtMod :: [a] -> Integer -> a
+lazyAtMod a i = fromMaybe
+ (a!!fromIntegral(i`mod`fromIntegral (length a)))
+ (at a i)

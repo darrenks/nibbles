@@ -19,6 +19,7 @@ minor things:
 -10 as leading 0 in int rep
 -use char type in haskell instead of Int
 
+multiple values makes special behavior (i.e. if int constant, range map?)?
 ------------------------------------------
 compile with wall on
 -------------------------------
