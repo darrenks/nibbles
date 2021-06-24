@@ -50,7 +50,7 @@ finishH :: VT -> String
 finishH (VList tt)
 	| d >= 3 = joinC "[]"
 	| d == 2 = joinC "[32]"
-	| d == 1 = compose1 "(++[10])" $ joinC "[10]"
+	| d == 1 = compose1 "(++[10])" $ joinC "[10]" -- todo might not want that newline for empty list? like unlines
 	where
 		t = todoAssumeFst tt
 		d = sdim t

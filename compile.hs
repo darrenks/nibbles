@@ -20,7 +20,7 @@ compile = compileH
 	, Arg (Impl undefined (hsAtom"_") 0:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
-		[ ("asInts", VList [VInt], "map read $ words $ aToS input :: [Integer]")
+		[ ("asInts", VList [VInt], "map read $ filter (not.null) $ splitWhen (not.isDigit) $ aToS input :: [Integer]")
 		, ("asLines", VList [vstr], "map sToA $ lines $ aToS input")
 		]
 	letArgs = map (\(name, vt, _) -> noArgsUsed { implType=vt, implCode=hsAtom name }) mainLets

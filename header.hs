@@ -1,10 +1,10 @@
 module Header where
 
 import Data.List
-import Data.Char (chr,ord,isAlpha)
+import Data.Char (chr,ord,isAlpha,isDigit)
 import Data.Maybe (fromMaybe)
 import Data.Tuple (swap)
-import Data.List.Split (splitOn) -- needs cabal install --lib split
+import Data.List.Split (splitOn,splitWhen) -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
