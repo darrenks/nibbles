@@ -276,7 +276,7 @@ ops = map convertNullNib [
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
 	-- Desc: debug context types
 	-- Example: ;5 ct -> error "LetArg VInt"
-	atom("ct", [], gets pdContext >>= error . debugContext),
+	atom("ct", [], gets pdContext >>= parseError . debugContext),
 	-- Desc: error
 	-- Example: error "asdf" -> error "asdf"
 	op("error", [], [str], "error.aToS" ~> vstr, []),
@@ -292,13 +292,6 @@ ops = map convertNullNib [
 	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList [VList [VInt]]), []),
 	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList [vstr]), []),
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
-
-debugContext context = "\nContext:\n" ++ (unlines $ map (\arg ->
-	unlines $ showArgType arg : map (("  "++).show.implType) (flattenArg arg)
-	) $ filter (not.null.flattenArg) context)
-
-showArgType (Arg _ LambdaArg) = "LambdaArg"
-showArgType (Arg _ (LetArg _)) = "LetArg"
 
 infixr 1 ~>
 a~>b = (b,a)

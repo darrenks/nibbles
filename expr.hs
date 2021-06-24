@@ -9,20 +9,22 @@ import Hs
 data Impl = Impl { implType::VT
                  , implCode::HsCode
                  , minUsedDepth::Int
+                 , implName::Maybe String
+                 , implUsed::Bool
                  } deriving (Eq, Show)
-noArgsUsed = Impl { implType=undefined, implCode=undefined, minUsedDepth=0 }
+noArgsUsed = Impl undefined undefined 0 Nothing False
 
 data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving Show
 data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show
 
 -- cp is the number of characters consumed so far
-data Code = Lit { codeLit::String, litcp::Int }
+data Code = Lit { fullLit::String, codeLit::String, litcp::Int }
           | Nib { codeNib::[Int], nibcp::Int } deriving Show
 
 uselessOp = 6 :: Int -- for padding odd nibbles into bytes
 
 app1Hs :: String -> Impl -> Impl
-app1Hs s (Impl t hs d) = Impl t (hsApp (hsAtom s) hs) d
+app1Hs s impl = impl { implCode=hsApp (hsAtom s) (implCode impl) }
 
 data ParseData = ParseData { pdCode :: Code
                            , pdContext :: [Arg]

@@ -35,14 +35,15 @@ runHs prog = do
 	hGetContents hout
 
 toTest(origLit, expect, size) =
-	("putStrLn$aToS$"++flatHs hs++";", (expect,
+	("putStrLn$aToS$"++testHs++";", (expect,
 	outLit, origLit,
 	length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
-	flatHs hsFromNib, flatHs hs))
+	flatHs (implCode implFromNib), testHs))
 	where
 		cc = compile inspect ","
-		(Impl t hs _, nib, outLit) =  cc $ Lit origLit 0
-		(Impl _ hsFromNib _, _, _) = cc $ Nib nib 0
+		(implFromLit, nib, outLit) =  cc $ Lit origLit origLit 0
+		testHs = flatHs (implCode implFromLit)
+		(implFromNib, _, _) = cc $ Nib nib 0
 
 removeSpaces = filter (not.isSpace)
 

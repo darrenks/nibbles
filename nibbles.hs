@@ -44,8 +44,8 @@ main=do
 				where (basename, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
-	let (Impl t hs _, b, lit)  = compileIt $ case parseMode of
-		FromLit -> Lit contents 0
+	let (impl, b, lit)  = compileIt $ case parseMode of
+		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
 
 	let (_, _, realLit) = compileIt $ Nib b 0
@@ -62,7 +62,7 @@ main=do
 --  			hPutStrLn stderr $ flatHs hs
  			headerRaw <- readFile "header.hs"
  			let header = unlines $ tail $ lines headerRaw -- remove "module Header"
- 			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs hs ++ ").sToA)"
+ 			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs (implCode impl) ++ ").sToA)"
  			if ops /= ["-norun"] then do
  				-- Compile with -O for full laziness rather than using runhaskell
  				(_, _, Just hsErr, p) <- createProcess (proc "ghc" ["-O", "out.hs"]){ std_out = CreatePipe, std_err = CreatePipe }

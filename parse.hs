@@ -21,9 +21,11 @@ module Parse(
 import Expr
 import Types
 import Hs
+import Header (at)
 
 import Data.Char
 import Numeric (showOct, readDec, readHex, showHex)
+import Data.Maybe (fromMaybe)
 import State
 
 import Text.ParserCombinators.ReadP (gather, readP_to_S)
@@ -36,7 +38,8 @@ toByte [a,b]=chr $ 16 * a + b
 
 fromByte b=[ord b `div` 16, ord b `mod` 16]
 
-sLit = (consumeWhitespace .) . Lit
+sLit :: String -> String -> Int -> Code
+sLit f s cp = consumeWhitespace $ Lit f s cp
 
 parseInt (Nib (0:s) cp) = (-1, Nib s (cp+1))
 parseInt (Nib s cp) = parseNibInt s 0 cp where
@@ -45,10 +48,10 @@ parseInt (Nib s cp) = parseNibInt s 0 cp where
 		| f>=8 = (c,Nib s (cp+1))
 		| otherwise = parseNibInt s c (cp+1)
 		where c=a*8+toInteger f`mod`8
-parseInt (Lit ('-':'1':s) cp) = (-1, sLit s (cp+2))
+parseInt (Lit f ('-':'1':s) cp) = (-1, sLit f s (cp+2))
 -- Thanks Jon Purdy for the readP info!
-parseInt (Lit s cp) = case readP_to_S (gather readDecP) s of
-	[((used, n), rest)] -> (n, sLit rest (cp+length used))
+parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
+	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	otherwise -> error $ "unparsable int: " ++ s
 	
 parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
@@ -65,8 +68,8 @@ parseStr(Nib (a:s) cp)
 			then ([ch], after)
 			else case parseStr after of (rest, rs) -> (ch:rest, rs)
 			where after = Nib (drop (used-1) s) (cp+used)
-parseStr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
-	[((used, Lex.String str), rest)] -> (str, sLit rest (cp+length used))
+parseStr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
+	[((used, Lex.String str), rest)] -> (str, sLit f rest (cp+length used))
 	otherwise -> error $ "unparsable string: " ++ s
 
 specialChars = " \n,.-0a"
@@ -77,8 +80,8 @@ parseChr(Nib (c:rest) cp)
 	| c > 8 = (specialChars !! (c-9), Nib rest (cp+1))
 parseChr(Nib [_] cp) = error "unterminated char"
 parseChr(Nib (a:b:rest) cp) = (toByte [a,b], Nib rest (cp+2))
-parseChr (Lit s cp) = case readP_to_S (gather Lex.lex) s of
-	[((used, Lex.Char char), rest)] -> (char, sLit rest (cp+length used))
+parseChr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
+	[((used, Lex.Char char), rest)] -> (char, sLit f rest (cp+length used))
 	otherwise -> error $ "unparsable char: " ++ s
 
 -- count the number of leading "auto" symbols.
@@ -97,21 +100,21 @@ parseCountTuple = do
 			modify $ \st -> st { pdCode=Nib rest (cp+1) }
 			doAppendRep 
 			parseCountTuple >>= return.(+1)
-		(Lit ('~':rest) cp) -> do
-			modify $ \st -> st { pdCode=sLit rest (cp+1) }
+		(Lit f ('~':rest) cp) -> do
+			modify $ \st -> st { pdCode=sLit f rest (cp+1) }
 			doAppendRep 
 			parseCountTuple >>= return.(+1)
 		otherwise -> return 0
 	where doAppendRep = appendRep ([0],"~")
 
+cp (Lit _ _ cp) = cp
 cp (Nib _ cp) = cp
-cp (Lit _ cp) = cp
 empty (Nib [op] _) | op == uselessOp = True
 empty (Nib [] _) = True
-empty (Lit [] _) = True
+empty (Lit _ [] _) = True
 empty _ = False
 nextOffset (Nib (c:s) cp) = Nib s (cp+1)
-nextOffset (Lit (c:s) cp) = Lit s (cp+1)
+nextOffset (Lit f (c:s) cp) = Lit f s (cp+1)
 nextHex :: ParseState Int
 nextHex = do
 	code <- gets pdCode
@@ -119,9 +122,9 @@ nextHex = do
 		(Nib (c:s) cp) -> do
 			modify $ \st -> st { pdCode=Nib s (cp+1) }
 			return c
-		(Lit (c:s) cp) -> do
+		(Lit f (c:s) cp) -> do
 			let [(h, _)] = readHex [c]
-			modify $ \st -> st { pdCode=sLit s (cp+1) }
+			modify $ \st -> st { pdCode=sLit f s (cp+1) }
 			return h
 	appendRep ([v],showHex v "")
 	return v
@@ -131,27 +134,40 @@ match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
 
-match (Lit s cp) (needle, _)
-	| needle == " " && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit s cp
-	| needle == "\"" && '"' == head s = Just $ Lit s cp
-	| needle == "\'" && '\'' == head s = Just $ Lit s cp
-	| isPrefixOf needle s = Just $ sLit (drop (length needle) s) (cp+length needle)
+match (Lit f s cp) (needle, _)
+	| needle == " " && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit f s cp
+	| needle == "\"" && '"' == head s = Just $ Lit f s cp
+	| needle == "\'" && '\'' == head s = Just $ Lit f s cp
+	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
 parseError :: String -> ParseState Impl
 parseError msg = do
 	s <- gets pdCode
 	return $ error $ msg ++ "\n" ++ case s of
-		Lit s _ -> head (lines s)
-		Nib s _ -> show s
+		Lit f s cp -> literateError f cp
+		Nib s cp -> "at nibble #" ++ show cp ++ "\nnext nibble is" ++ fromMaybe "" (at s 0>>=Just . show)
+
+literateError s cp =
+	"at line: " ++ show lineno
+		++ ", char: " ++ show charno
+		++ "\n" ++ arrows ++ "v"
+		++ "\n" ++ line
+		++ "\n" ++ arrows ++ "^"
+	where
+		prev = take cp s
+		lineno = length $ lines prev
+		line = lines s !! (lineno-1)
+		charno = fromMaybe 0 $ elemIndex '\n' $ reverse prev
+		arrows = replicate (charno-1) ' '
 
 consumeWhitespace :: Code -> Code
-consumeWhitespace (Nib n cp) = Nib n cp
-consumeWhitespace (Lit [] cp) = Lit [] cp
-consumeWhitespace (Lit (c:s) cp)
-	| c=='#' = sLit rest (cp+1+length comment)
-	| isSpace c = sLit s (cp+1)
-	| otherwise = Lit (c:s) cp
+consumeWhitespace n@(Nib _ _) = n
+consumeWhitespace l@(Lit _ [] _) = l
+consumeWhitespace (Lit f (c:s) cp)
+	| c=='#' = sLit f rest (cp+1+length comment)
+	| isSpace c = sLit f s (cp+1)
+	| otherwise = Lit f (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
 parseIntExpr :: ParseState Impl

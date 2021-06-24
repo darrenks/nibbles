@@ -16,14 +16,16 @@ import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile = compileH
-	[ Arg [Impl vstr (hsAtom"input" ) 0] LambdaArg
-	, Arg (Impl undefined (hsAtom"_") 0:letArgs)
+	[ Arg [Impl vstr (hsAtom"input" ) 0 (Just "input") True] LambdaArg
+	, Arg (Impl undefined (hsAtom"_") 0 Nothing True:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
 		[ ("asInts", VList [VInt], "map read $ filter (not.null) $ splitWhen (not.isDigit) $ aToS input :: [Integer]")
 		, ("asLines", VList [vstr], "map sToA $ lines $ aToS input")
 		]
-	letArgs = map (\(name, vt, _) -> noArgsUsed { implType=vt, implCode=hsAtom name }) mainLets
+	letArgs = map (\(name, vt, _) -> noArgsUsed {
+		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=True
+		}) mainLets
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
 
 compileH args finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
@@ -43,7 +45,7 @@ getAllValues = do
 		getAllValues >>= return.(impl1++)
 
 applyImpl :: Impl -> Impl -> Impl
-applyImpl (Impl t1 hs1 d1) (Impl _ hs2 d2) = Impl t1 (hsApp hs1 hs2) (max d1 d2)
+applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (max d1 d2) undefined undefined
 	
 makePairs :: [VT] -> [Impl] -> Impl
 makePairs fromTypes args = foldl applyImpl initImpl args where
@@ -55,7 +57,7 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 convertAutoType VAuto = VInt
 convertAutoType t = t
 
-convertAuto (Impl VAuto _ _) auto = noArgsUsed { implType=VInt, implCode=i $ fromIntegral auto }
+convertAuto (Impl VAuto _ _ _ _) auto = noArgsUsed { implType=VInt, implCode=i $ fromIntegral auto }
 convertAuto impl _ = impl
 
 convertAutos :: [Impl] -> [Int] -> [Impl]
@@ -152,7 +154,7 @@ exprsByOffset (Thunk code context) =
 getValue :: [[(Impl, ParseData)]] -> ParseState Impl
 getValue offsetExprs = do
 	ParseData code context nibSoFar litSoFar <- get	
-	let fail = parseError "no matching op"
+	let fail = parseError "Parse Error: no matching op"
 	let tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		in convertOp valList op >>= \f -> Just $
@@ -179,8 +181,8 @@ convertOp _ (Atom impl) = Just $ do
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
 applyFirstClassFn :: Impl -> ParseState Impl
-applyFirstClassFn (Impl (VFn from to) hs dep) = getNArgs from >>= \impls -> do
-	let initImpl = Impl undefined hs dep
+applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> do
+	let initImpl = Impl undefined hs dep undefined undefined
 	convertPairToLet (foldl applyImpl initImpl impls) to
 applyFirstClassFn x = return x
 
@@ -190,10 +192,10 @@ getNArgs argTypes = do -- todo clean
 	return $ zipWith coerceImpl argImpls argTypes
 
 coerceImpl :: Impl -> VT -> Impl
-coerceImpl (Impl et hs dep) t = Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep
+coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep undefined undefined
 
 convertPairToLet :: Impl -> [VT] -> ParseState Impl
-convertPairToLet (Impl _ hs dep) [t] = return $ Impl t hs dep
+convertPairToLet (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined
 convertPairToLet impl implTypes = do
 	context <- gets pdContext
 	let letArg = newLetArg context impl implTypes
