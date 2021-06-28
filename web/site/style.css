@@ -1,0 +1,51 @@
+code { 
+	font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
+	padding: 3px;
+	background-color: #c9a6ed;
+	border:none;
+}
+pre code {
+	display: block;
+	padding: 5px;
+	background-color: #d1b2f0;
+	border:1px dashed black;
+}
+
+#navbar * {
+	text-decoration: none;
+	font-weight: bold;
+	color: #FFD700;
+	font-size: 18px;
+}
+
+#navbar ul {
+	padding: 0;
+	margin: 0;
+	display:table;
+	width:100%;
+	background-color: #2e005c;
+	border-radius: 10px;
+}
+
+#navbar li {
+	display: table-cell;
+	padding: 5px;
+	text-align: center;
+}
+
+#nibbles * {
+	font-size: 30px;
+}
+
+#navbar a:hover {
+	color: #d1b2f0;
+}
+
+body {
+	background-color: #e8d9f7
+}
+
+* {
+	font-family: Verdana;
+}
+
