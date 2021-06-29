@@ -360,7 +360,7 @@ anyT = Cond "any" $ const True
 listOf (Exact t) =  Exact $ VList [t]
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
 	t@(VList _) -> c [elemT $ t]
-	otherwise -> False
+	_ -> False
 
 ret1 (VFn from [to]) = to
 elemT (VList e) = todoAssumeFst e

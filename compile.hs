@@ -1,11 +1,10 @@
 module Compile(compile) where
 
-import Data.List
+import Data.List(inits,intercalate)
 import Control.Monad (msum)
 import Data.Maybe
 import State
 
-import Header
 import Polylib(coerceTo)
 import Ops
 import Types
@@ -67,13 +66,13 @@ simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec where
 	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
 	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
-	simplifyArgSpec (Fn numRets f) vts = Just $ ArgFn (Fn numRets f)
+	simplifyArgSpec (Fn numRets f) _ = Just $ ArgFn (Fn numRets f)
 	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
 	maybeMatch b = if b then Just ArgMatches else Nothing
 
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
-putAddRep partialFinalState@(ParseData code context nib lit) = do
+putAddRep (ParseData code context nib lit) = do
 	appendRepH (nib,lit)
 	modify $ \s -> s { pdCode=code, pdContext=context }
 
@@ -129,7 +128,7 @@ getValuesMemo :: Int -> ParseState [Impl]
 getValuesMemo n = do
 	ParseData code context _ _ <- get
 	let exprs = take n $ head $ exprsByOffset $ Thunk code context
-	mapM (putAddRep.snd) exprs
+	_ <- mapM (putAddRep.snd) exprs
 	return $ map fst exprs
 
 data Thunk = Thunk Code [Arg]
@@ -153,13 +152,12 @@ exprsByOffset (Thunk code context) =
 
 getValue :: [[(Impl, ParseData)]] -> ParseState Impl
 getValue offsetExprs = do
-	ParseData code context nibSoFar litSoFar <- get	
-	let fail = parseError "Parse Error: no matching op"
+	code <- gets pdCode
 	let tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		in convertOp valList op >>= \f -> Just $
 			appendRep (nib,lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
-	fromMaybe fail $ msum $ map tryOp ops
+	fromMaybe (parseError "Parse Error: no matching op") $ msum $ map tryOp ops
 
 convertOp :: [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
 convertOp valList (Op ats impl autos) = 
@@ -187,9 +185,9 @@ applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> 
 applyFirstClassFn x = return x
 
 getNArgs :: [VT] -> ParseState [Impl]
-getNArgs argTypes = do -- todo clean
-	argImpls <- getValuesMemo (length argTypes)
-	return $ zipWith coerceImpl argImpls argTypes
+getNArgs argTypes = do
+	args <- getValuesMemo (length argTypes)
+	return $ zipWith coerceImpl args argTypes
 
 coerceImpl :: Impl -> VT -> Impl
 coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep undefined undefined

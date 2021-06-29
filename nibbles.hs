@@ -1,4 +1,4 @@
-import Data.List
+import Data.List(isPrefixOf)
 import System.Environment
 import System.IO
 import GHC.IO.Encoding
@@ -37,11 +37,11 @@ main=do
 	args <- getArgs
 	let (contentsIO, basename, parseMode) = case filter (not.isOpt) args of
 		[] -> (getContents, "a", FromLit)
-		[f] -> (readFile f, basename, case ext of
+		[f] -> (readFile f, base, case ext of
 			".nbb" -> FromBytes
 			".nbl" -> FromLit
-			otherwise -> error "file extension must be .nbb or .nbl")
-				where (basename, ext) = splitExtension f
+			_ -> error "file extension must be .nbb or .nbl")
+				where (base, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
 	let (impl, b, lit)  = compileIt $ case parseMode of
@@ -71,9 +71,9 @@ main=do
  					ExitSuccess -> do
  						(_, Just hout, _, _) <- createProcess (proc "out" []){ std_out = CreatePipe }
  						hGetContents hout >>= putStr
- 					ExitFailure r -> do
+ 					ExitFailure _ -> do
  						hGetContents hsErr >>= hPutStr stderr
-	 					error "failed to compile hs"
+	 					error "failed to compile hs (likely an internal nibbles bug!)"
  			else do return ()
 		["-c"] -> do
 			let bytes = toBytes b

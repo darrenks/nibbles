@@ -19,7 +19,7 @@ minor things:
 multiple values makes special behavior (i.e. if int constant, range map?)?
 	auto range1 map if number then multiple outputs? also could auto map if list?
 ------------------------------------------
-compile with wall on
+compile with wall on? nah, but incomplete patterns would be most useful
 -------------------------------
 auto input types
 library reference?

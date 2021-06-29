@@ -24,7 +24,7 @@ import Hs
 import Header (at)
 
 import Data.Char
-import Numeric (showOct, readDec, readHex, showHex)
+import Numeric (showOct, readHex, showHex)
 import Data.Maybe (fromMaybe)
 import State
 
@@ -52,7 +52,7 @@ parseInt (Nib s cp) = (if pow10 n then n*10 else n, rest) where
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
-	otherwise -> error $ "unparsable int: " ++ s
+	_ -> error $ "unparsable int: " ++ s
 	
 parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
 parseStr(Nib (a:s) cp)
@@ -70,7 +70,7 @@ parseStr(Nib (a:s) cp)
 			where after = Nib (drop (used-1) s) (cp+used)
 parseStr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.String str), rest)] -> (str, sLit f rest (cp+length used))
-	otherwise -> error $ "unparsable string: " ++ s
+	_ -> error $ "unparsable string: " ++ s
 
 specialChars = " \n,.-0a"
 parseChr :: Code -> (Char, Code)
@@ -82,7 +82,7 @@ parseChr(Nib [_] cp) = error "unterminated char"
 parseChr(Nib (a:b:rest) cp) = (toByte [a,b], Nib rest (cp+2))
 parseChr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.Char char), rest)] -> (char, sLit f rest (cp+length used))
-	otherwise -> error $ "unparsable char: " ++ s
+	_ -> error $ "unparsable char: " ++ s
 
 -- count the number of leading "auto" symbols.
 -- parseCountTuple :: Code -> (Int, Code)
@@ -104,7 +104,7 @@ parseCountTuple = do
 			modify $ \st -> st { pdCode=sLit f rest (cp+1) }
 			doAppendRep 
 			parseCountTuple >>= return.(+1)
-		otherwise -> return 0
+		_ -> return 0
 	where doAppendRep = appendRep ([0],"~")
 
 cp (Lit _ _ cp) = cp
@@ -204,7 +204,7 @@ strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	'\n' -> [last]
 	' ' -> [1+last]
 	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
-	otherwise -> [last+div oc 16, mod oc 16]
+	_ -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
 
 chrToNib :: Char -> [Int]

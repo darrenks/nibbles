@@ -80,7 +80,7 @@ There will be automatic parses beyond `$`, `@`, `` `2`` at the start of the prog
 
 To make this concrete: `+4~` -> `5`
 
-You can probably guess the auto values for each operation, but they are also listed in a column in the full QuickRef.
+You can probably guess the auto values for each operation, but they are also listed in a column in the full $QuickRef.
 
 ## Let Statements
 
@@ -122,7 +122,7 @@ todo
 
 ## Vectorization
 
-Check out the full QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
+Check out the full $QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
 
 For example `+5 ,5` gives `[6,7,8,9,10]`. This is cool, but not as useful as in other golf languages because it prevents overloading by type, so it is only provided for these very common operations.
 

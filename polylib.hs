@@ -62,7 +62,7 @@ finishH VChr = "(:[])"
 finish = finishH
 -- = composez finishH removePairs
 
-composez a b t = compose1 (a t2) s where (t2, s) = b t
+-- composez a b t = compose1 (a t2) s where (t2, s) = b t
 compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
 app1 a b = "(" ++ a ++ b ++ ")"
 
