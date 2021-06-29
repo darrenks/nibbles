@@ -41,14 +41,14 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 sLit :: String -> String -> Int -> Code
 sLit f s cp = consumeWhitespace $ Lit f s cp
 
-parseInt (Nib (0:s) cp) = (-1, Nib s (cp+1))
-parseInt (Nib s cp) = parseNibInt s 0 cp where
+parseInt (Nib (0:s) cp) = (10, Nib s (cp+1))
+parseInt (Nib s cp) = (if pow10 n then n*10 else n, rest) where
+	(n,rest) = parseNibInt s 0 cp
 	parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
 	parseNibInt(f:s) a cp
 		| f>=8 = (c,Nib s (cp+1))
 		| otherwise = parseNibInt s c (cp+1)
 		where c=a*8+toInteger f`mod`8
-parseInt (Lit f ('-':'1':s) cp) = (-1, sLit f s (cp+2))
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
@@ -134,7 +134,7 @@ match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	else Nothing
 match (Lit f s cp) (needle, _)
 	| null s = error "Error! Expected: another expression, found: EOF"
-	| needle == " " && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit f s cp
+	| needle == " " && isDigit (head s) = Just $ Lit f s cp
 	| needle == "\"" && '"' == head s = Just $ Lit f s cp
 	| needle == "\'" && '\'' == head s = Just $ Lit f s cp
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
@@ -191,8 +191,11 @@ parseChrExpr = do
 	return $ noArgsUsed { implType=VChr, implCode=hsParen $ hsAtom $ "ord " ++ show s }
 
 intToNib :: Integer -> [Int]
-intToNib (-1)=[0]
-intToNib n=init digits ++ [last digits + 8]
+intToNib (10)=[0]
+intToNib n
+	| pow10 n = intToNibH $ n `div` 10
+	| otherwise = intToNibH n
+intToNibH n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 strToNib :: String -> [Int]
@@ -210,3 +213,9 @@ chrToNib c
 	| otherwise = case elemIndex c specialChars of
 	Just i -> [9 + i]
 	Nothing -> fromByte c
+
+-- name is a bit of a lie as we want 1 to be False
+pow10 n
+	| n == 10 = True
+	| n < 10 = False
+	| n > 10 = pow10 $ n `div` 10

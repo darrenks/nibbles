@@ -7,12 +7,11 @@ debug features to add:
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
 	-but should it default to using first or both?
--io
+-more input parses
 -maybe
 
 minor things:
 -coerce after foldr
--10 as leading 0 in int rep
 -use of char (and instances to convert for vec)
 
 -auto test examples from docs
@@ -32,11 +31,6 @@ fyi instead of coerce in user fn, could skip it in context lookup
 for multipage quickref (coerce, etc)
 https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
-debug helpers
-	see current context
-	show type of arg and exit
-	see the parse tree
-
 website design
 
 ParseError in parse instead of regular (need refactor to monad)
@@ -48,7 +42,7 @@ helpful error if commutative backwards (use aliases)
 either instead of bool/maybe
 maybe id, maybe nothing
 handle div 0 errors/etc
-infinity
+infinity, iden init val
 
 index/prev in loop
 

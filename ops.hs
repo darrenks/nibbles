@@ -25,9 +25,14 @@ ops = map convertNullNib [
 	op("~", [0], [], (undefined::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
+	-- Test (size 2): 0 -> 0
+	-- Test (size 2): 1 -> 1
+	-- Test (size 2): 7 -> 7
 	-- Test (size 3): 8 -> 8
-	-- Test (size 4): 100 -> 100
-	-- Test negative one (special case) (size 2): -1 -> -1
+	-- Test (size 2): 10 -> 10
+	-- Test (size 3): 20 -> 20
+	-- Test (size 3): 100 -> 100
+	-- Test (size 4): 200 -> 200
 	atom(" ", [1], parseIntExpr), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
