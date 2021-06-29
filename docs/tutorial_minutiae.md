@@ -23,7 +23,7 @@ arbitrary precision ish
 
 ## Beyond the $QuickRef
 
-I haven't built a complete reference of all the built ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).
+I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).
 
 Let's see how we could use this to figure out how to use `ma` (`mapAccumL`) (without needing to look at the example).
 
@@ -31,7 +31,7 @@ The arg types are defined as:
 
 	[list, anyT, fn2 (\[l, x]->[x,elemT l])]
 
-This means the first arg is a list, the second is any type, the third is a function that returns 2 values (denoted from fn2). The lambda expression isn't that function's type as you might expect. Instead it is a function which returns what the arg types of this function will be based on the previos args to `ma`. Here it says your function will receive 2 args, the first being the same type as the `anyT` and the second the same type as the element type of the `list`.
+This means the first arg is a list, the second is any type, the third is a function that returns 2 values (denoted from fn2). The lambda expression isn't that function's type as you might expect. Instead it is a function which returns what the arg types of this function will be based on the previous args to `ma`. Here it says your function will receive 2 args, the first being the same type as the `anyT` and the second the same type as the element type of the `list`.
 
 Next we have the generated Haskell code:
 

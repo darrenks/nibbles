@@ -32,9 +32,9 @@ Computes the sum from 1 to 100,000,000, and takes 1.16 seconds on my computer no
 
 	+ .,1000 +,100000000
 
-Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds. If you had done this in a strict language it would have taken 1,000 times longer. Yes some optimizing compilers in languages like C might have been smart enough to automatically move that computation out of the loop, but in general they cannot because their type system doesn't understand side effects.
+Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds. If you had done this in a strict language it would have taken 1,000 times longer. Yes, some optimizing compilers in languages like C might have been smart enough to automatically move that computation out of the loop, but in general they cannot because their type system doesn't understand side effects.
 
-This is critical for whole model of Nibbles' syntax (since there would be no easy way to move an expensive computation from inside a loop to out).
+This is critical for the whole model of Nibbles' syntax (since there would be no easy way to move an expensive computation from inside a loop to out).
 
 ### Challenge Exercise
 Write a program that finds one factor of a composite number from stdin, let's say 3902309423233451. You may not hard code constants besides numbers <= 2.
@@ -62,7 +62,7 @@ So far we've just been printing a single value or string. But if your program re
 	1 2 3
 	1 2 3	
 
-Higher dimension lists just are concatenated first. For printing purposes a string is considered a single value (not a list of chars).
+Higher dimension lists are concatenated first. For printing purposes a string is considered a single value (not a list of chars).
 
 ### Multiple Outputs
 
@@ -84,7 +84,7 @@ You can probably guess the auto values for each operation, but they are also lis
 
 ## Let Statements
 
-`;` is a let statement and is somewhat special. It takes one argument returns it, but also saves that argument for use by anything after it, you reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
+`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
 
 ### Exercise
 
@@ -172,7 +172,7 @@ It may seem odd that we couldn't define a function without using it. But this is
 
 Unfortunately recursive functions (without type specifications) are difficult to implement because when we recurse we don't yet know the return type. Luckily there is a hacky way to get around this, that actually makes the code even shorter!
 
-Recursive functions always need a base case to terminate, and the base case is easy to deduce the type of. So recursive functions are implemented as function that returns 3 things.
+Recursive functions always need a base case to terminate, and the base case is easy to deduce the type of. So recursive functions are implemented as a function that returns 3 things.
 
 1.	the condition for when to use the base case
 1.	the base case

@@ -10,8 +10,8 @@ allFiles = `cd docs; echo *.md`.split
 def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')
 	md = File.read("docs/#{filename}")
-	md.gsub!('$QuickRef','<a href="quickref.html">Quick Ref</a>')
-	md.gsub!('$Feedback','Bug reports, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at <img src="email.png" alt="Image of email" title="" />')
+	md.gsub!('$QuickRef','[Quick Ref](quickref.html)')
+	md.gsub!('$Feedback','Bug reports, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at ![image of email](email.png)')
 	md.gsub!('$Intro',File.read("README.md").lines.first)
 	File.open('t.md','w'){|f|f<<md}
 	markdown = `markdown.pl < t.md`

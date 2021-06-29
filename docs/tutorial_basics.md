@@ -4,7 +4,7 @@ This basics tutorial will teach you how to write and run Nibbles code. You will 
 
 ---
 
-In Nibbles, each instruction only requires 4 bits (also know as half a byte - aka a nibble). But it's nice to read and write in ascii (literate form), so we write code in ascii and compile it, packing 2 instructions per byte (binary form). In the binary form, ops are heavily overloaded by type, allowing for more than 16 possible instructions.
+In Nibbles, each instruction only requires 4 bits (also known as half a byte - aka a nibble). But it's nice to read and write in ascii (literate form), so we write code in ascii and compile it, packing 2 instructions per byte (binary form). In the binary form, ops are heavily overloaded by type, allowing for more than 16 possible instructions.
 
 Typically the literate code you write will correspond 1 ascii character to 1 nibble, so you can basically divide your code length in half. There are some exceptions to this (numbers, strings, etc). But don't worry about this for now.
 
@@ -52,7 +52,7 @@ You may have also noticed that a file named `out.hs` appeared. For now, Nibbles 
 A file appears named `intro.nbb` (nbb is the file extension for binary Nibbles programs) which has a size of 3 bytes. That compactification was not as good as the promised divide by 2... but it would have been 2.5 bytes if we were measuring that way (and small numbers are a bad example). FYI you can automatically expand `.nbb` files back to literate form using `-e`.
 
 ## Syntax
-Programs are written in Polish (prefix notation). Instead of writing `1+2` we write `+1 2`. The advantage of this is that you do not ever need parenthesis. `(1+2)*3` would be written as `*+1 2 3`. `1+(2*3)` would be written as `+1*2 3`. This may seem strange for math operators but it is actually quite familiar for other functions. For example C uses prefix notation for function calls. i.e. `add(1, 2)`. But unlike C we don't need commas or parenthesis since all functions have a fixed arity.
+Programs are written in Polish (prefix notation). Instead of writing `1+2` we write `+1 2`. The advantage of this is that you do not ever need parenthesis. `(1+2)*3` would be written as `*+1 2 3`. `1+(2*3)` would be written as `+1*2 3`. This may seem strange for math operators but it is actually quite familiar for other functions. For example C uses prefix notation for function calls. i.e. `add(1, 2)`. But unlike C we don't need commas or parentheses since all functions have a fixed arity.
 
 ### Exercise
 Write a program that computes `(1+2)*(3-4)`
@@ -123,7 +123,7 @@ All programs actually start off with args available for use.
 
 - `$` is the entire stdin as a string
 - `@` is the entire stdin parsed into a list of ints (with non ints removed)
-- `` `3 `` is the the entire stdin split into lines (a list of strings).
+- `` `3 `` is the entire stdin split into lines (a list of strings).
 
 For example
 
