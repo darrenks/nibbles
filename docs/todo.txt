@@ -39,6 +39,8 @@ debug helpers
 
 website design
 
+ParseError in parse instead of regular (need refactor to monad)
+
 better op not found error message (hard because memoize of arg types is lazy)
 aliases so don't have to use ~ in middle of extensions type : "1" ~
 helpful error if communitive backwards (use aliases)

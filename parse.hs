@@ -129,12 +129,11 @@ nextHex = do
 	appendRep ([v],showHex v "")
 	return v
 
-
 match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
-
 match (Lit f s cp) (needle, _)
+	| null s = error "Error! Expected: another expression, found: EOF"
 	| needle == " " && (isDigit (head s) || isPrefixOf "-1" s) = Just $ Lit f s cp
 	| needle == "\"" && '"' == head s = Just $ Lit f s cp
 	| needle == "\'" && '\'' == head s = Just $ Lit f s cp
