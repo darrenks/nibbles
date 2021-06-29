@@ -15,6 +15,8 @@ communitiave/associative
 opcode 15, mismatched 2d+ lists
 ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 
+~ in toplevel (space or newline? or something in context)
+
 desired features
 pair (only needed in fns)
 min/max
@@ -49,6 +51,7 @@ string + int coercing the otherway (old idea was to use opcode of *int str)
 abs/sig
 ljust/etc
 uniq, setwise op [by]
+auto rec (base case is arg, condition is arg).
 
 -- "too complicated"
 sqrt

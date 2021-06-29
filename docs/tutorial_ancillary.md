@@ -17,60 +17,166 @@ If this is all unfamiliar to you, you could read up on [lazy evaluation](https:/
 Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=\: /1 0 2 1` (which builds the list of `[error,2]`, reverses it then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
 
 And we could also generate the list of numbers from 1 to a googol, then select only the first 50 that are odd as such:
-```
-<50 & ,^10 100 %$2
-```
+
+	<50 & ,^10 100 %$2
+
 Without it using all of the time the universe has to offer. This is useful when we don't know how many elements we will need at later stages of computations (typically languages have a separate concept of streams to support this, but that is superflous in lazy languages).
 
 ### Full laziness
 
 Another useful thing about Haskell's laziness (full laziness). Is that expressions are never evaluated multiple times, even inside a loop. For example:
-```
-+,100000000
-```
+
+	+,100000000
+
 Computes the sum from 1 to 100,000,000, and takes 1.16 seconds on my computer not including compile time.
-```
-+ .,1000 +,100000000
-```
+
+	+ .,1000 +,100000000
+
 Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds. If you had done this in a strict language it would have taken 1,000 times longer. Yes some optimizing compilers in languages like C might have been smart enough to automatically move that computation out of the loop, but in general they cannot because their type system doesn't understand side effects.
 
 This is critical for whole model of Nibbles' syntax (since there would be no easy way to move an expensive computation from inside a loop to out).
 
 ### Challenge Exercise
-Write a program that finds one factor of composite number from stdin, let's say 3902309423233451. You may not hard code constants besides numbers <= 2.
+Write a program that finds one factor of a composite number from stdin, let's say 3902309423233451. You may not hard code constants besides numbers <= 2.
 
 <details>
-  <summary>Solution</summary>
-  
-  ```
-  <1 &          # Get the first 1 elements of the filtered list.
-    >1,=@ 1     # Generate the list from 2 to input
-    - 1 %=`3 1$ # \elem -> 1 - (input % elem)
-  ```
-  This is the first time we've needed comments, use them with `#`
+<summary>Solution</summary>
 
-  That was hard, and there are still some pain points we haven't learned how to get around yet, like having to extract the input number from a list twice (and differently even since there was something added to the context). The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly exit the loop.
+	<1 &          # Get the first 1 elements of the filtered list.
+	  >1,=@ 1     # Generate the list from 2 to input
+	  - 1 %=`3 1$ # \elem -> 1 - (input % elem)
+
+This is the first time we've needed comments, use them with `#`
+
+That was hard, and there are still some pain points we haven't learned how to get around yet, like having to extract the input number from a list twice (and differently even since there was something added to the context). The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly exit the loop.
 </details>
 
 ## Output
 
-## More inputs
+So far we've just been printing a single value or string. But if your program returns a list it is printed with newlines between each element. And if it is a list of lists then spaces between those inner elements. Example:
 
-## Auto values
+	.,3 .,3 $
+<!-- -->
 
-`~` Can be used to save space specifying the most common integer for operations. For example `+4~` -> `5` and `*4~` -> `8` (1 is most commonly added to things and 2 is most commonly multiplied by things, see the quickref for what the auto values are for each function). This may not be shorter in literate form, but numbers are actually multiple nibbles (see below).
+	1 2 3
+	1 2 3
+	1 2 3	
 
+Higher dimension lists just are concatenated first. For printing purposes a string is considered a single value (not a list of chars).
 
-## Let statements
+### Multiple Outputs
 
-`;` is a let statement and is somewhat special. It takes one argument and saves that argument for use by anything after it, you reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
+You can return multiple things (i.e. `1 2`). They will just be printed without any separators, in this case `12`. This behavior is likely to change in the future (todo).
 
+If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `:~` (singleton).
+
+## More Inputs
+
+There will be automatic parses beyond `$`, `@`, `` `2`` at the start of the program, they will be mentioned here when they exist (todo).
+
+## Auto Values
+
+`~` Can be used to save space by specifying the most common integer for operations in a single nibble. They don't allow you to do anything new, but they make it shorter. For example the most common number used in addition is 1 (that's why it often has special forms like `++` in C and `succ` in Ruby/etc.). So for addition `~` is `1` (which would have required two nibbles).
+
+To make this concrete: `+4~` -> `5`
+
+You can probably guess the auto values for each operation, but they are also listed in a column in the full QuickRef.
+
+## Let Statements
+
+`;` is a let statement and is somewhat special. It takes one argument returns it, but also saves that argument for use by anything after it, you reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
+
+### Exercise
+
+Write a program to print the sum of all numbers in the input or the string "large" if that sum is greater than 100 (without computing the sum twice).
+<details>
+<summary>Solution</summary>
+
+	? - ;+@ 100 "large" $
+</details>
 
 ## Tuples
 
+When I said `;` is "somewhat special" I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself.
+
+For example `/~` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
+
+	"the div is: " /~ 10 3 "\n"
+	"the mod is: " $
+
+Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function `%~` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
+
+### Creating Tuples
+
+Normally it would be pointless to create your own tuple, it would immediately be deconstructed. But it could be useful to return multiple values from your own functions, and so you are able to by using `~` at the beginning of any function. For example:
+
+	p.,10 ~$ *$$
+
+Gives
+
+	[(1,1),(2,4),(3,9),(4,16),(5,25)]
+
 ## Maybe
+
+todo
 
 ## Vectorization
 
-creating functions
-	recursive
+Check out the full QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
+
+For example `+5 ,5` gives `[6,7,8,9,10]`. This is cool, but not as useful as in other golf languages because it prevents overloading by type, so it is only provided for these very common operations.
+
+## Extensions
+
+You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
+
+In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (i.e. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
+
+Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (for now at least). This is reasonable in that a 3 nibble op has an implied probability of use as 1/4096 which would mean that very few programs would use it and I don't wish to convolute the language with things that are of little use.
+
+If you find possible two nibble extensions, please let me know!
+
+## Creating Your Own Functions
+It is actually somewhat rare to need to create your own functions in codegolf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
+
+This can be done using the `;;` extension. `;;` takes two arguments, treating the second one as a function and passing it the first. But it also adds that function to the context for later use.
+
+Example:
+
+	;;3 *$$
+gives
+
+	9
+and now we can use that square function with `$`. I.e. `$4` gives `16`.
+
+Note that we can even square strings now. I.e. `$"5"` -> `25`.
+
+### Exercise
+
+Define your own divmod!
+
+Hint: The first argument to `;;` is actually a function of no arguments.
+
+<details>
+<summary>Solution</summary>
+
+	;; ~10 3 ~/$@ %$@   $ # returns 3,1
+	@ 15 5              $ # returns 3,0
+</details>
+
+Notice that the second use of your function didn't require you to use `~`. It knew it took two arguments.
+
+It may seem odd that we couldn't define a function without using it. But this is codegolf, why would you want to!
+
+### Recursive Functions
+
+Unfortunately recursive functions (without type specifications) are difficult to implement because when we recurse we don't yet know the return type. Luckily there is a hacky way to get around this, that actually makes the code even shorter!
+
+Recursive functions always need a base case to terminate, and the base case is easy to deduce the type of. So recursive functions are implemented as function that returns 3 things.
+
+1.	the condition for when to use the base case
+1.	the base case
+1. the recursive case.
+
+The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).
+

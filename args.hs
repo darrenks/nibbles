@@ -76,5 +76,5 @@ showArgType (Arg _ (LetArg _)) = "LetArg"
 showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl)
 
 indexToOp :: Int -> String
-indexToOp = (indexOps !!) where
+indexToOp = fromMaybe "<truncated>" . (at indexOps) where
 	indexOps = ["$","@","`3","`4","`5","`6","`7","`8","`9","`a","`b","`c","`d","`e","`f"]

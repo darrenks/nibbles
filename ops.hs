@@ -186,9 +186,9 @@ ops = map convertNullNib [
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
 	-- Desc: map accum L
-	-- Example: mac,3 0 +@$ $ $ -> [0,1,3],6
-	-- Test: mac,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mac", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
+	-- Example: ma,3 0 +@$ $ $ -> [0,1,3],6
+	-- Test: ma,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
+	op("ma", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -254,6 +254,7 @@ ops = map convertNullNib [
 	-- Test coerce: ? +0 1 1 "F" -> "1"
 	-- todo more lazy empty check than computing length
 	-- todo args could be fn's with orig value (orig list if ?,)
+	-- todo able to return multiple args with ~ (make true/false clause fn noArgs)
 	op("?", [15], [num, anyT, anyT], \ts -> coerce ("(iff."++truthy (a1 ts)++")") [1,2] id ts, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2

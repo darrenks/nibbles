@@ -14,6 +14,9 @@ For alpha release:
 minor things:
 -coerce after foldr
 -10 as leading 0 in int rep
+-use of char (and instances to convert for vec)
+
+-auto test examples from docs
 
 multiple values makes special behavior (i.e. if int constant, range map?)?
 ------------------------------------------

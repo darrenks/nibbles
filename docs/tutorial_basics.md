@@ -70,7 +70,10 @@ You've seen **integers**, other data types are chars and lists. **Chars** behave
 
 **Strings** are actually just a list of chars, and can be created using double quotes, for example `"Hello\n"` does what you would expect. Note that escapes are valid for strings and chars in the same style that Haskell uses.
 
-Here is [a table of the basic Nibbles ops](https://nibbles.golf/simpleref.html). There is a more complete quick reference, but for now it would have some confusing things.
+Here is [a table of the basic Nibbles ops](https://nibbles.golf/simpleref.html). There is a more complete quick reference, but for now it would have some confusing things. A couple things to note:
+
+-	`num` means `int` or `chr`
+-	`[a]`, etc. means "list of any thing," but the next use of `a` must be the same type.
 
 ### Exercise
 Use the ops table to write a program which outputs your name as a square, i.e
@@ -114,7 +117,7 @@ Finally we are seeing nice looking programs, can you do better? We will learn mo
 </details>
 
 ## Input
-All programs actually starts off with args available for use.
+All programs actually start off with args available for use.
 
 - `$` is the entire stdin as a string
 - `@` is the entire stdin parsed into a list of ints (with non ints removed)
