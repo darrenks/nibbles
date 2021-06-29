@@ -4,7 +4,7 @@ Nibbles is a **minimal [codegolf](https://en.wikipedia.org/wiki/Code_golf)** lan
 
 ### Resources
 
-The tutorials on this site are recommended for learning the language. Also check out the Why and Philosophy pages (todo they don't exist yet) if you're more interested in the ideas behind the language.
+The [tutorials](tutorial_basics.html) on this site are recommended for learning the language. Also check out the Why and Philosophy pages (todo they don't exist yet) if you're more interested in the ideas behind the language.
 
 ### Where to Golf?
 

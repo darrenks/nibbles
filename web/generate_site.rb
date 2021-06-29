@@ -11,8 +11,12 @@ def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')
 	markdown = `markdown.pl docs/#{filename}`
 	title = markdown[/<h1>(.*?)<\/h1>/,1]
+	if title.nil?
+		puts 'skipping '+filename
+		return
+	end
 	navbar = if filename=="tutorial_basics.md"
-		Navbar.sub('>Quick Ref',' id="simple">Simple Ref').sub('quick','simple')
+		Navbar.sub('<a href="quickref.html">Quick Ref</a>','<del><a href="quickref.html">Quick Ref</a></del><ins><a href="simpleref.html">Simple Ref</a></ins>')
 	else
 		Navbar
 	end

@@ -45,7 +45,12 @@ body {
 	background-color: #e8d9f7
 }
 
-#simple {
+#navbar del * {
+	text-decoration: line-through;
+	color: pink;
+}
+
+#navbar ins * {
 	color: lightgreen;
 }
 
