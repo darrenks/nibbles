@@ -20,9 +20,9 @@ And we could also generate the list of numbers from 1 to a googol, then select o
 
 	<50 & ,^10 100 %$2
 
-Without it using all of the time the universe has to offer. This is useful when we don't know how many elements we will need at later stages of computations (typically languages have a separate concept of streams to support this, but that is superflous in lazy languages).
+Without it using all of the time the universe has to offer. This is useful when we don't know how many elements we will need at later stages of computations (typically languages have a separate concept of streams to support this, but that is superflous in a lazy language).
 
-### Full laziness
+### Full Laziness
 
 Another useful thing about Haskell's laziness (full laziness). Is that expressions are never evaluated multiple times, even inside a loop. For example:
 

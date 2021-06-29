@@ -45,6 +45,10 @@ body {
 	background-color: #e8d9f7
 }
 
+#simple {
+	color: lightgreen;
+}
+
 * {
 	font-family: Verdana;
 }
