@@ -1,6 +1,6 @@
 # Nibbles Home
 
-Nibbles is a **minimal [codegolf](https://en.wikipedia.org/wiki/Code_golf)** language (it aims to be good at codegolf while remaining relatively simple). It is also purely **functional**, statically typed, and fully lazy. Syntax is **Polish** (prefix) notation. Each instruction is **half a byte**.
+$Intro
 
 ### Resources
 
@@ -18,4 +18,5 @@ Good places to use Nibbles for competing online are:
 $Feedback
 
 ## News
-- No news is good news
+- **June 29, 2021**: Nibbles is in **Alpha**! If you post code please designate it as Nibbles Alpha so as not to be confusing later when it becomes broken by language changes.
+

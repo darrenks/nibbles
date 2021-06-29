@@ -13,6 +13,8 @@ Let's see this in action.
 ### Install Haskell
 Follow instructions at [https://www.haskell.org/platform/](https://www.haskell.org/platform/)
 
+Or if you already have Haskell installed, check compatibility (I'm using GHC 8.10) with `ruby test/testall.rb` after you've installed the required libs.
+
 ### Install some libs
 	> cabal install --lib dlist
 	> cabal install --lib split
