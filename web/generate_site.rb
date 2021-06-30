@@ -2,7 +2,7 @@ Navbar='<div id="navbar"><ul>
 	<li id="nibbles"><a href="index.html">Nibbles</a></li>
 	<li><a href="tutorial_basics.html">Tutorial: Basics</a> | <a href="tutorial_ancillary.html">Ancillary</a> | <a href="tutorial_minutiae.html">Minutiae</a></li>
 	<li><a href="quickref.html">Quick Ref</a></li>
-	<li><a href="https://github.com/darrenks/nibbles">Code: Github</a> | <a href="nibbles-latest.tgz">Download</a></li>
+	<li><a href="https://github.com/darrenks/nibbles">Code: Github</a> | <a href="download.html">Download</a></li>
 </ul></div>'
 
 allFiles = `cd docs; echo *.md`.split
@@ -16,6 +16,8 @@ def convertMd(filename)
 	File.open('t.md','w'){|f|f<<md}
 	markdown = `markdown.pl < t.md`
 	`rm t.md`
+	markdown.gsub!(/\<p\>\$Solution\<\/p\>(.*?)\<p\>\$EndSolution\<\/p\>/m,
+		'<details><summary>Solution</summary>\\1<hr></details>')
 	
 	title = markdown[/<h1>(.*?)<\/h1>/,1]
 	if title.nil?

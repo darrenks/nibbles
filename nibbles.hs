@@ -1,3 +1,5 @@
+{-# LANGUAGE QuasiQuotes #-}
+
 import Data.List(isPrefixOf)
 import System.Environment
 import System.IO
@@ -6,6 +8,7 @@ import System.FilePath
 import System.Process
 import System.Exit
 
+import FileQuoter
 import Compile
 import Header
 import Polylib
@@ -31,6 +34,10 @@ usage = "\
 \  empty = use stdin in literate form\n"
 
 data ParseMode = FromLit | FromBytes deriving Eq
+
+-- Set this as a constant rather than read it to create a stand-alone binary.
+headerRaw :: String
+headerRaw = [litFile|header.hs|]
 
 main=do
 	setLocaleEncoding char8
@@ -60,7 +67,6 @@ main=do
 	 			else return ()
 --  			hPutStrLn stderr lit
 --  			hPutStrLn stderr $ flatHs hs
- 			headerRaw <- readFile "header.hs"
  			let header = unlines $ tail $ lines headerRaw -- remove "module Header"
  			writeFile "out.hs" $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs (implCode impl) ++ ").sToA)"
  			if ops /= ["-norun"] then do

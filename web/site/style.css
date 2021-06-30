@@ -1,3 +1,7 @@
+hr {
+  border: 1px solid black;
+}
+
 code { 
 	font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
 	padding: 3px;

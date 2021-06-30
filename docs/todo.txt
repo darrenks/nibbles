@@ -1,3 +1,5 @@
+generate error ops for rebound extensions (right way to detect accidental extension use)
+
 debug features to add:
 	gather rest of program
 	show context values
@@ -13,6 +15,7 @@ For alpha release:
 minor things:
 -coerce after foldr
 -use of char (and instances to convert for vec)
+	+ 'a' =@1 # gives Int Integer error (likely other cases of this)
 
 -auto test examples from docs
 
@@ -20,6 +23,7 @@ multiple values makes special behavior (i.e. if int constant, range map?)?
 	auto range1 map if number then multiple outputs? also could auto map if list?
 ------------------------------------------
 compile with wall on? nah, but incomplete patterns would be most useful
+should also have dependency bounds for dlist/etc.
 -------------------------------
 auto input types
 library reference?
@@ -52,3 +56,5 @@ more extensions
 auto fill $ for implicit input (or unused args that were expected to be used) (let's wait and see what would be most useful)
 
 quickref to show return types
+
+debuging commands that use error to exit, surpress callstack/etc.

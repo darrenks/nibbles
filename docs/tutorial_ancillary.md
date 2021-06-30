@@ -36,11 +36,12 @@ Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds
 
 This is critical for the whole model of Nibbles' syntax (since there would be no easy way to move an expensive computation from inside a loop to out).
 
-### Challenge Exercise
+### <span style="color: red">Challenge</span> Exercise
 Write a program that finds one factor of a composite number from stdin, let's say 3902309423233451. You may not hard code constants besides numbers <= 2.
 
-<details>
-<summary>Solution</summary>
+Hint: If you'd like to negate a "bool" don't forget about the custom truthiness rules for ints.
+
+$Solution
 
 	<1 &          # Get the first 1 elements of the filtered list.
 	  >1,=@ 1     # Generate the list from 2 to input
@@ -49,7 +50,8 @@ Write a program that finds one factor of a composite number from stdin, let's sa
 This is the first time we've needed comments, use them with `#`
 
 That was hard, and there are still some pain points we haven't learned how to get around yet, like having to extract the input number from a list twice (and differently even since there was something added to the context). The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly exit the loop.
-</details>
+
+$EndSolution
 
 ## Output
 
@@ -62,11 +64,11 @@ So far we've just been printing a single value or string. But if your program re
 	1 2 3
 	1 2 3	
 
-Higher dimension lists are concatenated first. For printing purposes a string is considered a single value (not a list of chars).
+Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
 ### Multiple Outputs
 
-You can return multiple things (i.e. `1 2`). They will just be printed without any separators, in this case `12`. This behavior is likely to change in the future (todo).
+You can return multiple things (e.g. `1 2`). They will just be printed without any separators, in this case `12`. This behavior is likely to change in the future (todo).
 
 If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `:~` (singleton).
 
@@ -84,20 +86,21 @@ You can probably guess the auto values for each operation, but they are also lis
 
 ## Let Statements
 
-`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. I.e. if you use a loop variable the let variable can only be used within that loop.
+`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the let variable can only be used within that loop.
 
 ### Exercise
 
 Write a program to print the sum of all numbers in the input or the string "large" if that sum is greater than 100 (without computing the sum twice).
-<details>
-<summary>Solution</summary>
+
+$Solution
 
 	? - ;+@ 100 "large" $
-</details>
+
+$EndSolution
 
 ## Tuples
 
-When I said `;` is "somewhat special" I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself.
+When I said `;` is "somewhat special" I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself. Tuples really are somewhat special though (not first class), they will never be bound to an identifier.
 
 For example `/~` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
 
@@ -108,13 +111,15 @@ Note if you wanted to use the value of the mod before the div, you can't do that
 
 ### Creating Tuples
 
-Normally it would be pointless to create your own tuple, it would immediately be deconstructed. But it could be useful to return multiple values from your own functions, and so you are able to by using `~` at the beginning of any function. For example:
+In functions you can return a tuple instead of a regular value using `~`. For example:
 
-	p.,10 ~$ *$$
+	p.,5 ~$ *$$
 
 Gives
 
 	[(1,1),(2,4),(3,9),(4,16),(5,25)]
+
+Outside of functions it would be pointless to create your own tuple, it would immediately be deconstructed, and so that opcode has been rebound to something else, making it invalid to even try.
 
 ## Maybe
 
@@ -130,9 +135,9 @@ For example `+5 ,5` gives `[6,7,8,9,10]`. This is cool, but not as useful as in 
 
 You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
 
-In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (i.e. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
+In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
 
-Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (for now at least). This is reasonable in that a 3 nibble op has an implied probability of use as 1/4096 which would mean that very few programs would use it and I don't wish to convolute the language with things that are of little use.
+Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (for now at least). This is reasonable in that a 3 nibble op has an implied probability of use as 1/2<sup>12</sup> which would mean that very few programs would use it and I don't wish to convolute the language with things that are of little use.
 
 If you find possible two nibble extensions, please let me know!
 
@@ -147,26 +152,26 @@ Example:
 gives
 
 	9
-and now we can use that square function with `$`. I.e. `$4` gives `16`.
+and now we can use that square function with `$`. E.g. `$4` gives `16`.
 
-Note that we can even square strings now. I.e. `$"5"` -> `25`.
+Note that we can even square strings now. E.g. `$"5"` -> `25`.
+
+It may seem odd that we couldn't define a function without using it. But this is codegolf, why would you want to!
 
 ### Exercise
 
 Define your own divmod!
 
-Hint: The first argument to `;;` is actually a function of no arguments.
+Hint: The first argument to `;;` is actually a function of no arguments (which allows you to pass a tuple into your function).
 
-<details>
-<summary>Solution</summary>
+$Solution
 
 	;; ~10 3 ~/$@ %$@   $ # returns 3,1
 	@ 15 5              $ # returns 3,0
-</details>
 
 Notice that the second use of your function didn't require you to use `~`. It knew it took two arguments.
 
-It may seem odd that we couldn't define a function without using it. But this is codegolf, why would you want to!
+$EndSolution
 
 ### Recursive Functions
 
@@ -180,3 +185,6 @@ Recursive functions always need a base case to terminate, and the base case is e
 
 The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).
 
+Create a recursive funciton with `;~`.
+
+Check out the example in the $QuickRef
