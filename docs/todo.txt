@@ -1,5 +1,3 @@
-generate error ops for rebound extensions (right way to detect accidental extension use)
-
 debug features to add:
 	gather rest of program
 	show context values

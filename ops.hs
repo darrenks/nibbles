@@ -9,17 +9,26 @@ import Parse
 import Args
 
 import State
+import Data.List(concat)
 
 data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (ParseState Impl)
 
-op(lit, nib, t, impl, autos) = (lit, nib, Op t (toImpl impl) autos)
-atom(lit, nib, impl) = (lit, nib, Atom impl)
+op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
+atom(lit, nib, impl) = [(lit, nib, Atom impl)]
+
+litExtError invalidLit lit = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\nThis usually means there is an alternative (likely shorter) way to do what you are trying to. For more infromation see Extensions in https://nibbles.golf/tutorial_ancillary.html"
+
+extendAtom invalidLit (lit, nib, impl) =
+	atom (invalidLit, [], litExtError invalidLit lit) ++ atom (lit, nib, impl)
+
+extendOp invalidLit (lit, nib, t, impl, autos) =
+	op (invalidLit, [], t, litExtError invalidLit lit :: (VT,String), []) ++ op (lit, nib, t, impl, autos)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
 ops :: [(String, [Int], Operation)]
-ops = map convertNullNib [
+ops = map convertNullNib $ concat [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),
@@ -46,7 +55,7 @@ ops = map convertNullNib [
 	-- Test (size 3): 'a' -> 'a'
 	-- Test (size 3): ' ' -> ' '
 	-- Test (size 5): '\200' -> '\200'
-	atom("'", [13,2], parseChrExpr),
+	extendAtom ",\"" ("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
 	atom("$", [3], argn 1),
@@ -137,7 +146,7 @@ ops = map convertNullNib [
 	-- Desc: product
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
-	op("pd", [8,11], [listOf int], "product" ~> VInt, []),
+	extendOp "+\\" ("pd", [8,11], [listOf int], "product" ~> VInt, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
@@ -173,7 +182,7 @@ ops = map convertNullNib [
 	op("/", [10], [list, fn $ dup.elemT.a1], "flip$foldr1" ~> ret.a2, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
-	op("st", [11, 11], [list], "sort" ~> a1, []),
+	extendOp "\\\\" ("st", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [11,2], [anyT], "asdf" ~> VInt, []),
@@ -197,7 +206,7 @@ ops = map convertNullNib [
 	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
-	op("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
+	extendOp ",." ("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn ((:[]).elemT.a1)], "flip map" ~> VList .ret.a2, []),
@@ -215,13 +224,13 @@ ops = map convertNullNib [
 	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
-	op("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
+	extendOp ",," ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
-	op("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
+	extendOp ",%" ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",^", [13,14], [int, list], "asdf" ~> VInt, [autoTodo]),

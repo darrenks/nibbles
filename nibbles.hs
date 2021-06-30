@@ -51,14 +51,9 @@ main=do
 				where (base, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
-	let (impl, b, lit)  = compileIt $ case parseMode of
+	let (impl, b, lit)  = compile finish "" $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
-
-	let (_, _, realLit) = compileIt $ Nib b 0
-	if parseMode == FromLit && noOnlyLits b && realLit /= lit
-	then error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ lit ++ "\nBut this actually will mean:\n" ++ realLit ++ "\nThis usually means there is an alternative (likely shorter) way to do what you are trying to. For more infromation see the Extensions section of the docs"
-	else return ()
 
 	case filter isOpt args of
 		ops | ops == [] || ops == ["-norun"] -> do
@@ -92,5 +87,3 @@ main=do
 	where
 		isOpt = isPrefixOf "-"
 		toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
-		compileIt = compile finish ""
-		noOnlyLits b = all (/=16) b
