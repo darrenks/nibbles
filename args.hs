@@ -5,7 +5,7 @@ import Types
 import Header
 import Hs
 
-import Parse (nextHex,parseError)
+import Parse (parseError)
 import Data.List
 import Data.Maybe
 import State
@@ -77,4 +77,4 @@ showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe 
 
 indexToOp :: Int -> String
 indexToOp = fromMaybe "<truncated>" . (at indexOps) where
-	indexOps = ["$","@","`3","`4","`5","`6","`7","`8","`9","`a","`b","`c","`d","`e","`f"]
+	indexOps = [replicate unary ';' ++ sym | unary <- [0..11], sym <- ["$","@","_"]]

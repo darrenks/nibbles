@@ -112,9 +112,13 @@ There were a couple things in that table we haven't seen yet, functions and args
 
 Functions do not require any syntax, some ops take a function argument and automatically treat that operand as a function. Any expression can be treated as a function, for example if `+1 2` is to be treated as a function with 1 argument, then it is simply a function which ignores its argument and returns 3!
 
-Args are referenced by number with the following identifiers: `$` `@` `` `3 `` `` `4 `` `` `5 `` `` `6 `` `` `7 `` `` `8 `` `` `9 `` `` `a `` `` `b `` `` `c `` `` `d `` `` `e `` `` `f ``. If you are nesting functions then these count upwards in scope. For example in an inner function of 1 argument, `$` would be its argument as usual, but `@` would be the first argument of the outer function. This is also known as DeBruijn indices.
+#todo
+
+Args are referenced by number with the following identifiers: `$` `@` `_`. If you are nesting functions then these count upwards in scope. For example in an inner function of 1 argument, `$` would be its argument as usual, but `@` would be the first argument of the outer function. This is also known as DeBruijn indices.
 
 See `map`, `foldr`, etc in the ops table for examples.
+
+If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 5.
 
 ### Exercise
 Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
@@ -138,7 +142,7 @@ All programs actually start off with args available for use.
 
 - `$` is the entire stdin as a string
 - `@` is the entire stdin parsed into a list of ints (with non ints removed)
-- `` `3 `` is the entire stdin split into lines (a list of strings).
+- `_` is the entire stdin split into lines (a list of strings).
 
 For example
 
@@ -157,7 +161,7 @@ Reverse every line in the input.
 
 $Solution
 
-	.`3\$
+	._\$
 $HiddenOutput "12\n34"
 	21
 	43

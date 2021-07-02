@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), ops, impossibleAuto, autoTodo) where
+module Ops (Operation(..), ops, allOps, impossibleAuto, autoTodo) where
 
 import Types
 import Polylib
@@ -58,16 +58,15 @@ ops = map convertNullNib $ concat [
 	extendAtom ",\"" ("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
+	-- Test: ;1;2;3;4 ;$ -> 1,2,3,4,1
+	-- Test: ;1;2;3;4;5;6;7 ;;$ -> 1,2,3,4,5,6,7,1
 	atom("$", [3], argn 1),
 	-- Desc: 2nd arg
 	-- Example: ;1;2;3 @ -> 1,2,3,2
 	atom("@", [4], argn 2),
-	-- Desc: nth arg
-	-- Example: ;1;2;3 `3 -> 1,2,3,1
-	atom("`", [5], nextHex >>= argn), -- todo make it 3 to f instead of 2 to f
-	-- Desc: tbd (@ too)
-	-- Example: 0 -> 0
-	op(";$", [6,3], [anyT], "asdf" ~> VInt, []),
+	-- Desc: 3rd arg
+	-- Example: ;1;2;3 _ -> 1,2,3,1
+	atom("_", [], argn 3),
 	-- Desc: let fn
 	-- Example: ;;2+$1 $4 -> 3,5
 	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
@@ -84,7 +83,7 @@ ops = map convertNullNib $ concat [
 			), []),
 	-- Desc: let rec
 	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
-	-- Test (multiple args): ;~ ~3 4 $ 0 +@`3 -$1 @   $ 5 6 -> 12,30
+	-- Test (multiple args): ;~ ~3 4 $ 0 +@_ -$1 @   $ 5 6 -> 12,30
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
@@ -100,7 +99,7 @@ ops = map convertNullNib $ concat [
 	-- Test: ++; 3 ; 2 $ -> 7
 	-- Test: ++; 3 ; 2 @ -> 8
 	-- Test: ++; 5 /,1 $ $ -> 11
-	-- Test: ++; 5 /,2 `3 $ -> 15
+	-- Test: ++; 5 /,2 _ $ -> 15
 	-- Test: ++; 5 /,1 ;7 $ -> 13
 	-- Test: ++; 5 /,1 ;+0$ $ -> 11
 	-- Test: +;1 + ;2 @ -> 4
@@ -291,7 +290,7 @@ ops = map convertNullNib $ concat [
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
 	-- Desc: debug context types
 	-- Example: ;5 ct -> error "$ LetArg VInt ..."
-	atom("ct", [], gets pdContext >>= parseError . debugContext),
+	atom("ct", [], gets pdContext >>= parseError . debugContext), -- todo this puts error in wrong code spot
 	-- Desc: error
 	-- Example: error "asdf" -> error "asdf"
 	op("error", [], [str], "error.aToS" ~> vstr, []),
@@ -392,3 +391,11 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 
 testCoerceTo :: VT -> [VT] -> (VT, String)
 testCoerceTo to [a1] =  (to, coerceTo(to, a1))
+
+allOps = concat [atom(
+		replicate unary ';' ++ snd symb,
+		replicate unary 6 ++ [2+fst symb],
+		argn (unary*3+fst symb))
+	| unary <- [1..10]
+	, symb <- [(1,"$"),(2,"@"),(3,"_")]
+	] ++ ops

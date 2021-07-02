@@ -3,11 +3,11 @@
 In this tutorial you will learn some useful features to help you reach par in some code golf problems.
 
 ## Laziness
-So you might have been wondering how using the input args work. When does it parse the input? What if I use both `@` and `` `3``? What if I use it multiple times? The answers are all very simple (if you understand laziness). Laziness is the whole reason Nibbles uses Haskell.
+So you might have been wondering how using the input args work. When does it parse the input? What if I use both `@` and `_`? What if I use it multiple times? The answers are all very simple (if you understand laziness). Laziness is the whole reason Nibbles uses Haskell.
 
 When does it parse the input? This is the wrong question to be asking in a purely functional language. But more practically speaking, your program won't get stuck waiting for input if you don't use any input variables. If your program unexpectedly hangs you may have accidentally used an input var, causing it to wait for input.
 
-What if I use both `@` and `` `3``? They both work independently, sharing the same input.
+What if I use both `@` and `_`? They both work independently, sharing the same input.
 
 What if I use it multiple times? It will return the same result each time. In fact everything in nibbles is a pure function.
 
@@ -51,7 +51,7 @@ $Solution
 
 	<1 &          # Get the first 1 elements of the filtered list.
 	  >1,=@ 1     # Generate the list from 2 to input
-	  - 1 %=`3 1$ # \elem -> 1 - (input % elem)
+	  - 1 %=_ 1$ # \elem -> 1 - (input % elem)
 $HiddenOutput "3902309423233451"
 	436151
 

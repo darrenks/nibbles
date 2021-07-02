@@ -12,7 +12,6 @@ module Parse(
 	parseError,
 	nextOffset,
 	consumeWhitespace,
-	nextHex,
 	empty,
 	fromByte,
 	toByte) where
@@ -24,7 +23,7 @@ import Hs
 import Header (at)
 
 import Data.Char
-import Numeric (showOct, readHex, showHex)
+import Numeric (showOct)
 import Data.Maybe (fromMaybe)
 import State
 
@@ -115,19 +114,6 @@ empty (Lit _ [] _) = True
 empty _ = False
 nextOffset (Nib (c:s) cp) = Nib s (cp+1)
 nextOffset (Lit f (c:s) cp) = Lit f s (cp+1)
-nextHex :: ParseState Int
-nextHex = do
-	code <- gets pdCode
-	v <- case code of
-		(Nib (c:s) cp) -> do
-			modify $ \st -> st { pdCode=Nib s (cp+1) }
-			return c
-		(Lit f (c:s) cp) -> do
-			let [(h, _)] = readHex [c]
-			modify $ \st -> st { pdCode=sLit f s (cp+1) }
-			return h
-	appendRep ([v],showHex v "")
-	return v
 
 match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
@@ -149,7 +135,7 @@ parseError msg = do
 
 literateError s cp =
 	"at line: " ++ show lineno
-		++ ", char: " ++ show charno
+		++ ", char: " ++ show (charno+1)
 		++ "\n" ++ arrows ++ "v"
 		++ "\n" ++ line
 		++ "\n" ++ arrows ++ "^"
@@ -158,7 +144,7 @@ literateError s cp =
 		lineno = length $ lines prev
 		line = lines s !! (lineno-1)
 		charno = fromMaybe cp $ elemIndex '\n' $ reverse prev
-		arrows = replicate (charno-1) ' '
+		arrows = replicate charno ' '
 
 consumeWhitespace :: Code -> Code
 consumeWhitespace n@(Nib _ _) = n
