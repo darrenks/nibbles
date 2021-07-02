@@ -157,7 +157,7 @@ literateError s cp =
 		prev = take cp s
 		lineno = length $ lines prev
 		line = lines s !! (lineno-1)
-		charno = fromMaybe 0 $ elemIndex '\n' $ reverse prev
+		charno = fromMaybe cp $ elemIndex '\n' $ reverse prev
 		arrows = replicate (charno-1) ' '
 
 consumeWhitespace :: Code -> Code

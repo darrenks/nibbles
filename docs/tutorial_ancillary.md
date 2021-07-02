@@ -66,11 +66,16 @@ So far we've just been printing a single value or string. But if your program re
 
 Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
+If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `:~` (singleton).
+
 ### Multiple Outputs
 
-You can return multiple things (e.g. `1 2`). They will just be printed without any separators, in this case `12`. This behavior is likely to change in the future (todo).
+You can return multiple things, e.g.
 
-If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `:~` (singleton).
++1 2
++3 4
+
+They will just be printed without any separators, in this case `37`. This behavior is likely to change in the future (todo).
 
 ## More Inputs
 
@@ -133,7 +138,7 @@ For example `+5 ,5` gives `[6,7,8,9,10]`. This is cool, but not as useful as in 
 
 ## Extensions
 
-You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
+You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
 
 In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
 

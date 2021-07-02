@@ -17,7 +17,7 @@ minor things:
 
 -auto test examples from docs
 
-multiple values makes special behavior (i.e. if int constant, range map?)?
+multiple values in main makes special behavior (i.e. if int constant, range map?)?
 	auto range1 map if number then multiple outputs? also could auto map if list?
 ------------------------------------------
 compile with wall on? nah, but incomplete patterns would be most useful
@@ -56,3 +56,6 @@ auto fill $ for implicit input (or unused args that were expected to be used) (l
 quickref to show return types
 
 debuging commands that use error to exit, surpress callstack/etc.
+
+switch to integer and char everywhere
+bounded integers/list size for more efficient math ops and no need for maybe on some list ops
