@@ -27,8 +27,8 @@ extendOp invalidLit (lit, nib, t, impl, autos) =
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 
-ops :: [(String, [Int], Operation)]
-ops = map convertNullNib $ concat [
+rawOps :: [[(String, [Int], Operation)]]
+rawOps = [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (undefined::String)~>VAuto, []),
@@ -66,7 +66,7 @@ ops = map convertNullNib $ concat [
 	atom("@", [4], argn 2),
 	-- Desc: 3rd arg
 	-- Example: ;1;2;3 _ -> 1,2,3,1
-	atom("_", [], argn 3),
+	atom("_", [5], argn 3),
 	-- Desc: let fn
 	-- Example: ;;2+$1 $4 -> 3,5
 	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
@@ -392,10 +392,11 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 testCoerceTo :: VT -> [VT] -> (VT, String)
 testCoerceTo to [a1] =  (to, coerceTo(to, a1))
 
+ops = map (convertNullNib.last) rawOps -- the others are for invalid literate warning
 allOps = concat [atom(
 		replicate unary ';' ++ snd symb,
 		replicate unary 6 ++ [2+fst symb],
 		argn (unary*3+fst symb))
 	| unary <- [1..10]
 	, symb <- [(1,"$"),(2,"@"),(3,"_")]
-	] ++ ops
+	] ++ map convertNullNib (concat rawOps)

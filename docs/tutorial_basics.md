@@ -112,8 +112,6 @@ There were a couple things in that table we haven't seen yet, functions and args
 
 Functions do not require any syntax, some ops take a function argument and automatically treat that operand as a function. Any expression can be treated as a function, for example if `+1 2` is to be treated as a function with 1 argument, then it is simply a function which ignores its argument and returns 3!
 
-#todo
-
 Args are referenced by number with the following identifiers: `$` `@` `_`. If you are nesting functions then these count upwards in scope. For example in an inner function of 1 argument, `$` would be its argument as usual, but `@` would be the first argument of the outer function. This is also known as DeBruijn indices.
 
 See `map`, `foldr`, etc in the ops table for examples.
