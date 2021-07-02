@@ -118,7 +118,7 @@ Args are referenced by number with the following identifiers: `$` `@` `_`. If yo
 
 See `map`, `foldr`, etc in the ops table for examples.
 
-If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 5.
+If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
 ### Exercise
 Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
