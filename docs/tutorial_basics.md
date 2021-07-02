@@ -61,7 +61,19 @@ You've seen **integers**, other data types are chars and lists. **Chars** behave
 
 **Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `::1 2 3` -> `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
 
-**Strings** are actually just a list of chars, and can be created using double quotes, for example `"Hello\n"` does what you would expect. Note that escapes are valid for strings and chars in the same style that Haskell uses.
+**Strings** are actually just a list of chars, and can be created using double quotes. Escapes are valid for strings and chars in the same style that Haskell uses. E.g.
+
+	"Hi\nthere"
+$Output
+	Hi
+	there
+
+### A note on example format in this tutorial
+
+-	Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketted, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`
+-	Boxed examples mean the result (shown in the solid box) is what nibbles would actually output.
+
+## Ops
 
 Here is [a table of the basic Nibbles ops](https://nibbles.golf/simpleref.html). There is a more complete quick reference, but for now it would have some confusing things. A couple things to note:
 

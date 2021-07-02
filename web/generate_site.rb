@@ -6,12 +6,6 @@ Navbar='<div id="navbar"><ul>
 </ul></div>'
 
 def addTest(raw, prog, input, output)
-	output = if raw == "Raw"
-		output.gsub(/^\t/,'').inspect
-	else
-		output.inspect[1..-2]
-	end
-		
 	File.open('test/tutorialTests.hs','a'){|f|f.puts "-- #{raw}Test %s : %s -> %s" % [input, prog, output]}
 end
 
@@ -21,16 +15,17 @@ end
 
 def convertTests(md)
 	md.gsub!(/\$(Hidden)?Output ?(".*?")?\n((\t.*?\n)+)/m) {
-		addTest("Raw", getProg($`), $2 || "", $3)
+		output = $3
+		addTest("Raw", getProg($`), $2 || "", $3.gsub(/^\t/,'').inspect)
 		if $1 # Hidden
 			''
 		else
-			"$Gives\n\n"+$3++"\n"
+			"$Gives\n\n"+output++"\n"
 		end
 	}
 	md.gsub!(/`([^`]+)` ?-> ?`(.*?)`/) {
 		addTest("", $1, "", $2)
-		$1 + " &#x2907; " + $2
+		"`" + $1 + "`" + " &#x2907; " + "`" + $2 + "`"
 	}
 end
 
