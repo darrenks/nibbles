@@ -13,14 +13,17 @@ def getProg(pre)
 	pre.reverse[/\A.*?\n\n/m].reverse.gsub(/\#.*/,'').gsub("\n", ' ').gsub(/\s+/,' ').split(/\$(Hidden)Output/)[0]
 end
 
+def removeLeadingTabs(s)
+	s.gsub(/^\t/,'')
+end
+
 def convertTests(md)
 	md.gsub!(/\$(Hidden)?Output ?(".*?")?\n((\t.*?\n)+)/m) {
-		output = $3
-		addTest("Raw", getProg($`), $2 || "", $3.gsub(/^\t/,'').inspect)
+		addTest("Raw", getProg($`), $2 || "", removeLeadingTabs($3).inspect)
 		if $1 # Hidden
 			''
 		else
-			"$Gives\n\n"+output++"\n"
+			"$Gives\n\n"+$3++"\n"
 		end
 	}
 	md.gsub!(/`([^`]+)` ?-> ?`(.*?)`/) {
