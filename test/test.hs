@@ -12,35 +12,41 @@ import Data.List.Split -- needs cabal install --lib split
 import Hs(flatHs)
 
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s = Just (
+getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s || isPrefixOf "-- RawTest" s = Just (
 	case elemIndex ':' s of
-		Just i -> (input, output, size) where
-			[input,output] = splitOn " -> " (drop (i + 2) s)
-			size = case splitOn "(size" (take i s) of
+		Just i -> (input, stdin, output, size, isPrefixOf "-- RawTest" s) where
+			beforeColon = take i s
+			afterColon = drop (i + 2) s
+			[input,output] = splitOn " -> " afterColon
+			stdin = case elemIndex '"' beforeColon of
+				Just quoteIndex -> fst $ head $ reads $ drop quoteIndex beforeColon:: String
+				Nothing -> ""
+			size = case splitOn "(size" beforeColon of
 				[pre,post] -> read (head $ splitOn ")" post)
 				otherwise -> 0
 	)
 getExample _ = Nothing
 
-isErrorResult (_, output, _) = isPrefixOf "error" output
+isErrorResult (_, _, output, _, _) = isPrefixOf "error" output
 
 getTestsFromAnnotations = do
 	ops1 <- readFile "ops.hs"
 	ops2 <- readFile "test/additional_tests.hs"
-	return $ catMaybes $ map getExample (lines ops1 ++ lines ops2)
+	ops3 <- readFile "test/tutorialTests.hs"
+	return $ catMaybes $ map getExample (lines ops1 ++ lines ops2 ++ lines ops3)
 
 runHs prog = do
 	writeFile "out.hs" prog
 	(_, Just hout, _, _) <- createProcess (proc "runhaskell" ["--ghc-arg=-Wno-tabs", "out.hs"]){ std_out = CreatePipe }
 	hGetContents hout
 
-toTest(origLit, expect, size) =
-	("putStrLn$aToS$"++testHs++";", (expect,
+toTest(origLit, stdin, expect, size, isRaw) =
+	("\n\tlet input=sToA"++show stdin++"\n\t"++(if isRaw then "print$finishLn" else "putStrLn")++"$aToS$"++testHs, (expect,
 	outLit, origLit,
 	length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
 	flatHs (implCode implFromNib), testHs))
 	where
-		cc = compile inspect ","
+		cc = if isRaw then compile finish "" else compile inspect ","
 		(implFromLit, nib, outLit) =  cc $ Lit origLit origLit 0
 		testHs = flatHs (implCode implFromLit)
 		(implFromNib, _, _) = cc $ Nib nib 0
@@ -66,7 +72,7 @@ main=do
 	let (_,(_,_,x,_,_,_,_)) = last tests
 	putStrLn $ show $ x
 	header <- readFile "header.hs"
-	let prog = header ++ "\ninput=[]\nmain=do;" ++ concatMap fst tests
+	let prog = header ++ "\nmain=do" ++ concatMap fst tests
 	result <- runHs prog
 	-- todo check result size matches
 	mapM printTestResult $ zip (lines result) (map snd tests)

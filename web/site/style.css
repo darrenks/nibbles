@@ -15,6 +15,10 @@ pre code {
 	border:1px dashed black;
 }
 
+code.result {
+	border:1px solid black;
+}
+
 #navbar * {
 	text-decoration: none;
 	font-weight: bold;

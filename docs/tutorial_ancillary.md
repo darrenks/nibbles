@@ -14,11 +14,17 @@ What if I use it multiple times? It will return the same result each time. In fa
 ### Infinite lists and errors
 If this is all unfamiliar to you, you could read up on [lazy evaluation](https://en.wikipedia.org/wiki/Lazy_evaluation). But you'll do ok with just the information here, as laziness should be pure win compared to eager evaluation (for codegolf purposes). Anything you would do eagerly will still work in equal or better asymptotic time lazily.
 
-Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=\: /1 0 2 1` (which builds the list of `[error,2]`, reverses it then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
+Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=\: /1 0 2 1` -> `2` (which builds the list of `[error,2]`, reverses it then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
 
-And we could also generate the list of numbers from 1 to a googol, then select only the first 50 that are odd as such:
+And we could also generate the list of numbers from 1 to a googol, then select only the first 5 that are odd as such:
 
-	<50 & ,^10 100 %$2
+	<5 & ,^10 100 %$2
+$HiddenOutput
+	1
+	3
+	5
+	7
+	9
 
 Without it using all of the time the universe has to offer. This is useful when we don't know how many elements we will need at later stages of computations (typically languages have a separate concept of streams to support this, but that is superflous in a lazy language).
 
@@ -46,6 +52,8 @@ $Solution
 	<1 &          # Get the first 1 elements of the filtered list.
 	  >1,=@ 1     # Generate the list from 2 to input
 	  - 1 %=`3 1$ # \elem -> 1 - (input % elem)
+$HiddenOutput "3902309423233451"
+	436151
 
 This is the first time we've needed comments, use them with `#`
 
@@ -58,11 +66,10 @@ $EndSolution
 So far we've just been printing a single value or string. But if your program returns a list it is printed with newlines between each element. And if it is a list of lists then spaces between those inner elements. Example:
 
 	.,3 .,3 $
-<!-- -->
-
+$Output
 	1 2 3
 	1 2 3
-	1 2 3	
+	1 2 3
 
 Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
@@ -72,10 +79,12 @@ If the default behavior isn't what you want, you can fairly easily increase or d
 
 You can return multiple things, e.g.
 
-+1 2
-+3 4
+	+1 2
+	+3 4
+$Output
+	37
 
-They will just be printed without any separators, in this case `37`. This behavior is likely to change in the future (todo).
+They will just be printed without any separators. This behavior is likely to change in the future (todo).
 
 ## More Inputs
 
@@ -100,6 +109,10 @@ Write a program to print the sum of all numbers in the input or the string "larg
 $Solution
 
 	? - ;+@ 100 "large" $
+$HiddenOutput "1 2 3"
+	6
+$HiddenOutput "50 51"
+	large
 
 $EndSolution
 
@@ -111,6 +124,9 @@ For example `/~` is a function that means `divmod`. It is just a function which 
 
 	"the div is: " /~ 10 3 "\n"
 	"the mod is: " $
+$HiddenOutput
+	the div is: 3
+	the mod is: 1
 
 Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function `%~` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
 
@@ -119,9 +135,7 @@ Note if you wanted to use the value of the mod before the div, you can't do that
 In functions you can return a tuple instead of a regular value using `~`. For example:
 
 	p.,5 ~$ *$$
-
-Gives
-
+$Output
 	[(1,1),(2,4),(3,9),(4,16),(5,25)]
 
 Outside of functions it would be pointless to create your own tuple, it would immediately be deconstructed, and so that opcode has been rebound to something else, making it invalid to even try.
@@ -134,7 +148,7 @@ todo
 
 Check out the full $QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
 
-For example `+5 ,5` gives `[6,7,8,9,10]`. This is cool, but not as useful as in other golf languages because it prevents overloading by type, so it is only provided for these very common operations.
+For example `+5 ,5` -> `[6,7,8,9,10]`. This is cool, but not as useful as in other golf languages because it prevents overloading by type, so it is only provided for these very common operations.
 
 ## Extensions
 
@@ -154,25 +168,30 @@ This can be done using the `;;` extension. `;;` takes two arguments, treating th
 Example:
 
 	;;3 *$$
-gives
-
+$Output
 	9
 and now we can use that square function with `$`. E.g. `$4` gives `16`.
 
-Note that we can even square strings now. E.g. `$"5"` -> `25`.
+Note that we can even square strings now. E.g. `$"5"` gives `25`.
 
 It may seem odd that we couldn't define a function without using it. But this is codegolf, why would you want to!
 
 ### Exercise
 
-Define your own divmod!
+Define your own divmod (and call it)!
 
 Hint: The first argument to `;;` is actually a function of no arguments (which allows you to pass a tuple into your function).
 
 $Solution
 
-	;; ~10 3 ~/$@ %$@   $ # returns 3,1
-	@ 15 5              $ # returns 3,0
+	p :                   # pretty print 1st call
+		;; ~10 3 ~/$@ %$@  # create fn and call it
+		$                  # get the snd result
+	p :                   # pretty print 2nd call
+		@ 20 5             # call it again
+		$                  # get the snd result
+$Output
+	[3,1][4,0]
 
 Notice that the second use of your function didn't require you to use `~`. It knew it took two arguments.
 

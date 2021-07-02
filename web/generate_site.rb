@@ -5,7 +5,37 @@ Navbar='<div id="navbar"><ul>
 	<li><a href="https://github.com/darrenks/nibbles">Code: Github</a> | <a href="download.html">Download</a></li>
 </ul></div>'
 
+def addTest(raw, prog, input, output)
+	output = if raw == "Raw"
+		output.gsub(/^\t/,'').inspect
+	else
+		output.inspect[1..-2]
+	end
+		
+	File.open('test/tutorialTests.hs','a'){|f|f.puts "-- #{raw}Test %s : %s -> %s" % [input, prog, output]}
+end
+
+def getProg(pre)
+	pre.reverse[/\A.*?\n\n/m].reverse.gsub(/\#.*/,'').gsub("\n", ' ').gsub(/\s+/,' ').split(/\$(Hidden)Output/)[0]
+end
+
+def convertTests(md)
+	md.gsub!(/\$(Hidden)?Output ?(".*?")?\n((\t.*?\n)+)/m) {
+		addTest("Raw", getProg($`), $2 || "", $3)
+		if $1 # Hidden
+			''
+		else
+			"$Gives\n\n"+$3++"\n"
+		end
+	}
+	md.gsub!(/`([^`]+)` ?-> ?`(.*?)`/) {
+		addTest("", $1, "", $2)
+		$1 + " &#x2907; " + $2
+	}
+end
+
 allFiles = `cd docs; echo *.md`.split
+`rm test/tutorialTests.hs; touch test/tutorialTests.hs`
 
 def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')
@@ -13,11 +43,13 @@ def convertMd(filename)
 	md.gsub!('$QuickRef','[Quick Ref](quickref.html)')
 	md.gsub!('$Feedback','Bug reports, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at ![image of email](email.png)')
 	md.gsub!('$Intro',File.read("README.md").lines.first)
+	convertTests(md)
 	File.open('t.md','w'){|f|f<<md}
 	markdown = `markdown.pl < t.md`
 	`rm t.md`
 	markdown.gsub!(/\<p\>\$Solution\<\/p\>(.*?)\<p\>\$EndSolution\<\/p\>/m,
 		'<details><summary>Solution</summary>\\1<hr></details>')
+	markdown.gsub!("<p>$Gives</p>\n\n<pre><code>",'<pre><code class="result">')
 	
 	title = markdown[/<h1>(.*?)<\/h1>/,1]
 	if title.nil?

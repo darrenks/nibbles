@@ -25,7 +25,7 @@ Save that to `intro.nbl` (nbl is the file extension for literate Nibbles program
 ### Run it
 
 	> nibbles intro.nbl
-<!-- -->
+$Gives
 
 	size = 5 nibbles
 	3
@@ -49,6 +49,8 @@ Write a program that computes `(1+2)*(3-4)`
 $Solution
 
 	*+1 2-3 4
+$HiddenOutput
+	-3
 
 You may be distraught about those spaces, but they don't affect binary size.
 
@@ -57,7 +59,7 @@ $EndSolution
 ## Other Types
 You've seen **integers**, other data types are chars and lists. **Chars** behave like integers in most cases but are displayed differently (the ops table linked below makes this more precise). They can be created with single quotes, e.g. `' '` to create a space char.
 
-**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `::1 2 3` produces `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
+**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `::1 2 3` -> `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
 
 **Strings** are actually just a list of chars, and can be created using double quotes, for example `"Hello\n"` does what you would expect. Note that escapes are valid for strings and chars in the same style that Haskell uses.
 
@@ -81,6 +83,13 @@ Hint: Since we haven't introduced assignments yet, it is ok to hard code the len
 $Solution
 
 	^6:"Darren" '\n'
+$HiddenOutput
+	Darren
+	Darren
+	Darren
+	Darren
+	Darren
+	Darren
 
 That newline could have been included in the string but I'm just showing off how not to code golf.
 
@@ -96,7 +105,7 @@ Args are referenced by number with the following identifiers: `$` `@` `` `3 `` `
 See `map`, `foldr`, etc in the ops table for examples.
 
 ### Exercise
-Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision when appropriate, so don't worry about that.
+Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
 
 **Hint1**: the range operator (`,`) is 1 indexed, which may seem bad, but, as it turns out in code golf, is much more commonly used than lists starting from 0. So `range` and all other list operators in Nibbles are 1 indexed.
 
@@ -105,6 +114,9 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 $Solution
 
 	/&,49%+1$2*$@
+$HiddenOutput
+	10409396852733332453861621760000
+
 Finally we are seeing nice looking programs, can you do better? We will learn more ways to shorten this.
 
 $EndSolution
@@ -120,7 +132,7 @@ For example
 
 	> echo "+@" > intro.nbl
 	> echo 1 2 3 | nibbles intro.nbl
-<!-- -->
+$Gives
 
 	6
 
@@ -134,6 +146,9 @@ Reverse every line in the input.
 $Solution
 
 	.`3\$
+$HiddenOutput "12\n34"
+	21
+	43
   
 Were you expecting it to be harder than that?
 
