@@ -53,6 +53,10 @@ ljust/etc
 uniq, setwise op [by]
 auto rec (base case is arg, condition is arg).
 
+downcase/upcase
+
+autorec (base case and cond = $)
+
 -- "too complicated"
 sqrt
 list of strs shorthand (use 32 value of str?)
