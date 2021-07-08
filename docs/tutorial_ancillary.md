@@ -12,7 +12,7 @@ What if I use both `@` and `_`? They both work independently, sharing the same i
 What if I use it multiple times? It will return the same result each time. In fact everything in nibbles is a pure function.
 
 ### Infinite lists and errors
-If this is all unfamiliar to you, you could read up on [lazy evaluation](https://en.wikipedia.org/wiki/Lazy_evaluation). But you'll do ok with just the information here, as laziness should be pure win compared to eager evaluation (for codegolf purposes). Anything you would do eagerly will still work in equal or better asymptotic time lazily.
+If this is all unfamiliar to you, you could read up on [lazy evaluation](https://en.wikipedia.org/wiki/Lazy_evaluation). But you'll do ok with just the information here, as laziness should be pure win compared to eager evaluation (for code golf purposes). Anything you would do eagerly will still work in equal or better asymptotic time lazily.
 
 Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=\: /1 0 2 1` -> `2` (which builds the list of `[error,2]`, reverses it then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
 
@@ -161,7 +161,7 @@ Note that there is no limit to the number of extensions that can be created, but
 If you find possible two nibble extensions, please let me know!
 
 ## Creating Your Own Functions
-It is actually somewhat rare to need to create your own functions in codegolf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
+It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
 
 This can be done using the `;;` extension. `;;` takes two arguments, treating the second one as a function and passing it the first. But it also adds that function to the context for later use.
 
@@ -174,7 +174,7 @@ and now we can use that square function with `$`. E.g. `$4` gives `16`.
 
 Note that we can even square strings now. E.g. `$"5"` gives `25`.
 
-It may seem odd that we couldn't define a function without using it. But this is codegolf, why would you want to!
+It may seem odd that we couldn't define a function without using it. But this is code golf, why would you want to!
 
 ### Exercise
 
