@@ -29,7 +29,13 @@ something to convert to truthiness
 2** (or 10** if auto 2) (or bitshift)
 empty str, empty list of various types
 range0
-iterate / unfold / until
+
+;;$ / etc could be these since wouldn't want 
+iterate (fn first) / unfold / until / etc
+map [1..inf]
+
+debruijn index 6+ (tbd input)
+
 mapaccum
 scan
 prepend Nothing
@@ -55,7 +61,7 @@ auto rec (base case is arg, condition is arg).
 
 downcase/upcase
 
-autorec (base case and cond = $)
+autorec (base case and cond = $) (or maybe version)
 
 -- "too complicated"
 sqrt

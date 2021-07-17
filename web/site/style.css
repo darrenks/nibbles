@@ -1,5 +1,9 @@
+body {
+	max-width: 900px;
+}
+
 hr {
-  border: 1px solid black;
+	border: 1px solid black;
 }
 
 code { 
@@ -66,3 +70,11 @@ body {
 	font-family: Verdana;
 }
 
+table {
+	border-collapse: collapse;
+}
+
+table, th, td {
+	border: 1px solid black;
+	padding: 1px 8px;
+}

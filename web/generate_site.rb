@@ -2,7 +2,7 @@ Navbar='<div id="navbar"><ul>
 	<li id="nibbles"><a href="index.html">Nibbles</a></li>
 	<li><a href="tutorial_basics.html">Tutorial: Basics</a> | <a href="tutorial_ancillary.html">Ancillary</a> | <a href="tutorial_minutiae.html">Minutiae</a></li>
 	<li><a href="quickref.html">Quick Ref</a></li>
-	<li><a href="https://github.com/darrenks/nibbles">Code: Github</a> | <a href="download.html">Download</a></li>
+	<li><a href="install.html">Code: Install</a> | <a href="https://github.com/darrenks/nibbles">Github</a></li>
 </ul></div>'
 
 def addTest(raw, prog, input, output)
@@ -33,7 +33,7 @@ def convertTests(md)
 end
 
 allFiles = `cd docs; echo *.md`.split
-`rm test/tutorialTests.hs; touch test/tutorialTests.hs`
+`echo > test/tutorialTests.hs`
 
 def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')

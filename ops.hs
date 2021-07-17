@@ -285,6 +285,9 @@ rawOps = [
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	
+	-- Desc: debug arg type
+	-- Example: pt 5 -> error "VInt"
+	op("pt", [], [anyT], "" ~> error.show :: ([VT]->[VT],String), []),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),

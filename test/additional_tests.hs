@@ -82,5 +82,5 @@
 	-- Test: testFinish .,2.,2"ab" -> "ab ab\nab ab\n"
 	--- Test: testFinish z ,3 "abc" -> "1\n2\n3\n"
 	
-	-- Test "hi\n": \$ -> "\nih"
+	-- Test "hi\n": \@ -> "ih"
 	-- RawTest: 1 2 -> "12\n"

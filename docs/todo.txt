@@ -1,21 +1,22 @@
+
+For alpha release:
+-make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
+	-but should it default to using first or both?
+-more extensions
+-clean up install instructions
+
 debug features to add:
 	gather rest of program
 	show context values
 	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
 	see parse tree
 
-For alpha release:
--make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
-	-but should it default to using first or both?
--more input parses
--maybe
-
 minor things:
+-maybe
 -coerce after foldr
 -use of char (and instances to convert for vec)
 	+ 'a' =@1 # gives Int Integer error (likely other cases of this)
 
--auto test examples from docs
 
 multiple values in main makes special behavior (i.e. if int constant, range map?)?
 	auto range1 map if number then multiple outputs? also could auto map if list?
@@ -23,7 +24,7 @@ multiple values in main makes special behavior (i.e. if int constant, range map?
 compile with wall on? nah, but incomplete patterns would be most useful
 should also have dependency bounds for dlist/etc.
 -------------------------------
-auto input types
+auto input types (for command line args, use delims for list of ints)
 library reference?
 
 non empty list for many [VT]
@@ -59,3 +60,5 @@ debuging commands that use error to exit, surpress callstack/etc.
 
 switch to integer and char everywhere
 bounded integers/list size for more efficient math ops and no need for maybe on some list ops
+
+~ in top level could mean set separator to custom value (used for both input and output)

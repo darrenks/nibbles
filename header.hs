@@ -35,3 +35,19 @@ lazyAtMod :: [a] -> Integer -> a
 lazyAtMod a i = fromMaybe
  (a!!fromIntegral(i`mod`fromIntegral (length a)))
  (at a i)
+
+asInts :: [Int] -> [Integer]
+asInts = map (read::String->Integer) . asIntsH . aToS
+asIntsH :: String -> [String]
+asIntsH "" = []
+asIntsH "-" = []
+asIntsH ('-':c:rest)
+	| isDigit c = ('-':c:num) : asIntsH after
+	| otherwise = asIntsH rest
+	where
+		(num,after) = span isDigit rest
+asIntsH (c:rest)
+	| isDigit c = (c:num) : asIntsH after
+	| otherwise = asIntsH rest
+	where
+		(num,after) = span isDigit rest

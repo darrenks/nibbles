@@ -15,12 +15,15 @@ import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile = compileH
-	[ Arg [Impl vstr (hsAtom"input" ) 0 (Just "input") True] LambdaArg
-	, Arg (Impl undefined (hsAtom"_") 0 Nothing True:letArgs)
+	[ Arg (Impl undefined (hsAtom"_") 0 Nothing True:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
-		[ ("asInts", VList [VInt], "map read $ filter (not.null) $ splitWhen (not.isDigit) $ aToS input :: [Integer]")
-		, ("asLines", VList [vstr], "map sToA $ lines $ aToS input")
+		[ ("firstInt", VInt, "fromMaybe 0 (at (asInts input) 0)")
+		, ("firstLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 0")
+		, ("ints", VList [VInt], "asInts (if length (asInts firstLine) < 2 then input else firstLine)")
+		, ("secondInt", VInt, "fromMaybe 0 (at (asInts input) 1)")
+		, ("secondLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 1")
+		, ("allInput", vstr, "input")
 		]
 	letArgs = map (\(name, vt, _) -> noArgsUsed {
 		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=True

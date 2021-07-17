@@ -1,4 +1,4 @@
-# Download
+# Install
 
 ### Install Haskell
 Follow instructions at [https://www.haskell.org/platform/](https://www.haskell.org/platform/)

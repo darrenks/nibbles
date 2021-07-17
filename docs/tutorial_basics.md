@@ -70,7 +70,7 @@ $Output
 
 ### A note on example format in this tutorial
 
--	Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketted, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`
+-	Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketed, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`
 -	Boxed examples mean the result (shown in the solid box) is what nibbles would actually output.
 
 ## Ops
@@ -123,7 +123,7 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 
 **Hint1**: the range operator (`,`) is 1 indexed, which may seem bad, but, as it turns out in code golf, is much more commonly used than lists starting from 0. So `range` and all other list operators in Nibbles are 1 indexed.
 
-**Hint2**: the filter operator (`&`) uses the truthiness of the function result. Integers are considered truthy if they are > 0 (and false if 0 or negative, this is **nonstandard** but useful). Lists are turthy if non empty. Chars are truthy if they are non whitespace.
+**Hint2**: the filter operator (`&`) uses the truthiness of the function result. Integers are considered truthy if they are > 0 (and false if 0 or negative, this is **nonstandard** but useful). Lists are truthy if non empty. Chars are truthy if they are non whitespace.
 
 $Solution
 
@@ -138,31 +138,31 @@ $EndSolution
 ## Input
 All programs actually start off with args available for use.
 
-- `$` is the entire stdin as a string
-- `@` is the entire stdin parsed into a list of ints (with non ints removed)
-- `_` is the entire stdin split into lines (a list of strings).
+- `$` is the first integer in the input (`int`)
+- `@` is the first line of input (`str`)
+- `_` is the first line as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
+- `;$` is the second integer in the input (`int`)
+- `;@` is the second line of input (`str`)
+- `;_` is the entire input (`str`)
 
-For example
+For example to if the input is a list of integers we could find the sum as so:
 
-	> echo "+@" > intro.nbl
+	> echo "+_" > intro.nbl
 	> echo 1 2 3 | nibbles intro.nbl
 $Gives
 
 	6
 
-There are more, but for now this should suffice.
-
 Keep in mind that these are DeBruijn indices too! So after you start using functions they will shift. It can be hard to keep track of what DeBruijn index corresponds to what, so you can always use `ct` anywhere to see **c**ontext **t**ypes.
 
 ### Exercise
-Reverse every line in the input.
+Input a number n, then repeat the second line n times.
 
 $Solution
 
-	._\$
-$HiddenOutput "12\n34"
-	21
-	43
+	^$;@
+$HiddenOutput "2\nabc"
+	abcabc
   
 Were you expecting it to be harder than that?
 

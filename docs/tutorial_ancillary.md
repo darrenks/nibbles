@@ -49,9 +49,9 @@ Hint: If you'd like to negate a "bool" don't forget about the custom truthiness 
 
 $Solution
 
-	<1 &          # Get the first 1 elements of the filtered list.
-	  >1,=@ 1     # Generate the list from 2 to input
-	  - 1 %=_ 1$ # \elem -> 1 - (input % elem)
+	<1 &      # Get the first 1 elements of the filtered list.
+	  >1,$    # Generate the list from 2 to input
+	  - 1 %@$ # \elem -> 1 - (input % elem)
 $HiddenOutput "3902309423233451"
 	436151
 
@@ -108,7 +108,7 @@ Write a program to print the sum of all numbers in the input or the string "larg
 
 $Solution
 
-	? - ;+@ 100 "large" $
+	? - ;+_ 100 "large" $
 $HiddenOutput "1 2 3"
 	6
 $HiddenOutput "50 51"

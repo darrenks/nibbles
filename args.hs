@@ -32,7 +32,7 @@ argn deBruijnIndex = do
 	context <- gets pdContext
 	let flattenedArgs = concatMap flattenArg context
 	case at flattenedArgs (deBruijnIndex-1) of
-		Nothing -> parseError $ "Attempt to access " ++ indexToOp deBruijnIndex ++ debugContext context
+		Nothing -> parseError $ "Attempt to access " ++ indexToOp (deBruijnIndex-1) ++ debugContext context
 		Just impl -> return impl
 
 flattenArg (Arg impls (LambdaArg)) = impls
