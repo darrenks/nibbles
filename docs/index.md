@@ -4,7 +4,7 @@ $Intro
 
 ### Resources
 
-The [tutorials](tutorial_basics.html) on this site are recommended for learning the language. Also check out the [Why](why.html) if you're more interested in the ideas behind the language.
+The [tutorials](tutorial_basics.html) on this site are recommended for learning the language. Also check out the [Why page](why.html) if you're interested in the ideas behind the language.
 
 ### Where to Golf?
 
