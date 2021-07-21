@@ -152,7 +152,7 @@ For example `+5 ,5` -> `[6,7,8,9,10]`. This is cool, but not as useful as in oth
 
 ## Extensions
 
-You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
+You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `;;` means sort, sort is just named `st` in the literate form.
 
 In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
 

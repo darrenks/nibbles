@@ -32,6 +32,7 @@ And some strategies that were chosen to accomplish this:
 
 1.	Decrease size by decreasing instruction size rather than adding more instructions.
 	-	This is more to keep it simple than to be optimal, more instructions would actually be shorter (if they are well chosen).
+	-	Half bytes keep it feeling like real golf, prefer it over variable bits
 1.	Functional programs are shorter and more intuitive.
 	-	Bonus is you get compatibility with laziness.
 1.	Overloading by type should only be used with static typing.

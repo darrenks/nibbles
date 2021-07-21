@@ -59,7 +59,7 @@ $EndSolution
 ## Other Types
 You've seen **integers**, other data types are chars and lists. **Chars** behave like integers in most cases but are displayed differently (the ops table linked below makes this more precise). They can be created with single quotes, e.g. `' '` to create a space char.
 
-**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `::1 2 3` -> `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
+**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `:1 :2 3` -> `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
 
 **Strings** are actually just a list of chars, and can be created using double quotes. Escapes are valid for strings and chars in the same style that Haskell uses. E.g.
 

@@ -14,6 +14,8 @@ value at of a range (although depending on OOB behavior...)
 communitiave/associative
 opcode 15, mismatched 2d+ lists
 ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
+debruijn index 6+ (tbd input)
+reverse map / map reverse
 
 ~ in toplevel (space or newline? or something in context)
 
@@ -33,8 +35,6 @@ range0
 ;;$ / etc could be these since wouldn't want 
 iterate (fn first) / unfold / until / etc
 map [1..inf]
-
-debruijn index 6+ (tbd input)
 
 mapaccum
 scan

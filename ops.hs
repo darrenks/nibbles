@@ -16,13 +16,16 @@ data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (ParseState Im
 op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
 atom(lit, nib, impl) = [(lit, nib, Atom impl)]
 
-litExtError invalidLit lit = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\nThis usually means there is an alternative (likely shorter) way to do what you are trying to. For more infromation see Extensions in https://nibbles.golf/tutorial_ancillary.html"
+genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
+associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 
-extendAtom invalidLit (lit, nib, impl) =
-	atom (invalidLit, [], litExtError invalidLit lit) ++ atom (lit, nib, impl)
+litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see Extensions in https://nibbles.golf/tutorial_ancillary.html"
 
-extendOp invalidLit (lit, nib, t, impl, autos) =
-	op (invalidLit, [], t, litExtError invalidLit lit :: (VT,String), []) ++ op (lit, nib, t, impl, autos)
+extendAtom invalidLit reason (lit, nib, impl) =
+	atom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
+
+extendOp invalidLit reason (lit, nib, t, impl, autos) =
+	op (invalidLit, [], t, litExtError invalidLit lit reason :: (VT,String), []) ++ op (lit, nib, t, impl, autos)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
@@ -55,7 +58,7 @@ rawOps = [
 	-- Test (size 3): 'a' -> 'a'
 	-- Test (size 3): ' ' -> ' '
 	-- Test (size 5): '\200' -> '\200'
-	extendAtom ",\"" ("'", [13,2], parseChrExpr),
+	extendAtom ",\"" genericReason ("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
 	-- Test: ;1;2;3;4 ;$ -> 1,2,3,4,1
@@ -67,14 +70,18 @@ rawOps = [
 	-- Desc: 3rd arg
 	-- Example: ;1;2;3 _ -> 1,2,3,1
 	atom("_", [5], argn 3),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	extendOp "::" associativeReason ("tbd", [7,7], [fn noArgs, fn $ ret.a1], "" ~> a1, [autoTodo]),
 	-- Desc: let fn
+	-- todo this ambiguous ;;; (that's ok for now since there is easy workaround but need accidental use error)
 	-- Example: ;;2+$1 $4 -> 3,5
 	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
 	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
 	-- Test (mult args and rets): ;;~1 2 ~+~$+~@ $ @3 4 $ -> 2,3,4,5
 	-- Test (coerce arg): ;;2+$1 $"4" -> 3,5
 	-- Test (coerce pair): ;;~1 2 +$@  $"5"2 -> 3,7
-	op(";;", [6,6], [fn noArgs, fn $ ret.a1], 
+	op(";;", [6,6], [fn noArgs, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
@@ -94,6 +101,9 @@ rawOps = [
 		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++"f x ("++ curryN a1L ++"rec) in if "
 		++truthy (head $ ret a2)++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
 		rt ++ [VFn (ret a1) rt]), []),
+	-- Desc: tbd (something that wouldn't take $@_ as first arg)
+	-- Example: 0 -> 0
+	op("tbd", [6,6], [], "" ~> a1, [autoTodo]),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -145,7 +155,7 @@ rawOps = [
 	-- Desc: product
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
-	extendOp "+\\" ("pd", [8,11], [listOf int], "product" ~> VInt, []),
+	extendOp "+\\" genericReason ("pd", [8,11], [listOf int], "product" ~> VInt, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
@@ -181,7 +191,7 @@ rawOps = [
 	op("/", [10], [list, fn $ dup.elemT.a1], "flip$foldr1" ~> ret.a2, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
-	extendOp "\\\\" ("st", [11, 11], [list], "sort" ~> a1, []),
+	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [11,2], [anyT], "asdf" ~> VInt, []),
@@ -202,10 +212,9 @@ rawOps = [
 	-- Example: ma,3 0 +@$ $ $ -> [0,1,3],6
 	-- Test: ma,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
 	op("ma", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
-	
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
-	extendOp ",." ("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
+	extendOp ",." genericReason ("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn ((:[]).elemT.a1)], "flip map" ~> VList .ret.a2, []),
@@ -223,13 +232,13 @@ rawOps = [
 	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
-	extendOp ",," ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
+	extendOp ",," genericReason ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
-	extendOp ",%" ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
+	extendOp ",%" genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(",^", [13,14], [int, list], "asdf" ~> VInt, [autoTodo]),
