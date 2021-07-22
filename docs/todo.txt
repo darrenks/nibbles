@@ -8,7 +8,6 @@ fold on prefixes (primo)
 
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
-	-currently broken splat on lambda args
 	-but should it default to using first or both?
 -more extensions
 -clean up install instructions

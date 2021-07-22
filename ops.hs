@@ -217,7 +217,7 @@ rawOps = [
 	extendOp ",." genericReason ("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, fn ((:[]).elemT.a1)], "flip map" ~> VList .ret.a2, []),
+	op(".", [12], [list, fn (actualElemT.a1)], (\[a1,a2]->"(\\a f->map ("++uncurryN (length (actualElemT a1))++"f) a)") ~> VList .ret.a2, []),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -267,8 +267,7 @@ rawOps = [
 	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
-	-- todo broken
-	--- Test .z,3,3+$@ -> [2,4,6]
+	-- Test: .z,3,3+$@ -> [2,4,6]
 	op("z", [14], [list, list], "zip" ~>  VList .(map elemT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -387,6 +386,10 @@ listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
 ret1 (VFn from [to]) = to
 elemT (VList e) = todoAssumeFst e
 elemT s = error $ show s
+
+actualElemT (VList e) = e
+actualElemT s = error $ show s
+
 
 -- todo consider arg matching in opcode 15
 elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
