@@ -18,10 +18,10 @@ compile = compileH
 	[ Arg (Impl undefined (hsAtom"_") 0 Nothing True:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
-		[ ("firstInt", VInt, "fromMaybe 0 (at (asInts input) 0)")
+		[ ("firstInt", VInt, "fromMaybe 100 (at (asInts input) 0)")
 		, ("firstLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 0")
 		, ("ints", VList [VInt], "asInts (if length (asInts firstLine) < 2 then input else firstLine)")
-		, ("secondInt", VInt, "fromMaybe 0 (at (asInts input) 1)")
+		, ("secondInt", VInt, "fromMaybe 1000 (at (asInts input) 1)")
 		, ("secondLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 1")
 		, ("allInput", vstr, "input")
 		]

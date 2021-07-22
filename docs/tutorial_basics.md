@@ -145,7 +145,7 @@ All programs actually start off with args available for use.
 - `;@` is the second line of input (`str`)
 - `;_` is the entire input (`str`)
 
-For example to if the input is a list of integers we could find the sum as so:
+For example, if the input is a list of integers we could find the sum as so:
 
 	> echo "+_" > intro.nbl
 	> echo 1 2 3 | nibbles intro.nbl
