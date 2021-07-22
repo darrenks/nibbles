@@ -84,3 +84,8 @@
 	
 	-- Test "hi\n": \@ -> "ih"
 	-- RawTest: 1 2 -> "12\n"
+	
+	--- Test implicit args
+	-- Test: ;7.,5+$ -> 7,[8,9,10,11,12]
+	-- Test: /,5+ -> 15
+	-- Test: /,5++$@ -> 25

@@ -160,7 +160,10 @@ getValue offsetExprs = do
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
 		in convertOp valList op >>= \f -> Just $
 			appendRep (nib,lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
-	fromMaybe (parseError "Parse Error: no matching op") $ msum $ map tryOp allOps
+	if empty code then
+		argImplicit 
+	else
+		fromMaybe (parseError "Parse Error: no matching op") $ msum $ map tryOp allOps
 
 convertOp :: [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
 convertOp valList (Op ats impl autos) = 

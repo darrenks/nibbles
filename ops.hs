@@ -267,6 +267,8 @@ rawOps = [
 	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
+	-- todo broken
+	--- Test .z,3,3+$@ -> [2,4,6]
 	op("z", [14], [list, list], "zip" ~>  VList .(map elemT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0

@@ -21,6 +21,8 @@ infinity
 
 arbitrary precision ish
 
+implicit args
+
 ## Beyond the $QuickRef
 
 I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).

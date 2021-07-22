@@ -1,4 +1,4 @@
-module Args(argn, newLambdaArg, addLambda, newLetArg, popArg, debugContext) where
+module Args(argn, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit) where
 
 import Expr
 import Types
@@ -33,7 +33,25 @@ argn deBruijnIndex = do
 	let flattenedArgs = concatMap flattenArg context
 	case at flattenedArgs (deBruijnIndex-1) of
 		Nothing -> parseError $ "Attempt to access " ++ indexToOp (deBruijnIndex-1) ++ debugContext context
-		Just impl -> return impl
+		Just impl -> setUsed impl
+
+setUsed :: Impl -> ParseState Impl
+setUsed impl = do
+	context <- gets pdContext
+	let newContext = map (\arg -> arg { argImpls=setUsedImpl (argImpls arg) } ) context
+	modify $ \s -> s { pdContext=newContext }
+	return impl where
+	
+	setUsedImpl :: [Impl] -> [Impl]
+	setUsedImpl = map (\argImpl ->
+		if implCode argImpl == implCode impl then
+			argImpl { implUsed=True }
+		else argImpl)
+
+argImplicit :: ParseState Impl
+argImplicit = do
+	context <- gets pdContext
+	argn $ 1 + (fromMaybe 0 $ findIndex (not.implUsed) (concatMap flattenArg context))
 
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
@@ -73,7 +91,7 @@ debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg 
 showArgType (Arg _ LambdaArg) = "LambdaArg"
 showArgType (Arg _ (LetArg _)) = "LetArg"
 
-showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl)
+showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " used: " ++ show (implUsed impl)
 
 indexToOp :: Int -> String
 indexToOp = fromMaybe "<truncated>" . (at indexOps) where
