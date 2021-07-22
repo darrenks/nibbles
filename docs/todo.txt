@@ -20,7 +20,6 @@ debug features to add:
 
 minor things:
 -maybe
--coerce after foldr
 -use of char (and instances to convert for vec)
 	+ 'a' =@1 # gives Int Integer error (likely other cases of this)
 

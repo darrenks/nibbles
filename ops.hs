@@ -186,9 +186,9 @@ rawOps = [
 	op("*", [10], [num, vec], vectorize "*" (const VInt), [-1, 2]),
 	-- Desc: foldr1
 	-- Example: /,3+$@ -> 6
+	-- Test: /,3"5" -> 5
 	-- todo make/test empty
-	-- todo coerce accum type?
-	op("/", [10], [list, fn $ dup.elemT.a1], "flip$foldr1" ~> ret.a2, []),
+	op("/", [10], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->foldr1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). f) a") ~> elemT.a1, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
