@@ -91,6 +91,7 @@ toQuickRef isSimple (Op types impl autos) = [
 		replaceComplexType _ s@_ = s
 		usableAutos = filter (/= impossibleAuto) autos
 		showAuto i | i == autoTodo = "tbd"
+		           | i >= 2^128 = "inf"
 		           | otherwise = show i
 		sort_type = if null types then "" else rootType $ Data.List.head types
 toQuickRef False _ = [td "",td ""]

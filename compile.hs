@@ -62,7 +62,7 @@ convertAutoType t = t
 convertAuto (Impl VAuto _ _ _ _) auto = noArgsUsed { implType=VInt, implCode=i $ fromIntegral auto }
 convertAuto impl _ = impl
 
-convertAutos :: [Impl] -> [Int] -> [Impl]
+convertAutos :: [Impl] -> [Integer] -> [Impl]
 convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
 
 simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]

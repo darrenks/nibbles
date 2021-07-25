@@ -11,7 +11,7 @@ import Args
 import State
 import Data.List(concat)
 
-data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Int] | Atom (ParseState Impl)
+data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Integer] | Atom (ParseState Impl)
 
 op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
 atom(lit, nib, impl) = [(lit, nib, Atom impl)]
@@ -295,6 +295,14 @@ rawOps = [
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	
+	-- Desc: hash mod
+	-- todo auto parse int (would save 1 nibble per use)
+	-- todo provide an option to easily add salt
+	-- Example: hm "asdf" 256 -> 112
+	-- Test: hm 5 10 -> 9
+	-- Test: hm :1 2 ~ -> 16914085776040879869467699104040987770
+	op("hm", [], [anyT, int], (\[a1,a2]->"mod.hlist."++flatten a1) ~> VInt, [autoTodo,2^128]),
+	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
 	op("pt", [], [anyT], "" ~> error.show :: ([VT]->[VT],String), []),
@@ -310,10 +318,6 @@ rawOps = [
 	-- Desc: undefined
 	-- Example: un -> error "undefined"
 	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
-	-- Desc: hash mod
-	-- todo auto parse int
-	-- Example: hm "asdf" 256 -> 112
-	op("hm", [], [anyT, int], (\[a1,a2]->"mod.hlist."++flatten a1) ~> VInt, [autoTodo]),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
 	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
