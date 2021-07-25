@@ -9,6 +9,11 @@ import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
 
+-- for Hash
+import qualified Data.ByteString.Lazy as B8
+import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
+import qualified Data.ByteString.Char8 as C8
+
 safeChr = chr.(`mod`256)
 sToA = map ord
 aToS = map$safeChr.fromIntegral
@@ -51,3 +56,10 @@ asIntsH (c:rest)
 	| otherwise = asIntsH rest
 	where
 		(num,after) = span isDigit rest
+
+fromBase b a = foldl (\x y->x*b+y) 0 a
+toBase _ 0 = [0]
+toBase b n = reverse $ map (flip mod b) $ takeWhile (>0) $ iterate (flip div b) n
+
+hlist :: Integral i => [i] -> Integer
+hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) (map (toInteger.fromIntegral) a)

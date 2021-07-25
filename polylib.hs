@@ -11,7 +11,8 @@ module Polylib(
 	uncurryN,
 	curryN,
 	flattenTuples,
-	promoteList) where
+	promoteList,
+	flatten) where
 
 import Types
 import Data.List
@@ -130,4 +131,7 @@ composeOp a b vts = a op rts where
 promoteList :: String -> VT -> (VT, String)
 promoteList op (VList t) = (VList t, op)
 promoteList op t = (VList [t], "(\\x y->"++op++" [x] [y])")
-	
+
+flatten :: VT -> String
+flatten (VList [a]) = "concat." ++ flatten a
+flatten _ = "(:[])"

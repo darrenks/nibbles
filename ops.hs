@@ -310,6 +310,10 @@ rawOps = [
 	-- Desc: undefined
 	-- Example: un -> error "undefined"
 	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
+	-- Desc: hash mod
+	-- todo auto parse int
+	-- Example: hm "asdf" 256 -> 112
+	op("hm", [], [anyT, int], (\[a1,a2]->"mod.hlist."++flatten a1) ~> VInt, [autoTodo]),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
 	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
