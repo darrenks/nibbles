@@ -63,3 +63,7 @@ toBase b n = reverse $ map (flip mod b) $ takeWhile (>0) $ iterate (flip div b) 
 
 hlist :: Integral i => [i] -> Integer
 hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) a
+
+listOr :: [a] -> [a] -> [a]
+listOr defaultResult [] = defaultResult
+listOr _ nonEmpty = nonEmpty

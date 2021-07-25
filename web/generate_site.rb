@@ -10,7 +10,7 @@ def addTest(raw, prog, input, output)
 end
 
 def getProg(pre)
-	pre.reverse[/\A.*?\n\n/m].reverse.gsub(/\#.*/,'').gsub("\n", ' ').gsub(/\s+/,' ').split(/\$(Hidden)Output/)[0]
+	pre.reverse[/\A.*?\n\n/m].reverse.gsub(/\#.*/,'').gsub("\n", ' ').gsub(/\s+/,' ').split(/\$(Hidden)?Output/)[0]
 end
 
 def removeLeadingTabs(s)

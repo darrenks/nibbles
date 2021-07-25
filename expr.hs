@@ -6,13 +6,15 @@ import qualified Data.DList as DList -- needs cabal install --lib dlist
 import Types
 import Hs
 
+data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
+
 data Impl = Impl { implType::VT
                  , implCode::HsCode
                  , minUsedDepth::Int
                  , implName::Maybe String
-                 , implUsed::Bool
+                 , implUsed::ArgUsedness
                  } deriving (Eq, Show)
-noArgsUsed = Impl undefined undefined 0 Nothing False
+noArgsUsed = Impl undefined undefined 0 Nothing UnusedArg
 
 data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving Show
 data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show

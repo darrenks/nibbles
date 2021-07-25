@@ -25,6 +25,79 @@ implicit args
 
 default int values for stdin empty (100, 1000)
 
+## Auto Map
+
+If your program uses input but not the entire raw input (`;_`) then your program will auto map.
+
+Suppose the input to your program is
+
+	12 888
+	34
+	56
+	78	
+
+Then outputs for these programs will be:
+
+	p +$1
+$Output "12 888\n34\n56\n78"
+	13
+	889
+	35
+	57
+	79
+
+Because all ints are auto mapped over.
+
+	p @
+$Output "12 888\n34\n56\n78"
+	"12 888"
+	"34"
+	"56"
+	"78"
+
+Because all lines are auto mapped over.
+
+	p _
+$Output "12 888\n34\n56\n78"
+	[12,888]
+	[34]
+	[56]
+	[78]
+$HiddenOutput "1 2 3"
+	[1,2,3]
+$HiddenOutput "1\n2\n3"
+	[1,2,3]
+$HiddenOutput ""
+	[]
+$HiddenOutput "1"
+	[1]
+$HiddenOutput "1\na\n2 3"
+	[1]
+	[2,3]
+
+But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `$`.
+
+	p ;$
+$Output "12 888\n34\n56\n78"
+	888
+	56
+	1000
+
+The 1000 resulted because that is the default value of `;$` if there is no value present. It attempted to auto map on pairs of numbers and 78 had no corresponding pair.
+
+	p ;@
+$Output "12 888\n34\n56\n78"
+	"34"
+	"78"
+$HiddenOutput "a"
+	""
+
+Because it automapped on pairs of lines. Note that if there had been an odd number of lines the last would have been `""`
+
+	p ;_
+$HiddenOutput "12 888\n34\n56\n78"
+	"12 888\n34\n56\n78"
+
 ## Beyond the $QuickRef
 
 I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).

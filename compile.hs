@@ -15,18 +15,18 @@ import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile = compileH
-	[ Arg (Impl undefined (hsAtom"_") 0 Nothing True:letArgs)
+	[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
 		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
 	mainLets =
-		[ ("firstInt", VInt, "fromMaybe 100 (at (asInts input) 0)")
-		, ("firstLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 0")
-		, ("ints", VList [VInt], "asInts (if length (asInts firstLine) < 2 then input else firstLine)")
-		, ("secondInt", VInt, "fromMaybe 1000 (at (asInts input) 1)")
-		, ("secondLine", vstr, "sToA $ fromMaybe [] $ at (lines $ aToS input) 1")
+		[ ("firstInt", VInt, "fromMaybe 100 $ at intList 0")
+		, ("firstLine", vstr, "fromMaybe [] $ at strLines 0")
+		, ("ints", VList [VInt], "intList")
+		, ("secondInt", VInt, "fromMaybe 1000 $ at intList 1")
+		, ("secondLine", vstr, "fromMaybe [] $ at strLines 1")
 		, ("allInput", vstr, "input")
 		]
 	letArgs = map (\(name, vt, _) -> noArgsUsed {
-		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=True
+		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=OptionalArg
 		}) mainLets
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
 
@@ -35,10 +35,26 @@ compileH args finishFn separator input = evalState doCompile $ blankRep (consume
 	impls <- getAllValues
 	let finishedImpls = map (\impl -> app1Hs (finishFn $ implType impl) impl) impls
 	let body = foldl1 (flip$applyImpl.app1Hs("++sToA"++show separator++"++")) finishedImpls
+	context <- gets pdContext
 	impl <- popArg 0 body
 	nib <- gets getNib
 	lit <- gets getLit
-	return (impl, nib, lit)
+	
+	let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed] =
+		tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
+	
+	let autoMap = if allInputUsed then ""
+		else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
+		else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
+		else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
+		else if sndIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 intList)) $ \\intList -> "
+		else if fstIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 intList)) $ \\intList -> "
+		else ""
+	let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
+		\strLines=map sToA $ lines $ aToS input;\
+		\intList=concat intMatrix;\
+		\in "++autoMap) impl
+	return (finalImpl, nib, lit)
 	
 getAllValues = do
 	ParseData code _ _ _ <- get

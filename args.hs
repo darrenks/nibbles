@@ -16,7 +16,7 @@ newLambdaArg :: [VT] -> ParseState Arg
 newLambdaArg argT = do
 	context <- gets pdContext
 	let depth = 1 + length context
-	let impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) depth Nothing False) argT [1..]
+	let impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) depth Nothing UnusedArg) argT [1..]
 	let newArg = Arg impls LambdaArg
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
@@ -24,7 +24,7 @@ newLambdaArg argT = do
 newLetArg :: [Arg] -> Impl -> [VT] -> Arg
 newLetArg context (Impl _ defHs defDepth _ _) defTypes = newArg where
 	depth = 1 + length context
-	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing False) defTypes [1..]
+	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing UnusedArg) defTypes [1..]
 	newArg = Arg impls $ LetArg defHs
 
 argn :: Int -> ParseState Impl
@@ -45,19 +45,19 @@ setUsed impl = do
 	setUsedImpl :: [Impl] -> [Impl]
 	setUsedImpl = map (\argImpl ->
 		if implCode argImpl == implCode impl then
-			argImpl { implUsed=True }
+			argImpl { implUsed=UsedArg }
 		else argImpl)
 
 argImplicit :: ParseState Impl
 argImplicit = do
 	context <- gets pdContext
-	argn $ 1 + (fromMaybe 0 $ findIndex (not.implUsed) (concatMap flattenArg context))
+	argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
 
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
 
 addLambda :: Arg -> Impl -> Impl
-addLambda arg (Impl t body d _ _) = Impl t (hsFn (map implCode $ argImpls arg) body) d Nothing False
+addLambda arg (Impl t body d _ _) = Impl t (hsFn (map implCode $ argImpls arg) body) d Nothing UsednessDoesntMatter
 
 -- Remove arg # and all its dependent let args (adding let statements for them).
 popArg :: Int -> Impl -> ParseState Impl
@@ -78,7 +78,7 @@ popArg depth impl = do
 	popIt :: Arg -> Impl -> Impl
 	popIt (Arg _ LambdaArg) impl = impl
 	popIt (Arg varImpls (LetArg refHs)) (Impl retT bodyHs dep _ _) =
-		Impl retT (hsLet (map implCode varImpls) refHs bodyHs) dep Nothing False
+		Impl retT (hsLet (map implCode varImpls) refHs bodyHs) dep Nothing UsednessDoesntMatter
 
 --------- for debugging // errors -----------
 
