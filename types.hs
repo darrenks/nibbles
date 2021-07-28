@@ -5,9 +5,8 @@ data VT = VInt | VChr | VList [VT] | VAuto | VFn [VT] [VT] -- | VMaybe VT | Noth
 
 vstr = VList [VChr]
 
---                           prev args -> fn arg
-data ArgSpec = Exact VT | Fn Int ([VT] -> [VT]) | Cond String ([VT] -> Bool)
---                     num ret ^
+--                       prev args -> num ret,fn arg
+data ArgSpec = Exact VT | Fn ([VT] -> (Int,[VT])) | Cond String ([VT] -> Bool)
 
 data ArgMatchResult = ArgMatches | ArgFn ArgSpec
 

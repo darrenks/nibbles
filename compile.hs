@@ -85,7 +85,7 @@ simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec where
 	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
 	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
-	simplifyArgSpec (Fn numRets f) _ = Just $ ArgFn (Fn numRets f)
+	simplifyArgSpec (Fn f) _ = Just $ ArgFn (Fn f)
 	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
 	maybeMatch b = if b then Just ArgMatches else Nothing
 
@@ -107,7 +107,7 @@ convertLambda :: [VT] -> (ArgMatchResult, (Impl, ParseData)) -> ParseState Impl
 convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
 	putAddRep memoState
 	return memoImpl
-convertLambda argTypes (ArgFn (Fn numRets argTypeFn), _) = do
+convertLambda argTypes (ArgFn (Fn fnFn), _) = do
 	(newArg,body) <- pushLambdaArg argType $ \newArg -> do
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
 		-- with its real Fn type which can only be known after 2nd arg type is determined.
@@ -131,7 +131,7 @@ convertLambda argTypes (ArgFn (Fn numRets argTypeFn), _) = do
 			bonus <- parseCountTuple
 			getValuesMemo (bonus + numRets)
 	return $ addLambda newArg body
-	where argType = argTypeFn argTypes
+	where (numRets, argType) = fnFn argTypes
 
 pushLambdaArg :: [VT] -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
 pushLambdaArg argType f = do

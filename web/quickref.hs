@@ -108,7 +108,7 @@ typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
 typeToStr (Exact VInt) _ = "int"
 typeToStr (Exact VChr) _ = "chr"
 typeToStr (Exact VAuto) _ = "~"
-typeToStr (Fn nargs f) _ = "fn"++show nargs
+typeToStr (Fn _) _ = "fn"
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'
 

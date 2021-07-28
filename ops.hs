@@ -34,7 +34,7 @@ rawOps :: [[(String, [Int], Operation)]]
 rawOps = [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
-	op("~", [0], [], (undefined::String)~>VAuto, []),
+	op("~", [0], [], (error"undefined auto"::String)~>VAuto, []),
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 2): 0 -> 0
@@ -94,7 +94,7 @@ rawOps = [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op(";~", [6,0], [fn noArgs, Fn 0 (\[a1]->ret a1++[undefined])],
+	op(";~", [6,0], [fn noArgs, Fn (\[a1]->(0, ret a1++[undefined]))],
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
@@ -184,6 +184,12 @@ rawOps = [
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
 	op("*", [10], [num, vec], vectorize "*" (const VInt), [-1, 2]),
+	-- Desc: foldr
+	-- Example: /,3 ~ 1 +$@ -> 7
+	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++$@_ -> 13
+	-- Test(accum has tuple): / ,3 ~ ~0 "" +$@ :$_ $ -> 6,"123"
+	-- todo coerce ret
+	op("/", [10], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->foldr ((\\f t1->"++uncurryN (length (ret a2))++"(f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> ret a2), [impossibleAuto, impossibleAuto]),
 	-- Desc: foldr1
 	-- Example: /,3+$@ -> 6
 	-- Test: /,3"5" -> 5
@@ -378,10 +384,12 @@ char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
 
-noArgs = const $ []
+noArgs = const []
 
-fn = Fn 1
-fn2 = Fn 2
+fn e = (Fn $ \prev -> (1, e prev))
+fn2 e = (Fn $ \prev -> (2, e prev))
+
+
 num = Cond "num" $ isNum . last
 vec = Cond "vec" $ const True
 list = Cond "list" $ isList . last
