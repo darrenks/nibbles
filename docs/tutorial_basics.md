@@ -5,7 +5,7 @@ This basics tutorial will teach you how to write and run Nibbles code. You will 
 ---
 
 ## Installation
-To follow this tutorial and run programs, you'll need Haskell and Nibbles. Follow instructions in [Download](download.html). When Nibbles is more stable there will be a way for you to try it online more easily, but for now it is what it is.
+To follow this tutorial and run programs, you'll need Haskell and Nibbles. Follow instructions in [Install](install.html). When Nibbles is more stable there will be a way for you to try it online more easily, but for now it is what it is.
 
 ## The Big Idea
 

@@ -1,29 +1,70 @@
 # Tutorial: Minutiae
 
-# Not written yet!!
+In this final tutorial you will learn obscure features and how to calculate binary nibble code size yourself. You do not need to know anything here to write Nibbles code, but it will be useful to win some code golf challenges!
 
-In this final tutorial you will learn obscure features and how to calculate binary nibble code size yourself. It's everything else you need to know to win some code golf challenges!
+## Binary size
 
-int size
-Numbers require 1 nibble (half byte) to initiate number mode and 1 nibble per octal digit of the number in question. So 7 is 1 byte and 8 is 1.5 bytes. Strings are 1 nibble to initiate string mode and then 1 byte per character of the string. So "hi" is 2.5 bytes. Space and newline each require only 1 nibble. Empty string is 2 bytes.
+All ops correspond to their literate size. `+` is 1 nibble (half a byte). `st` is 2 nibbles.
 
-str size
+**Integers** require 1 nibble plus their size in octal. So, `7` is 1 byte but `8` is 1.5 bytes. The reason for this is because in binary form only 1 hex value is reserved for starting a number. Then we need to use 1 bit per digit to say when to stop. Since integers are fairly common that is why `~` was added as another way to create integers cheaply.
 
-chr size
+If the number is a power of 10 then its size is 1 less nibble (this trick is enabled by remapping the encoding for a leading 0 in a number).
 
-coercion behavior
+**Strings** require 1 nibble plus 2 nibbles per character. So "hi" is 2.5 bytes. 
 
-implicit args
+There are a few exceptions:
 
-extra values (100, etc)
+*	Space and newline each require only 1 nibble.
+*	Empty string is 3 nibbles.
+*	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline which should be more common).
 
-infinity
+**Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
-arbitrary precision ish
+*	\n
+*	space
+*	,
+*	.
+*	-
+*	0
+*	a
 
-implicit args
+Binary chars will require 5 nibbles.
 
-default int values for stdin empty (100, 1000)
+## Coercion Behavior
+
+Some ops require the values to be a certain type. For example the result of `foldr1`. Rather than say your program is invalid if it doesn't match, it coerces the value to the desired type. TODO: write all the rules (in general it is intuitive). See coerceTo in polylib.hs.
+
+Other ops (like `:`) will take in two values and need to coerce them to the same type. First that type is decided and then both are coerced using the same rules as above. TODO: write the rules (but again it is intuitive, one that isn't obvious is char,int which becomes int). See coerce2 in polylib.hs.
+
+## Implicit Args
+
+If you use an operation that expects more values than you provide then Nibbles will choose a value for you to complete the program (so this can only be used for the last operations in a program). It will first choose any unused identifiers (starting from the smallest DeBruijn index). For example:
+
+	p.,;3+$
+$Output
+	[4,5,6]
+
+Because `$` had been used already, it chose `@` which was the value from the let `;` of 3.
+
+If there are no unused identifiers it will simply choose as many `$` as are needed.
+
+	p.,3+
+$Output
+	[2,4,6]
+
+Because it is just the same as `p.,3+$$`
+
+`$` will always be something because it corresponds the first integer from stdin at the beginning of your program. However input identifiers are set for optional use and so will not count as unused.
+
+## Special Values when stdin is Empty
+
+If stdin is empty, it likely means your program is supposed to produce some preset output. In this case constants like 100 are very common and so a few of these become available. Specifically `$` will be `100` and `;$` will be `1000`.
+
+Example (w/ empty input):
+
+	+ *2$ ;$
+$Output
+	1200
 
 ## Implicit Ops
 
@@ -156,6 +197,14 @@ Because it automapped on pairs of lines. Note that if there had been an odd numb
 	p ;_
 $HiddenOutput "12 888\n34\n56\n78"
 	"12 888\n34\n56\n78"
+
+## Infinity
+
+There is no concept of infinity yet, but it would be nice if there was. TODO create it.
+
+## Arbitrary precision ish
+
+For most use of integers nibbles doesn't specify if it is an Integer or Int (the former means infinite precision in Haskell), and so it is left up to Haskell to decide. This was done in attempt to make it much more efficient, but in practice Haskell cannot do a very good job deciding with the little information Nibbles gives it (and there could very well be some bugs where one is an Int and another Integer - which would cause it not to compile). It probably would have been better to build a type safe interpreter than trying to create Haskell code (this was also done for efficiency, but is bad because the string manipulation lacks type safety information). The short term plan is to just switch everything to Integer. The long term plan would be to switch it to being an interpeter and doing bounded integer analysis to determine when things can be safely operated on as Ints. That's a lot of work potentially but could have some other cool uses for additional overloading.
 
 ## Beyond the $QuickRef
 
