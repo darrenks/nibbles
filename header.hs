@@ -29,8 +29,8 @@ at (x:xs) n
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
 reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a
 
-iff :: Bool -> a -> a -> a
-iff c b1 b2 = if c then b1 else b2
+iff :: Bool -> a -> b -> Either a b
+iff c b1 b2 = if c then Left b1 else Right b2
 
 finishLn "\n" = "\n"
 finishLn "" = "\n"

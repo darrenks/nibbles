@@ -6,6 +6,7 @@ module Polylib(
 	join,
 	vectorize,
 	coerce,
+	coerceEither,
 	coerce2, coerceTo, -- test only
 	composeOp,
 	uncurryN,
@@ -112,6 +113,7 @@ sdim VInt = 1
 sdim VChr = 0
 sdim (VList a) = 1+sdim (todoAssumeFst a)
 
+-- todo get rid of this complicated way of coercing (use coerceEither)
 coerce :: String -> [Int] -> (VT -> VT) -> [VT] -> (VT, String)
 coerce op coerceArgIndices rtf vts = (rtf coercedType, rop) where
 	coercedType = foldr1 (curry coerce2) [vts!!j | j <- coerceArgIndices]
@@ -120,6 +122,11 @@ coerce op coerceArgIndices rtf vts = (rtf coercedType, rop) where
 	ctn n
 		| elem n coerceArgIndices = coerceTo (coercedType, vts !! n)
 		| otherwise = ""
+
+coerceEither :: VT -> VT -> (VT, String)
+coerceEither leftType rightType =
+	let coercedType = coerce2 (leftType, rightType) in
+		(coercedType, "(either ("++coerceTo (coercedType,leftType)++") ("++coerceTo (coercedType,rightType)++"))")
 
 -- not a true compose as assumes return type of b is just the one thing (same for all)
 composeOp :: (String -> VT -> (VT, String)) -> ([VT] -> (VT, String)) -> [VT] -> (VT, String)

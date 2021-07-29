@@ -281,13 +281,17 @@ rawOps = [
 	-- Desc: if (for lists - lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
-	op("?,", [15,13], [list, anyT, anyT], \ts -> coerce "(iff.not.null)" [1,2] id ts, [impossibleAuto, autoTodo, autoTodo]), 
+	op("?,", [15,13], [list, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
+		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) a b" ~> coercedType
+		, [impossibleAuto, autoTodo, autoTodo]), 
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +0 1 1 "F" -> "1"
 	-- todo args could be fn's with orig value (orig list if ?,)
 	-- todo able to return multiple args with ~ (make true/false clause fn noArgs)
-	op("?", [15], [num, anyT, anyT], \ts -> coerce ("(iff."++truthy (a1 ts)++")") [1,2] id ts, [autoTodo, autoTodo, autoTodo]),
+	op("?", [15], [num, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
+		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c a b" ~> coercedType
+		, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
