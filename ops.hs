@@ -281,12 +281,15 @@ rawOps = [
 	-- Desc: if (for lists - lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
-	op("?,", [15,13], [list, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
-		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) a b" ~> coercedType
+	-- Test: ?,"hi" $ 0 -> "hi"
+	-- todo, the arg passed in should be marked optional used
+	op("?,", [15,13], [list, fn ((:[]).a1), anyT], \ts -> let (coercedType, coerceFn) = coerceEither (todoAssumeFst$ret$ts!!1) (ts!!2) in
+		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) b" ~> coercedType
 		, [impossibleAuto, autoTodo, autoTodo]), 
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +0 1 1 "F" -> "1"
+	-- todo add ability to see c with $, but should it be for true value or both?
 	-- todo args could be fn's with orig value (orig list if ?,)
 	-- todo able to return multiple args with ~ (make true/false clause fn noArgs)
 	op("?", [15], [num, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
