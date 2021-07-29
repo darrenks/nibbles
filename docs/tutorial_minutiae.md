@@ -25,6 +25,65 @@ implicit args
 
 default int values for stdin empty (100, 1000)
 
+## Implicit Ops
+
+If your program produces multiple values instead of 1, Nibbles will insert implicit ops. Usually this is conversion to string and then concatenation. For example:
+
+	5 3
+$Output
+	53
+
+But if the first value is a non-string list then it will attempt to do a foldr1 over the list.
+
+	,5 +$@
+$Output
+	15
+
+You could even combine this with implicit args to just
+
+	,5+
+$Output
+	15
+
+If you don't use the accumulator (`@`) then it will instead assume you wanted to do a map.
+
+	,3+$$
+$Output
+	2
+	4
+	6
+
+And if you don't even use the element identifier (`$`) then it will assume you wanted to use string concatenation.
+
+	,3 8
+$Output
+	1
+	2
+	3
+	8
+
+Unless that second value is a string, then it will assume you wanted to join on that string.
+
+	,3 ", "
+$Output
+	1, 2, 3
+
+These rules (except the join one) also apply if the first value is an integer, except that it does a "range from 1 to n" to generate a list first.
+
+	5+
+$Output
+	15
+
+And for a map
+
+	3+$$
+$Output
+	2
+	4
+	6
+
+There's a lot more possibilities here, but it isn't obvious what the most common ops at the start of Nibble's programs will be, so we can wait and see what's used in practice the most and then add those.
+
 ## Auto Map
 
 If your program uses input but not the entire raw input (`;_`) then your program will auto map.

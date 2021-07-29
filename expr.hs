@@ -16,7 +16,7 @@ data Impl = Impl { implType::VT
                  } deriving (Eq, Show)
 noArgsUsed = Impl undefined undefined 0 Nothing UnusedArg
 
-data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving Show
+data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving (Show, Eq)
 data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show
 
 -- cp is the number of characters consumed so far

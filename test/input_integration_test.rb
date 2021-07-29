@@ -1,4 +1,4 @@
-test_program = "_+_"
+test_program = ":_+_"
 test_file = 'integration_test'
 testnbl = test_file+'.nbl'
 testnbb = test_file+'.nbb'

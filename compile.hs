@@ -14,9 +14,10 @@ import Parse
 import Hs
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
-compile = compileH
-	[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
-		(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")] where
+compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
+	args =
+		[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
+			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
 	mainLets =
 		[ ("firstInt", VInt, "fromMaybe 100 $ at intList 0")
 		, ("firstLine", vstr, "fromMaybe [] $ at strLines 0")
@@ -29,38 +30,69 @@ compile = compileH
 		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=OptionalArg
 		}) mainLets
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
-
-compileH args finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	doCompile = do
-	impls <- getAllValues
-	let finishedImpls = map (\impl -> app1Hs (finishFn $ implType impl) impl) impls
-	let body = foldl1 (flip$applyImpl.app1Hs("++sToA"++show separator++"++")) finishedImpls
-	context <- gets pdContext
-	impl <- popArg 0 body
-	nib <- gets getNib
-	lit <- gets getLit
+		impl1 <- get1Value
+		body <- if separator == "" then mainCombiner impl1
+			else testCombiner $ finishIt impl1
+		context <- gets pdContext
+		impl <- popArg 0 body
+		nib <- gets getNib
+		lit <- gets getLit
+
+		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed] =
+			tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
+
+		let autoMap = if allInputUsed then ""
+			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
+			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
+			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
+			else if sndIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 intList)) $ \\intList -> "
+			else if fstIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 intList)) $ \\intList -> "
+			else ""
+		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
+			\strLines=map sToA $ lines $ aToS input;\
+			\intList=concat intMatrix;\
+			\in "++autoMap) impl
+		return (finalImpl, nib, lit)
+	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
+	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
+
+	mainCombiner prev = do
+		let finishedPrev = finishIt prev
+		ParseData code _ _ _ <- get
+		if empty code then return finishedPrev
+		else do
+			result <- case implType prev of
+				VInt -> do
+					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt]
+					if last argsUsed then do
+						return $ (applyImpl (app1Hs "(\\a f -> foldr1 f [1..a])" prev) impl1) { implType = todoAssumeFst $ ret $ implType impl1 }
+					else if argsUsed == [True,False] then do
+						return $ (applyImpl (app1Hs "(\\a f -> map (flip f ()) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
+					else do
+						return $ join2 finishedPrev (finishIt $ (app1Hs "(\\f->f()())" impl1) { implType = todoAssumeFst $ ret $ implType $ impl1 } )
+				VList e | e /= [VChr] -> do
+					(impl1,argsUsed) <- getLambdaValue (length e) (e++e)
+					if or $ drop (length e) argsUsed then do
+						return $ (applyImpl (app1Hs "foldr1" impl1) prev) { implType = todoAssumeFst $ ret $ implType impl1 }
+					else if or $ take (length e) argsUsed then do
+						return $ (applyImpl (app1Hs "(\\a f -> map (flip f ()) a)" prev) impl1) { implType = VList $ ret $ implType impl1 }
+					else if todoAssumeFst (ret (implType impl1)) == vstr then do
+						return $ ((applyImpl (app1Hs "(\\f a->intercalate (f()()) a)" impl1) (app1Hs ("map"++finishFn (todoAssumeFst e)) prev))) { implType = vstr }
+					else do
+						return $ join2 finishedPrev (finishIt $ (app1Hs "(\\f->f()())" impl1) { implType = todoAssumeFst $ ret $ implType $ impl1 } )
+				_ -> do
+					impl1 <- get1Value
+					return $ join2 finishedPrev (finishIt impl1)
+			
+			mainCombiner result
 	
-	let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed] =
-		tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
-	
-	let autoMap = if allInputUsed then ""
-		else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
-		else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
-		else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
-		else if sndIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 intList)) $ \\intList -> "
-		else if fstIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 intList)) $ \\intList -> "
-		else ""
-	let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
-		\strLines=map sToA $ lines $ aToS input;\
-		\intList=concat intMatrix;\
-		\in "++autoMap) impl
-	return (finalImpl, nib, lit)
-	
-getAllValues = do
-	ParseData code _ _ _ <- get
-	if empty code then return [] else do
-		impl1 <- getValuesMemo 1
-		getAllValues >>= return.(impl1++)
+	testCombiner prev = do
+		ParseData code _ _ _ <- get
+		if empty code then return prev
+		else do
+			impl1 <- get1Value
+			testCombiner (join2 prev (finishIt impl1))
 
 applyImpl :: Impl -> Impl -> Impl
 applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (max d1 d2) undefined undefined
@@ -108,6 +140,11 @@ convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
 	putAddRep memoState
 	return memoImpl
 convertLambda argTypes (ArgFn (Fn fnFn), _) = do
+	let (numRets, argType) = fnFn argTypes
+	(lambdaFn, _) <- getLambdaValue numRets argType
+	return lambdaFn	
+
+getLambdaValue numRets argType = do
 	(newArg,body) <- pushLambdaArg argType $ \newArg -> do
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
 		-- with its real Fn type which can only be known after 2nd arg type is determined.
@@ -130,8 +167,7 @@ convertLambda argTypes (ArgFn (Fn fnFn), _) = do
 		else do
 			bonus <- parseCountTuple
 			getValuesMemo (bonus + numRets)
-	return $ addLambda newArg body
-	where (numRets, argType) = fnFn argTypes
+	return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argImpls newArg)
 
 pushLambdaArg :: [VT] -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
 pushLambdaArg argType f = do
@@ -139,8 +175,15 @@ pushLambdaArg argType f = do
 	depth <- gets pdContext >>= return.length
 	rets <- f newArg
 	let body = makePairs argType rets
+	finalContext <- gets pdContext
+	let newArgFinal = head $ filter (\arg -> argKind arg == LambdaArg) finalContext
 	bodyWithLets <- popArg depth body
-	return (newArg, bodyWithLets)
+	return (newArgFinal, bodyWithLets)
+
+get1Value :: ParseState Impl
+get1Value = do
+	v <- getValuesMemo 1
+	return $ head v
 
 -- Gets the arg list
 getValuesMemo :: Int -> ParseState [Impl]
