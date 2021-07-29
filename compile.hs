@@ -64,7 +64,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		else do
 			result <- case implType prev of
 				VInt -> do
-					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt]
+					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
 					if last argsUsed then do
 						return $ (applyImpl (app1Hs "(\\a f -> foldr1 f [1..a])" prev) impl1) { implType = todoAssumeFst $ ret $ implType impl1 }
 					else if argsUsed == [True,False] then do
@@ -72,7 +72,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 					else do
 						return $ join2 finishedPrev (finishIt $ (app1Hs "(\\f->f()())" impl1) { implType = todoAssumeFst $ ret $ implType $ impl1 } )
 				VList e | e /= [VChr] -> do
-					(impl1,argsUsed) <- getLambdaValue (length e) (e++e)
+					(impl1,argsUsed) <- getLambdaValue (length e) (e++e) OptionalArg
 					if or $ drop (length e) argsUsed then do
 						return $ (applyImpl (app1Hs "foldr1" impl1) prev) { implType = todoAssumeFst $ ret $ implType impl1 }
 					else if or $ take (length e) argsUsed then do
@@ -141,11 +141,11 @@ convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
 	return memoImpl
 convertLambda argTypes (ArgFn (Fn fnFn), _) = do
 	let (numRets, argType) = fnFn argTypes
-	(lambdaFn, _) <- getLambdaValue numRets argType
+	(lambdaFn, _) <- getLambdaValue numRets argType UnusedArg
 	return lambdaFn	
 
-getLambdaValue numRets argType = do
-	(newArg,body) <- pushLambdaArg argType $ \newArg -> do
+getLambdaValue numRets argType argUsedness= do
+	(newArg,body) <- pushLambdaArg argType argUsedness $ \newArg -> do
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
 		-- with its real Fn type which can only be known after 2nd arg type is determined.
 		-- It would very tricky to allow the the 3rd argument to do things like auto pair
@@ -169,9 +169,9 @@ getLambdaValue numRets argType = do
 			getValuesMemo (bonus + numRets)
 	return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argImpls newArg)
 
-pushLambdaArg :: [VT] -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
-pushLambdaArg argType f = do
-	newArg <- newLambdaArg argType
+pushLambdaArg :: [VT] -> ArgUsedness -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
+pushLambdaArg argType argUsedness f = do
+	newArg <- newLambdaArg argType argUsedness
 	depth <- gets pdContext >>= return.length
 	rets <- f newArg
 	let body = makePairs argType rets

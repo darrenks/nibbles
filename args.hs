@@ -12,11 +12,11 @@ import State
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 
-newLambdaArg :: [VT] -> ParseState Arg
-newLambdaArg argT = do
+newLambdaArg :: [VT] -> ArgUsedness -> ParseState Arg
+newLambdaArg argT argUsedness = do
 	context <- gets pdContext
 	let depth = 1 + length context
-	let impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) depth Nothing UnusedArg) argT [1..]
+	let impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) depth Nothing argUsedness) argT [1..]
 	let newArg = Arg impls LambdaArg
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg

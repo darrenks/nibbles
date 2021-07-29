@@ -80,12 +80,6 @@ But if the first value is a non-string list then it will attempt to do a foldr1 
 $Output
 	15
 
-You could even combine this with implicit args to just
-
-	,5+
-$Output
-	15
-
 If you don't use the accumulator (`@`) then it will instead assume you wanted to do a map.
 
 	,3+$$
@@ -93,6 +87,16 @@ $Output
 	2
 	4
 	6
+
+You could even combine this with implicit args to just
+
+	,3+
+$Output
+	2
+	4
+	6
+
+Note that this didn't default to a fold because these args are set to optional use.
 
 And if you don't even use the element identifier (`$`) then it will assume you wanted to use string concatenation.
 
@@ -111,9 +115,11 @@ $Output
 
 These rules (except the join one) also apply if the first value is an integer, except that it does a "range from 1 to n" to generate a list first.
 
-	5+
+	3+
 $Output
-	15
+	2
+	4
+	6
 
 And for a map
 
