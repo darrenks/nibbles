@@ -278,10 +278,13 @@ rawOps = [
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [15,1], [anyT], "asdf" ~> VInt, [autoTodo]),
+	-- Desc: if (for lists - lazy)
+	-- Example: ?,"hi" 1 0 -> 1
+	-- Test: ?,"" 1 0 -> 0
+	op("?,", [15,13], [list, anyT, anyT], \ts -> coerce "(iff.not.null)" [1,2] id ts, [impossibleAuto, autoTodo, autoTodo]), 
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +0 1 1 "F" -> "1"
-	-- todo more lazy empty check than computing length
 	-- todo args could be fn's with orig value (orig list if ?,)
 	-- todo able to return multiple args with ~ (make true/false clause fn noArgs)
 	op("?", [15], [num, anyT, anyT], \ts -> coerce ("(iff."++truthy (a1 ts)++")") [1,2] id ts, [autoTodo, autoTodo, autoTodo]),
