@@ -115,7 +115,7 @@ rawOps = [
 	-- Test: +;1 + ;2 @ -> 4
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +;1 ;+2$ -> 4
-	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [autoTodo]),
+	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [impossibleAuto]),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	op(":~", [7,0], [anyT], "(:[])" ~> vList1 .a1, [autoTodo]),
@@ -175,11 +175,15 @@ rawOps = [
 	-- todo test/make negative
 	-- Example: %2,5 -> [1,3,5]
 	op("%", [9], [num, list], "step" ~> a2, [2]),
+	--- Desc: reject
+	--todo this doesn't work because checking for is auto isn't lazy enough since it calculates exact type, but need to decide earlier that it isn't auto...
+	--- Example: &,5~%$2 -> [2,4]
+-- 	op("&", [9], [list, auto, fn ((:[]).elemT.a1)], (\[a1,_,a2] -> "flip$filter.("++truthy (ret1 $ a2)++".)") ~> a1, [impossibleAuto, autoTodo]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &:""~"b"$ -> ["b"]
-	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, autoTodo {-reject?-}]),
+	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
@@ -251,10 +255,13 @@ rawOps = [
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt, []),
+	-- Desc: range from 0 ...
+	-- Example: ,~3 -> [0,1,2]
+	op(",~", [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [autoTodo]),
 	-- Desc: range from 1 to
 	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
-	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [autoTodo]),
+	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [impossibleAuto]),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),

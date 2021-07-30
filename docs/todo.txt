@@ -1,4 +1,5 @@
 accidental extension detection won't handle spaces!
+issue with not lazy enough ~ detection in args (see reject)
 
 haskell equivalents of examples
 good example on homepage

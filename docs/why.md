@@ -21,6 +21,7 @@ But Golfscript was never fully optimized for truly short solutions, after all it
 The allure of creating even more compact golf languages was irresistible and over time many have been created it. But compactness was usually accomplished by adding more instructions instead of reducing the instruction size. The result of this was very complicated languages (competitive ones have over 400 different built-ins).
 
 This has bothered me because
+
 1.	Solutions will rely on specialty functions for common golf themes (e.g. palindromize, factor, pi digits, etc.), rather than solving the problem yourself, as you would in a normal language.
 1.	Golf became more about hunting for puzzle pieces than manipulating puzzle pieces (searching through a long list of arbitrary functions rather than problem solving).
 

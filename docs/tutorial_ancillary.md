@@ -185,11 +185,11 @@ Hint: The first argument to `;;` is actually a function of no arguments (which a
 $Solution
 
 	p :                   # pretty print 1st call
-		;; ~10 3 ~/$@ %$@  # create fn and call it
-		$                  # get the snd result
+	   ;; ~10 3 ~/$@ %$@  # create fn and call it
+	   $                  # get the snd result
 	p :                   # pretty print 2nd call
-		@ 20 5             # call it again
-		$                  # get the snd result
+	   @ 20 5             # call it again
+	   $                  # get the snd result
 $Output
 	[3,1][4,0]
 
@@ -205,7 +205,7 @@ Recursive functions always need a base case to terminate, and the base case is e
 
 1.	the condition for when to use the base case
 1.	the base case
-1. the recursive case.
+1. the recursive case
 
 The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).
 

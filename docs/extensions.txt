@@ -2,41 +2,34 @@ This is a list of ideas of things that are useless and could be remapped to some
 
 Only tracking things which take 2 nibbles to achieve.
 
-available extensions
+available extensions (besides the tbd in quickref)
 constant + constant (*) too
 constant in loop
 ~ auto valued int (2 in *) (could mean infinity)
-`0,1
-`unset
 length of drop/take? not if they weren't as long as the int
-if of constant
 value at of a range (although depending on OOB behavior...)
 communitiave/associative
 opcode 15, mismatched 2d+ lists
 ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 debruijn index 6+ (tbd input)
-reverse map / map reverse
+reverse map / map reverse (depending on prev/etc)
 
 ~ in toplevel (space or newline? or something in context)
 
 desired features
-pair (only needed in fns)
 min/max
 not
-or
 and
 more vectorized ops (- / %)
 more special folds
 something to convert to truthiness
 2** (or 10** if auto 2) (or bitshift)
 empty str, empty list of various types
-range0
 
 ;;$ / etc could be these since wouldn't want 
 iterate (fn first) / unfold / until / etc
 map [1..inf]
 
-mapaccum
 scan
 prepend Nothing
 chunk/while
@@ -49,8 +42,6 @@ transpose
 array split, not removing empties
 maybe version of things that throw?
 ==, list comparison < >, etc
-functions
-10
 bitwise ^ & |
 string + int coercing the otherway (old idea was to use opcode of *int str)
 	if could reverse operands of + could make it +str int for good literal form
