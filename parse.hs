@@ -129,7 +129,7 @@ match (Lit f s cp) (needle, _)
 parseError :: String -> ParseState Impl
 parseError msg = do
 	s <- gets pdCode
-	return $ error $ msg ++ "\n" ++ case s of
+	return $ errorWithoutStackTrace $ msg ++ "\n" ++ case s of
 		Lit f s cp -> literateError f cp
 		Nib s cp -> "at nibble #" ++ show cp ++ "\nnext nibble is" ++ fromMaybe "" (at s 0>>=Just . show)
 

@@ -318,7 +318,7 @@ rawOps = [
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	
-	-- Desc: hash mod
+	-- Desc: hash (md5) mod
 	-- todo auto parse int (would save 1 nibble per use)
 	-- todo provide an option to easily add salt
 	-- Example: hm "asdf" 256 -> 112
@@ -328,7 +328,7 @@ rawOps = [
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
-	op("pt", [], [anyT], "" ~> error.show :: ([VT]->[VT],String), []),
+	op("pt", [], [anyT], "" ~> errorWithoutStackTrace.show :: ([VT]->[VT],String), []),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr, []),
@@ -337,10 +337,10 @@ rawOps = [
 	atom("ct", [], gets pdContext >>= parseError . debugContext), -- todo this puts error in wrong code spot
 	-- Desc: error
 	-- Example: error "asdf" -> error "asdf"
-	op("error", [], [str], "error.aToS" ~> vstr, []),
+	op("error", [], [str], "errorWithoutStackTrace.aToS" ~> vstr, []),
 	-- Desc: undefined
 	-- Example: un -> error "undefined"
-	op("un", [], [], "error \"undefined (todo put location in msg)\"" ~> vstr, []),
+	op("un", [], [], "errorWithoutStackTrace \"undefined (todo put location in msg)\"" ~> vstr, []),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
 	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),

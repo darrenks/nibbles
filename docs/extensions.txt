@@ -8,9 +8,8 @@ constant in loop
 ~ auto valued int (2 in *) (could mean infinity)
 length of drop/take? not if they weren't as long as the int
 value at of a range (although depending on OOB behavior...)
-communitiave/associative
+commutative/associative
 opcode 15, mismatched 2d+ lists
-ops 8 str int (or str scalar) (l/r just), replace or split/join char or count add int as a char?
 debruijn index 6+ (tbd input)
 reverse map / map reverse (depending on prev/etc)
 
@@ -53,6 +52,13 @@ auto rec (base case is arg, condition is arg).
 downcase/upcase
 
 autorec (base case and cond = $) (or maybe version)
+
+chr ops:
+(l/r just)
+replace chr 
+split/join char
+count chr
+add int as a char
 
 -- "too complicated"
 sqrt
