@@ -96,7 +96,7 @@ $Output
 	4
 	6
 
-Note that this didn't default to a fold because these args are set to optional use.
+Note that this didn't default to a fold (via `,3+$@`) because these args are set to optional use.
 
 And if you don't even use the element identifier (`$`) then it will assume you wanted to use string concatenation.
 
@@ -121,13 +121,11 @@ $Output
 	4
 	6
 
-And for a map
+And for a fold `5+$@` which can be done shorter by:
 
-	3+$$
+	5+@
 $Output
-	2
-	4
-	6
+	15
 
 There's a lot more possibilities here, but it isn't obvious what the most common ops at the start of Nibble's programs will be, so we can wait and see what's used in practice the most and then add those.
 
@@ -181,7 +179,7 @@ $HiddenOutput "1\na\n2 3"
 	[1]
 	[2,3]
 
-But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `$`.
+But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `:~$`.
 
 	p ;$
 $Output "12 888\n34\n56\n78"
