@@ -84,7 +84,7 @@ You can return multiple things, e.g.
 $Output
 	37
 
-They will just be printed without any separators. This behavior is likely to change in the future (todo).
+They will just be printed without any separators. But beware, you may accidentally use some implicit ops besides concatenation (see [Implicit Ops](tutorial_minutiae.html#implicitops) for more info).
 
 ## More Inputs
 
@@ -142,7 +142,7 @@ Outside of functions it would be pointless to create your own tuple, it would im
 
 ## Maybe
 
-todo
+Currently nothing returns a maybe type, but there are plans to do so for some operations. These would behave like normal values except would behave like Haskell's `>>=` when nothing, and would overload `?` for handling the nothing case more easily. TODO implement and update this.
 
 ## Vectorization
 

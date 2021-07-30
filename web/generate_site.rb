@@ -50,6 +50,9 @@ def convertMd(filename)
 	markdown.gsub!("<p>$Gives</p>\n\n<pre><code>",'<pre><code class="result">')
 	
 	title = markdown[/<h1>(.*?)<\/h1>/,1]
+	
+	markdown.gsub!(/<(h[1-3])>(.*?)<\/\1>/){"<#$1 id=\"#{$2.downcase.tr'^a-z0-9',''}\">#$2</#$1>"}
+	
 	if title.nil?
 		puts 'skipping '+filename
 		return

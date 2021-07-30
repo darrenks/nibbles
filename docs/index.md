@@ -117,7 +117,7 @@ The [tutorials](tutorial_basics.html) on this site are recommended for learning 
 
 Good places to use Nibbles for competing online are:
 
--	[Anarchy Golf](http://golf.shinh.org/) (my old favorite)
+-	<s>[Anarchy Golf](http://golf.shinh.org/) (my old favorite)</s> (Not yet, let's get more stable first).
 -	[Code Golf Stack Exchange](https://codegolf.stackexchange.com) (most active)
 
 ### Feedback?
