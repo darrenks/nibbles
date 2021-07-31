@@ -48,6 +48,7 @@ parseInt (Nib s cp) = (if pow10 n then n*10 else n, rest) where
 		| f>=8 = (c,Nib s (cp+1))
 		| otherwise = parseNibInt s c (cp+1)
 		where c=a*8+toInteger f`mod`8
+parseInt (Lit f ('0':s) cp) = (0, sLit f s (cp+1))
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))

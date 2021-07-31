@@ -45,6 +45,7 @@ rawOps = [
 	-- Test (size 3): 20 -> 20
 	-- Test (size 3): 100 -> 100
 	-- Test (size 4): 200 -> 200
+	-- Test leading zero is separate: :05 -> [0,5]
 	atom(" ", [1], parseIntExpr), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
