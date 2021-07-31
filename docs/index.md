@@ -4,7 +4,7 @@ $Intro
 
 ### FizzBuzz
 
-This program is 36 nibbles long (18 bytes) and solves FizzBuzz, really it is 10 bytes with 8 bytes of data for the text FizzBuzz.
+Although this program appears as 28 characters here, characters (except for the digits and string text) take only half a byte in binary form. It is trivially encoded as **18 bytes**. That's pretty decent considering 8 of those bytes are for the text FizzBuzz.
 
 	$?,:^-~%$3"Fizz"^-~%$5"Buzz"
 $HiddenOutput
@@ -111,7 +111,9 @@ $HiddenOutput
 
 ### Resources
 
-The [tutorials](tutorial_basics.html) on this site are recommended for learning the language. Also check out the [Why page](why.html) if you're interested in the ideas behind the language.
+The [tutorials](tutorial_basics.html) can teach you the language.
+
+Also check out the [Why page](why.html) if you're interested in the ideas behind Nibbles.
 
 ### Where to Golf?
 

@@ -39,15 +39,18 @@ And some strategies that were chosen to accomplish this:
 1.	Overloading by type should only be used with static typing.
 	-	Changing types would almost never be what you actually want if there is overloading by type.
 1.	Prefix notation with DeBruijn indices are easy to use and eliminate the need for all function delimiters and stack manipulation.
+	-	Tacit is beautiful, but I couldn't find a way to match this efficiency while keeping it this simple.
 1.	There should be only 1 way to do things and 0 ways to do useless things, otherwise wastes entropy.
 
 ### Anti-philosophy of Nibbles
 
 Be good at everything.
 
-It seems like a no-brainer to automatically compress strings, but doing so adds complexity to the golfing process and also makes the golf language quite arbitrary (do we optimize for Spanish too, etc.)? Sure, without compression we'll be at a disadvantage in problems that include printing arbitrary english sentences, but I'd argue those weren't great problems for golf in the first place.
+It seems like a no-brainer to automatically **compress strings**, but doing so adds complexity to the golfing process and also makes the golf language quite arbitrary (do we optimize for Spanish too, what about Chinese or Mayan?). Sure, without compression we'll be at a disadvantage in problems that include printing arbitrary english sentences, but I'd argue those weren't great problems for golf in the first place.
 
-Similar argument for floating point math. What precision and what rounding behavior do we use? Floating point problems are more of a math problem than code golf anyway.
+Currently there are no **floating point** numbers. In the past I thought they didn't belong in code golf because of issues like difference between languages in what precision to use. However the rules on stackexchange don't require specific output so this wouldn't be as much of an issue. None-the-less, I haven't thought enough about how to fit them into the ops table and how to support the many more operations that would be needed for them. And they aren't useful for that high of a percent of problems, so for at least for the foreseeable future, Nibbles just isn't the language to use if you want to do floating point math.
+
+**Regexes** are cool and undoubtedly better than Nibbles at some types of string manipulation. However they are complicated and really a language of their own.
 
 ### Future
 
