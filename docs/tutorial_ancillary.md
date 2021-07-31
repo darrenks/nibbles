@@ -55,8 +55,6 @@ $Solution
 $HiddenOutput "3902309423233451"
 	436151
 
-This is the first time we've needed comments, use them with `#`
-
 That was hard, and there are still some pain points we haven't learned how to get around yet, like having to extract the input number from a list twice (and differently even since there was something added to the context). The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly exit the loop.
 
 $EndSolution
@@ -85,10 +83,6 @@ $Output
 	37
 
 They will just be printed without any separators. But beware, you may accidentally use some implicit ops besides concatenation (see [Implicit Ops](tutorial_minutiae.html#implicitops) for more info).
-
-## More Inputs
-
-There will be automatic parses beyond `$`, `@`, `` `2`` at the start of the program, they will be mentioned here when they exist (todo).
 
 ## Auto Values
 

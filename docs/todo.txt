@@ -1,7 +1,5 @@
 accidental extension detection won't handle spaces!
 
-could clean out some of the VAuto usage, should be impossible now.
-
 haskell equivalents of examples
 good example on homepage
 clarify fn0/etc (num rets)

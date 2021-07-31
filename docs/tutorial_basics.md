@@ -114,9 +114,29 @@ Functions do not require any syntax, some ops take a function argument and autom
 
 Args are referenced by number with the following identifiers: `$` `@` `_`. If you are nesting functions then these count upwards in scope. For example in an inner function of 1 argument, `$` would be its argument as usual, but `@` would be the first argument of the outer function. This is also known as DeBruijn indices.
 
-See `map`, `foldr`, etc in the ops table for examples.
+Let's look at the examples from the ops table for `map` and `foldr1`.
 
-If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
+`."abc"+1$` -> `"bcd"`
+
+This corresponds to the Haskell code:
+
+	flip map "abc" (\a -> chr ((+) 1 (ord a)))
+
+The `chr` and `ord` are implicit because Nibbles supports `+` on chars. Let's imagine the map function just took the list first and also supported math ops on chars then the code could have been:
+
+	map "abc" (\a -> (+) 1 a)
+
+Which is more obviously related to the Nibbles code.
+
+And for foldr1:
+
+`/,3+$@` -> `6`
+
+This corresponds to the Haskell code:
+
+	flip foldr1 [1..3] (\elem accum -> (+) elem accum)
+
+**Note:** If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
 ### Exercise
 Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
@@ -128,10 +148,20 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 $Solution
 
 	/&,49%+1$2*$@
+	
+Or more verbosely:
+
+	/         # flip foldr1
+	  &       #   (flip filter
+	    ,49   #     [1..49] 
+	    %+1$2 #     (\a -> (mod) ((+) 1 a) 2 > 0)
+	  *$@     #   ) (\a b-> (*) a b)
 $HiddenOutput
 	10409396852733332453861621760000
 
 Finally we are seeing nice looking programs, can you do better? We will learn more ways to shorten this.
+
+Those `#`'s act like typical scripting language comments.
 
 $EndSolution
 
