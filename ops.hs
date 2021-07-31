@@ -188,6 +188,14 @@ rawOps = [
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
 	op("*", [10], [num, vec], vectorize "*" (const VInt), [-1, 2]),
+	-- Desc: scanl
+	-- Example: sc,3 ~ 0 +$@ -> [0,1,3,6]
+	-- todo coerce ret
+	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl ((\\f t1->"++uncurryN (length (ret a2))++"(f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
+	-- Desc: scanl1
+	-- Example: sc,3+$@ -> [1,3,6]
+	-- todo make/test empty
+	extendOp ",\\" genericReason ("sc", [13,11], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->scanl1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). f) a") ~> VList .actualElemT.a1, []),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +$@ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++$@_ -> 13
@@ -243,9 +251,6 @@ rawOps = [
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp ",," genericReason ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(",\\", [13,11], [list], "asdf" ~> VInt, []),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	extendOp ",%" genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),

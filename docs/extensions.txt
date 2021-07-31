@@ -29,7 +29,6 @@ empty str, empty list of various types
 iterate (fn first) / unfold / until / etc
 map [1..inf]
 
-scan
 prepend Nothing
 chunk/while
 splitWhen
