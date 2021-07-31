@@ -58,7 +58,16 @@ main=do
 	case filter isOpt args of
 		ops | ops == [] || ops == ["-norun"] -> do
 			if parseMode == FromLit
-	 			then hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
+	 			then do
+	 				hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
+	 				let (_,_,binLit) = compile finish "" (Nib b 0)
+	 				-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
+	 				if binLit /= lit then do
+	 					hPutStrLn stderr "Warning: your code's binary would actual extract to:"
+	 					hPutStrLn stderr binLit
+						hPutStrLn stderr "instead of:"
+	 					hPutStrLn stderr lit
+	 				else return ()
 	 			else return ()
 --  			hPutStrLn stderr lit
 --  			hPutStrLn stderr $ flatHs hs

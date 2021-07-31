@@ -1,9 +1,4 @@
-accidental extension detection won't handle spaces!
-
-haskell equivalents of examples
-good example on homepage
 clarify fn0/etc (num rets)
-auto map!
 fold on prefixes (primo)
 
 For alpha release:

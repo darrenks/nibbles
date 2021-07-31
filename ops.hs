@@ -75,7 +75,7 @@ rawOps = [
 	-- Example: 0 -> 0
 	extendOp "::" associativeReason ("tbd", [7,7], [fn noArgs, fn $ ret.a1], "" ~> a1, [autoTodo]),
 	-- Desc: let fn
-	-- todo this ambiguous ;;; (that's ok for now since there is easy workaround but need accidental use error)
+	-- todo this ambiguous ;;; (that's okish for now since there are workarounds)
 	-- Example: ;;2+$1 $4 -> 3,5
 	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
 	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
@@ -102,9 +102,6 @@ rawOps = [
 		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++"f x ("++ curryN a1L ++"rec) in if "
 		++truthy (head $ ret a2)++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
 		rt ++ [VFn (ret a1) rt]), []),
-	-- Desc: tbd (something that wouldn't take $@_ as first arg)
-	-- Example: 0 -> 0
-	op("tbd", [6,6], [], "" ~> a1, [autoTodo]),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
