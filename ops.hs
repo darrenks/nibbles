@@ -175,10 +175,9 @@ rawOps = [
 	-- todo test/make negative
 	-- Example: %2,5 -> [1,3,5]
 	op("%", [9], [num, list], "step" ~> a2, [2]),
-	--- Desc: reject
-	--todo this doesn't work because checking for is auto isn't lazy enough since it calculates exact type, but need to decide earlier that it isn't auto...
-	--- Example: &,5~%$2 -> [2,4]
--- 	op("&", [9], [list, auto, fn ((:[]).elemT.a1)], (\[a1,_,a2] -> "flip$filter.("++truthy (ret1 $ a2)++".)") ~> a1, [impossibleAuto, autoTodo]),
+	-- Desc: reject
+	-- Example: &,5~%$2 -> [2,4]
+	op("&", [9], [list, auto, fn ((:[]).elemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".f) l") ~> a1, [impossibleAuto, autoTodo]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"

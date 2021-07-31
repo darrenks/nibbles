@@ -1,5 +1,6 @@
 accidental extension detection won't handle spaces!
-issue with not lazy enough ~ detection in args (see reject)
+
+could clean out some of the VAuto usage, should be impossible now.
 
 haskell equivalents of examples
 good example on homepage

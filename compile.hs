@@ -113,12 +113,12 @@ convertAuto impl _ = impl
 convertAutos :: [Impl] -> [Integer] -> [Impl]
 convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
 
-simplifyArgSpecs :: [ArgSpec] -> [[VT] -> Maybe ArgMatchResult]
+simplifyArgSpecs :: [ArgSpec] -> [[Maybe VT] -> Maybe ArgMatchResult]
 simplifyArgSpecs = map simplifyArgSpec where
-	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ VAuto == last vts
-	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (last vts)
+	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ isNothing $ last vts
+	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (fromMaybe VAuto $ last vts)
 	simplifyArgSpec (Fn f) _ = Just $ ArgFn (Fn f)
-	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f vts -- last
+	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f $ map (fromMaybe VAuto) vts -- last
 	maybeMatch b = if b then Just ArgMatches else Nothing
 
 -- add the current rep to the partialFinalState
@@ -206,7 +206,7 @@ getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThun
 		then drop (cp afterCode-cp code) offsetExprs
 		else drop 1 $ exprsByOffset afterThunk
 
--- Gets the arg lists from each possible offset
+-- Gets the arg lists from each possible offset (ParseData is what is after the Impl)
 exprsByOffset :: Thunk -> [[(Impl, ParseData)]]
 exprsByOffset (Thunk code context) =
 	getValues (Thunk code context) rest : rest where
@@ -224,8 +224,13 @@ getValue offsetExprs = do
 	else
 		fromMaybe (parseError "Parse Error: no matching op") $ msum $ map tryOp allOps
 
+isTildaStart :: ParseState Bool
+isTildaStart = do
+	code <- gets pdCode
+	return $ not (empty code) && (isJust $ match code ("~", [0]))
+
 convertOp :: [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
-convertOp valList (Op ats impl autos) = 
+convertOp valList (Op ats impl autos) = do
 	if all isJust typeMatch then Just $ do
 		let isFns = map fromJust typeMatch
 		argList <- convertLambdas [] $ zip isFns valList
@@ -233,9 +238,13 @@ convertOp valList (Op ats impl autos) =
 		let initImpl = noArgsUsed { implCode=hsParen $ hsAtom hs }
 		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
 		convertPairToLet fullImpl rt
-	else Nothing where	
-		valTypes = map (implType.fst) valList
-		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits valTypes)
+	else Nothing where
+		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits lazyAutoEqValTypes)
+		-- Manually detect if an arg is an auto value, this allows lazy evaluation to
+		-- skip parsing the whole expression to determine the type (which can't be auto).
+		-- Parsing this could cause a false parse error.
+		-- This assumes first value being auto is handled by the ~ in the op name and so hard codes false for it.
+		lazyAutoEqValTypes = zipWith (\(impl,_) isTilda -> if isTilda then Nothing else Just $ implType impl) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
 
 convertOp _ (Atom impl) = Just $ do
 	impl >>= applyFirstClassFn
