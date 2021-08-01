@@ -16,11 +16,8 @@ debug features to add:
 minor things:
 -maybe
 -use of char (and instances to convert for vec)
-	+ 'a' =@1 # gives Int Integer error (likely other cases of this)
 
 
-multiple values in main makes special behavior (i.e. if int constant, range map?)?
-	auto range1 map if number then multiple outputs? also could auto map if list?
 ------------------------------------------
 compile with wall on? nah, but incomplete patterns would be most useful
 should also have dependency bounds for dlist/etc.
@@ -40,8 +37,6 @@ website design
 ParseError in parse instead of regular (need refactor to monad)
 
 better op not found error message (hard because memoize of arg types is lazy)
-aliases so don't have to use ~ in middle of extensions type : "1" ~
-helpful error if commutative backwards (use aliases)
 
 either instead of bool/maybe
 maybe id, maybe nothing
@@ -55,9 +50,7 @@ more extensions
 
 quickref to show return types
 
-debuging commands that use error to exit, surpress callstack/etc.
+debugging commands that use error to exit, surpress callstack/etc.
 
 switch to integer and char everywhere
 bounded integers/list size for more efficient math ops and no need for maybe on some list ops
-
-~ in top level could mean set separator to custom value (used for both input and output)

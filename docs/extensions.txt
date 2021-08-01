@@ -13,7 +13,10 @@ opcode 15, mismatched 2d+ lists
 debruijn index 6+ (tbd input)
 reverse map / map reverse (depending on prev/etc)
 
+unterminated int/str at end of program (or even partial string byte)
+
 ~ in toplevel (space or newline? or something in context)
+	could have it mean: set separator to custom value (used for both input and output)
 
 desired features
 min/max
@@ -62,7 +65,6 @@ add int as a char
 -- "too complicated"
 sqrt
 list of strs shorthand (use 32 value of str?)
-magic/hash
 permutations/combinations
 prefixes/suffixes
 base conversion

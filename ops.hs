@@ -279,6 +279,7 @@ rawOps = [
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
 	-- Test auto: ="asdf"~ -> 'a'
+	-- todo empty list will error, maybe it should use maybe??
 	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, 1]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]

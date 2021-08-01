@@ -16,6 +16,7 @@ import qualified Data.ByteString.Char8 as C8
 
 safeChr = chr.(`mod`256)
 sToA = map ord
+aToS :: Integral i => [i] -> String
 aToS = map$safeChr.fromIntegral
 bToI b = if b then 1 else 0
 

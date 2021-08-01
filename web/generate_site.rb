@@ -39,7 +39,7 @@ def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')
 	md = File.read("docs/#{filename}")
 	md.gsub!('$QuickRef','[Quick Ref](quickref.html)')
-	md.gsub!('$Feedback','Bug reports, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at ![image of email](email.png)')
+	md.gsub!('$Feedback','Bug reports, pain points, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at ![image of email](email.png)')
 	md.gsub!('$Intro',File.read("README.md").lines.first)
 	convertTests(md)
 	File.open('t.md','w'){|f|f<<md}
