@@ -71,6 +71,7 @@ main=do
 		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 		isExtOpt (Op types _ _) = any (\t -> case t of
 			(Exact VAuto) -> True
+			BinAuto -> True
 			otherwise -> False) types
 		isExtOpt _ = False
 		toHex (16:_) = ""
@@ -108,6 +109,7 @@ typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
 typeToStr (Exact VInt) _ = "int"
 typeToStr (Exact VChr) _ = "chr"
 typeToStr (Exact VAuto) _ = "~"
+typeToStr BinAuto _ = "b~"
 typeToStr (Fn _) _ = "fn"
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'

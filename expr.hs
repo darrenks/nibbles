@@ -44,6 +44,10 @@ appendRepH (nib2,lit2) = do
 appendRep :: ([Int],String) -> ParseState ()
 appendRep (nib2,lit2) = appendRepH (DList.fromList nib2, DList.fromList lit2)
 
+chompLit :: ParseState ()
+chompLit = do
+	modify $ \s -> s { pdLit = DList.fromList $ init $ DList.toList $ pdLit s }
+	
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =
 	ParseData code context (DList.fromList []) (DList.fromList "")

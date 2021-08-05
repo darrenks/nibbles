@@ -116,17 +116,17 @@ rawOps = [
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
 	extendOp "::" associativeReason ("it", [7,7], [fn noArgs, fn $ ret.a1],
 		\[a1,a2]->"\\i f->iterate ("++coerceTo(todoAssumeFst (ret a1), todoAssumeFst (ret a2))++".f) (i())" ~> VList (ret a1), []),
-	-- Desc: cons
-	-- Example: :~"a""b" -> ["a","b"]
-	-- Test (coerce, but pointless todo): :~,2 "34" -> "1234"
-	op(":~", [7,0], [list, anyT], cons, [impossibleAuto, autoTodo]),
+	-- Desc: singleton
+	-- Example: :~3 -> [3]
+	-- Test tuple: :~~1 2 -> [(1,2)]
+	op(":~", [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1, [autoTodo]),
 	-- Desc: abs
 	-- Example: ab *~5 -> 5
-	-- Test: ab 5 -> 5
-	extendOp ":~" genericReason ("ab", [7,0], [num], "abs" ~> a1, [autoTodo]),
-	-- Desc: singleton (todo ~ should make pairs)
-	-- Example: :3~ -> [3]
-	op(":", [7], [anyT, auto], "\\v _->v:[]" ~> vList1 .a1, [autoTodo, impossibleAuto]),
+	op("ab", [7], [num, BinAuto], "abs" ~> a1, [autoTodo, impossibleAuto]),
+	-- Desc: cons
+	-- Example: :"a"~"b" -> ["a","b"]
+	-- Test (coerce, but pointless todo): :,2~ "34" -> "1234"
+	op(":", [7], [list, auto, anyT], cons, [impossibleAuto, impossibleAuto, autoTodo]),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -182,7 +182,7 @@ rawOps = [
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
-	-- Test list truthy: &:~"" "b"$ -> ["b"]
+	-- Test list truthy: &:""~"b"$ -> ["b"]
 	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
@@ -214,9 +214,9 @@ rawOps = [
 	-- Example: 0 -> 0
 	extendOp "\\\"" genericReason ("tbd", [11,2], [], "asdf" ~> VInt, []),
 	-- Desc: transpose
-	-- Example: tr :~"hi""yo" -> ["hy","io"]
-	-- Test mismatch dims: tr :~"hi""y" -> ["hy","i"]
-	-- Test mismatch dims: tr :~"h""yo" -> ["hy","o"]
+	-- Example: tr :"hi"~"yo" -> ["hy","io"]
+	-- Test mismatch dims: tr :"hi"~"y" -> ["hy","i"]
+	-- Test mismatch dims: tr :"h"~"yo" -> ["hy","o"]
 	-- Test 1 dim: tr "abc" -> ["a","b","c"]
 	extendOp "\\." genericReason ("tr", [11,12], [list], \[a1] ->
 		case a1 of
@@ -244,7 +244,7 @@ rawOps = [
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
 	-- Desc: map accum L
 	-- Example: mapAccum,3 0 +@$ $ $ -> [0,1,3],6
-	-- Test: mapAccum,3 :0~ :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
+	-- Test: mapAccum,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
 	op("mapAccum", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
@@ -452,8 +452,8 @@ actualElemT s = error $ show s
 elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
 
-cons [a,c] = (t, "\\a c->"++code++"[a] c") where
-	(t, code) = coerce "(\\a c->a++c)" [0,1] id [VList [a],c]
+cons [a,b,c] = (t, "\\a b c->"++code++"[a] b c") where
+	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList [a],b,c]
 
 testCoerce2 :: [VT] -> String
 testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2

@@ -177,7 +177,7 @@ $HiddenOutput "1\na\n2 3"
 	[1]
 	[2,3]
 
-But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `:$~`.
+But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `:$`.
 
 	p ;$
 $Output "12 888\n34\n56\n78"
