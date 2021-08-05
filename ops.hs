@@ -33,18 +33,18 @@ impossibleAuto = -77 -- suppress displaying in quickref
 rawOps :: [[(String, [Int], Operation)]]
 rawOps = [
 	-- Desc: auto int
-	-- Example (size 4): +4~ -> 5
+	-- Example (size 4): +~4 -> 5
 	op("~", [0], [], (error"undefined auto"::String)~>VAuto, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	atom("tbd", [1,0], undefined),
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 2): 0 -> 0
 	-- Test (size 2): 1 -> 1
 	-- Test (size 2): 7 -> 7
 	-- Test (size 3): 8 -> 8
-	-- Test (size 2): 10 -> 10
 	-- Test (size 3): 20 -> 20
-	-- Test (size 3): 100 -> 100
-	-- Test (size 4): 200 -> 200
 	-- Test leading zero is separate: :05 -> [0,5]
 	atom(" ", [1], parseIntExpr), 
 	-- Desc: string
@@ -139,7 +139,7 @@ rawOps = [
 	-- Test 2d vectorized: +1 .,2 ,2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
-	op("+", [8], [num, vec], vectorize "+" xorChr, [1,1]),
+	op("+", [8], [num, vec], vectorize "+" xorChr, [1,2]),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
@@ -280,13 +280,12 @@ rawOps = [
 	-- Desc: replicate
 	-- todo test/make negative
 	-- Example: ^3 "ab" -> "ababab"
-	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [2 {- todo maybe this should be inf -}]),
+	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [2^128]),
 	-- Desc: subscript. Wrapped.
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
-	-- Test auto: ="asdf"~ -> 'a'
 	-- todo empty list will error, maybe it should use maybe??
-	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, 1]),
+	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, autoTodo]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]

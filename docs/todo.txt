@@ -1,10 +1,5 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
-other ~ in + should be -1 or 2
-replicate ~ should be inf
-=~ is redundant with / ... $
-maybe make leading bin 0 in digit be negative again? need special var for 10 then
-fix p (extension check fails it)
 
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)

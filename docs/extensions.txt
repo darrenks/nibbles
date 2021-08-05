@@ -84,7 +84,7 @@ todo consider monads/seq/etc.
 
 -- "too complicated"
 sqrt
-list of strs/ints shorthand (use 32 value of str?)
+list of strs/ints shorthand (use 32+128 value of str?) (for ints leading 0 could meaning to take another int after)
 permutations/combinations
 prefixes/suffixes = foldr [] : (but not so eloquently)
 iterate until fixed point / seen = last of map isUniq prefixes
@@ -94,7 +94,7 @@ to add
 ------
 int
 	abs
-	2** (auto 8)
+	2** (auto 8) (if space)
 	bitwise xor / or / and
 	to base / from base
 	could vectorize more ops if space

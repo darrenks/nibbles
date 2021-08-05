@@ -59,6 +59,16 @@ That was hard, and there are still some pain points we haven't learned how to ge
 
 $EndSolution
 
+### Practical Tricks
+
+The best way to get the first element of a list actually relies on laziness, and that is doing a foldr1 and just returning the element.
+
+	/,^10 100 $
+$Output
+	1
+
+Of course this trick doesn't require laziness to return the right result, but in that example, it does if you want your program to actually finish. A similar trick can be used to get the last element of a list (by using `@` instead of `$`). But this will not be lazy, nor could any operation on a simple cons style list.	
+
 ## Output
 
 So far we've just been printing a single value or string. But if your program returns a list it is printed with newlines between each element. And if it is a list of lists then spaces between those inner elements. Example:
@@ -88,7 +98,7 @@ They will just be printed without any separators. But beware, you may accidental
 
 `~` Can be used to save space by specifying the most common integer for operations in a single nibble. They don't allow you to do anything new, but they make it shorter. For example the most common number used in addition is 1 (that's why it often has special forms like `++` in C and `succ` in Ruby/etc.). So for addition `~` is `1` (which would have required two nibbles).
 
-To make this concrete: `+4~` -> `5`
+To make this concrete: `+~4` -> `5`
 
 You can probably guess the auto values for each operation, but they are also listed in a column in the full $QuickRef.
 

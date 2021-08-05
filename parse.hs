@@ -40,8 +40,7 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 sLit :: String -> String -> Int -> Code
 sLit f s cp = consumeWhitespace $ Lit f s cp
 
-parseInt (Nib (0:s) cp) = (10, Nib s (cp+1))
-parseInt (Nib s cp) = (if pow10 n then n*10 else n, rest) where
+parseInt (Nib s cp) = (n, rest) where
 	(n,rest) = parseNibInt s 0 cp
 	parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
 	parseNibInt(f:s) a cp
@@ -178,11 +177,7 @@ parseChrExpr = do
 	return $ noArgsUsed { implType=VChr, implCode=hsParen $ hsAtom $ "ord " ++ show s }
 
 intToNib :: Integer -> [Int]
-intToNib (10)=[0]
-intToNib n
-	| pow10 n = intToNibH $ n `div` 10
-	| otherwise = intToNibH n
-intToNibH n = init digits ++ [last digits + 8]
+intToNib n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 strToNib :: String -> [Int]
@@ -200,9 +195,3 @@ chrToNib c
 	| otherwise = case elemIndex c specialChars of
 	Just i -> [9 + i]
 	Nothing -> fromByte c
-
--- name is a bit of a lie as we want 1 to be False
-pow10 n
-	| n == 10 = True
-	| n < 10 = False
-	| n > 10 = pow10 $ n `div` 10

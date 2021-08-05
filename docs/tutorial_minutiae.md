@@ -8,8 +8,6 @@ All ops correspond to their literate size. `+` is 1 nibble (half a byte). `st` i
 
 **Integers** require 1 nibble plus their size in octal. So, `7` is 1 byte but `8` is 1.5 bytes. The reason for this is because in binary form only 1 hex value is reserved for starting a number. Then we need to use 1 bit per digit to say when to stop. Since integers are fairly common that is why `~` was added as another way to create integers cheaply.
 
-If the number is a power of 10 then its size is 1 less nibble (this trick is enabled by remapping the encoding for a leading 0 in a number).
-
 **Strings** require 1 nibble plus 2 nibbles per character. So "hi" is 2.5 bytes. 
 
 There are a few exceptions:
