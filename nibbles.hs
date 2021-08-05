@@ -61,8 +61,10 @@ main=do
 	 			then do
 	 				hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
 	 				let (_,_,binLit) = compile finish "" (Nib b 0)
+	 				if any (==16) b then do
+	 					hPutStrLn stderr "Warning: you are using literal only ops"
 	 				-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
-	 				if binLit /= lit then do
+	 				else if binLit /= lit then do
 	 					hPutStrLn stderr "Warning: your code's binary would actual extract to:"
 	 					hPutStrLn stderr binLit
 						hPutStrLn stderr "instead of:"
