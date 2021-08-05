@@ -102,8 +102,7 @@ list
 	splitAt | num -> [any] ->
 	split, keep empties | [a] -> [a] ->
 	intersperse | a -> [a] ->
-	chunk [while] | [any] ->   while | [any] -> fn
-	group [by] | same as chunk
+	group by
 	index by | [any] -> fn ->
 	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
 	zip prevs

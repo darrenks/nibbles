@@ -178,12 +178,13 @@ rawOps = [
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: reject
 	-- Example: &,5~%$2 -> [2,4]
-	op("&", [9], [list, auto, fn ((:[]).elemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".f) l") ~> a1, [impossibleAuto, autoTodo]),
+	op("&", [9], [list, auto, fn (actualElemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".("++uncurryN (length (actualElemT a1))++"f)) l") ~> a1, [impossibleAuto, autoTodo]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &:""~"b"$ -> ["b"]
-	op("&", [9], [list, fn ((:[]).elemT.a1)], (\args -> "flip$filter.("++truthy (ret1 $ a2 args)++".)") ~> a1, [impossibleAuto, impossibleAuto]),
+	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
+	op("&", [9], [list, fn (actualElemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret1 a2)++".("++uncurryN (length (actualElemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
@@ -195,6 +196,7 @@ rawOps = [
 	-- Desc: scanl1
 	-- Example: sc,3+$@ -> [1,3,6]
 	-- todo make/test empty
+	-- todo handle tuple
 	extendOp ",\\" genericReason ("sc", [13,11], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->scanl1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). flip f) a") ~> VList .actualElemT.a1, []),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +$@ -> 7
@@ -206,6 +208,7 @@ rawOps = [
 	-- Example: /,3+$@ -> 6
 	-- Test: /,3"5" -> 5
 	-- todo make/test empty
+	-- todo handle tuple
 	op("/", [10], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->foldr1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). f) a") ~> elemT.a1, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
@@ -223,9 +226,14 @@ rawOps = [
 			VList [VList _] -> "transpose" ~> a1 -- todoAssumeFst
 			otherwise -> "transpose.(:[])" ~> VList [a1]
 		, []),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	extendOp "\\&" genericReason ("tbd", [11,9], [list], "asdf" ~> a1, []),
+	-- Desc: chunk
+	-- Example: ck "abbc" ~ -> ["a","bb","c"]
+	extendOp "\\&" genericReason ("ck", [11,9], [list, auto], "\\a _->chunkSameAdjacents a" ~> vList1.a1, [impossibleAuto, impossibleAuto]),
+	-- Desc: chunkWhile
+	-- todo could have also made this chunk while values same, or other behaviors
+	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
+	extendOp "\\&" genericReason ("ck", [11,9], [list, fn (actualElemT.a1)],
+		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (safeOnlyElem $ ret a2) ++".("++uncurryN (length (actualElemT a1))++"f)) a" ~> vList1 a1, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
@@ -288,6 +296,7 @@ rawOps = [
 	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [impossibleAuto]),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
+	-- Test: a' ' -> 0
 	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
 	-- Desc: exponentiation
 	-- todo test/make negative
@@ -305,7 +314,8 @@ rawOps = [
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]
-	op("z", [14], [list, list], "zip" ~>  VList .(map elemT), []),
+	-- Test 3 tuple: .z z,3,3,3++$@_ -> [3,6,9]
+	op("z", [14], [list, list], "zip" ~>  (VList .(concatMap actualElemT) :: [VT] -> VT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [15,1], [anyT], "asdf" ~> VInt, [autoTodo]),
@@ -326,6 +336,9 @@ rawOps = [
 	op("?", [15], [num, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c a b" ~> coercedType
 		, [autoTodo, autoTodo, autoTodo]),
+	-- Desc: index by
+	-- Example: ?\,5~ -2$ -> 5
+	op("?", [15], [list, auto, fn (actualElemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (todoAssumeFst $ ret a2)++".("++uncurryN (length (actualElemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
@@ -444,6 +457,13 @@ ret1 (VFn from [to]) = to
 elemT (VList e) = todoAssumeFst e
 elemT s = error $ show s
 
+safeElemT (VList [e]) = e
+safeElemT t = error $ "safeElemT: " ++ show t
+
+safeOnlyElem [e] = e
+safeOnlyElem t = error $ "safeOnlyElem: " ++ show t
+
+actualElemT :: VT -> [VT]
 actualElemT (VList e) = e
 actualElemT s = error $ show s
 

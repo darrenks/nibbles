@@ -68,3 +68,12 @@ hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ m
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult
 listOr _ nonEmpty = nonEmpty
+
+chunkSameAdjacents :: Eq a => [a] -> [[a]]
+chunkSameAdjacents [] = [[]]
+chunkSameAdjacents (x:xs) = reverse $ chunkSameAdjacentsH [[x]] xs
+chunkSameAdjacentsH r [] = r
+chunkSameAdjacentsH ((a:f):fs) (x:xs) =
+	if a == x
+		then chunkSameAdjacentsH ((x:a:f):fs) xs
+		else chunkSameAdjacentsH ([x]:(a:f):fs) xs

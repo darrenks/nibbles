@@ -36,8 +36,11 @@ inspectElem ts = "(\\("++intercalate "," varNames++")->sToA \"(\"++"++
 	varNames = map (\tn -> "a"++show tn) [1..length ts]
 
 
-uncurryN n = "(\\f z->let ("++intercalate "," varNames++")=z in f "++intercalate " " varNames ++ ")"
-	where varNames = map (\tn -> "a"++show tn) [1..n]
+uncurryN n = "(\\f z->let "++recParen (reverse varNames)++"=z in f "++intercalate " " varNames ++ ")"
+	where
+		recParen [a] = a
+		recParen (a:as) = "("++recParen as++","++a++")"
+		varNames = map (\tn -> "a"++show tn) [1..n]
 -- 
 -- uncurryN n = "(\\f ("++intercalate "," varNames++")->f "++intercalate " " varNames ++ ")"
 -- 	where varNames = map (\tn -> "a"++show tn) [1..n]
