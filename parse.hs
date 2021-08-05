@@ -57,7 +57,7 @@ parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newl
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
 	| a8==1 = cont ' ' 1
-	| c==32 = ("", Nib (tail s) 2)
+	| c==32 = ("", Nib (tail s) (cp+2))
 	| c==127 = cont (toByte $ tail s) 4
 	| otherwise = cont (chr c) 2
 	where

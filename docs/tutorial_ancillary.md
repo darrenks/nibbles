@@ -81,7 +81,7 @@ $Output
 
 Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
-If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `:~` (singleton).
+If the default behavior isn't what you want, you can fairly easily increase or decrease the dimensions of your list using `+` (concat) or `: ... ~` (singleton).
 
 ### Multiple Outputs
 

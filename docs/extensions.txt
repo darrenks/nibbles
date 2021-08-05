@@ -99,7 +99,6 @@ int
 	could vectorize more ops if space | num -> any ->
 
 list
-	transpose | [[any]] ->
 	takeWhile / dropWhile / span | [any] -> fn ->
 	splitAt | num -> [any] ->
 	split, keep empties | [a] -> [a] ->
@@ -120,7 +119,6 @@ chr
 	tbd
 
 misc
-	autorec (base case and cond = $) (or maybe version)
-	iterate
-	nats
+	autorec (base case and cond = $) (or maybe version) (skip for now.. how often really needed)
+	nats (if needed...)
 
