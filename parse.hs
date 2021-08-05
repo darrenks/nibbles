@@ -141,10 +141,10 @@ literateError s cp =
 		++ "\n" ++ line
 		++ "\n" ++ arrows ++ "^"
 	where
-		prev = take cp s
+		prev = take (cp+1) s
 		lineno = length $ lines prev
 		line = lines s !! (lineno-1)
-		charno = fromMaybe cp $ elemIndex '\n' $ reverse prev
+		charno = (fromMaybe (cp+1) $ elemIndex '\n' $ reverse prev) - 1
 		arrows = replicate charno ' '
 
 consumeWhitespace :: Code -> Code

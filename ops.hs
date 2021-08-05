@@ -227,8 +227,8 @@ rawOps = [
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
 	-- Desc: map accum L
-	-- Example: ma,3 0 +@$ $ $ -> [0,1,3],6
-	-- Test: ma,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
+	-- Example: mapAccum,3 0 +@$ $ $ -> [0,1,3],6
+	-- Test: mapAccum,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
 	op("mapAccum", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
