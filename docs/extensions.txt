@@ -92,11 +92,10 @@ iterate until fixed point / seen = last of map isUniq prefixes
 to add
 ------
 int
-	abs | int/num ->
-	2** (auto 8) (if space) | int/num ->
 	bitwise xor / or / and | num -> num ->
 	to base / from base | num -> num -> \ num -> [num] ->
 	could vectorize more ops if space | num -> any ->
+	2** (auto 8) (if space) | int/num ->
 
 list
 	takeWhile / dropWhile / span | [any] -> fn ->
@@ -111,7 +110,7 @@ list
 
 str
 	str= more useful than list=
-	l/rjust
+	l/rjust (rjust more common in gs2)
 	down/upcase (if space)
 	tbd
 

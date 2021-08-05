@@ -30,7 +30,7 @@ main=do
 	examples <- getExamples
 	let convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ renameIntLit lit]
-			++ifNotSimpleL[td $ styleCode $ toHex nib]
+			++ifNotSimpleL[td $ styleCode $ toHex nib ++ binOnlyAuto impl]
 			++[td $ toHtml desc] ++
 			toQuickRef isSimple impl ++
 			[td $ styleCode $ do
@@ -109,8 +109,11 @@ typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
 typeToStr (Exact VInt) _ = "int"
 typeToStr (Exact VChr) _ = "chr"
 typeToStr (Exact VAuto) _ = "~"
-typeToStr BinAuto _ = "b~"
+typeToStr BinAuto _ = ""
 typeToStr (Fn _) _ = "fn"
+
+binOnlyAuto (Op types impl autos) = if any (\t->case t of BinAuto -> True; otherwise -> False) types then ".~" else ""
+binOnlyAuto _ = ""
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'
 
