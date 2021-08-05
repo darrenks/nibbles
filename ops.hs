@@ -19,7 +19,7 @@ atom(lit, nib, impl) = [(lit, nib, Atom impl)]
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 
-litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see Extensions in https://nibbles.golf/tutorial_ancillary.html"
+litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions"
 
 extendAtom invalidLit reason (lit, nib, impl) =
 	atom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
@@ -209,7 +209,13 @@ rawOps = [
 	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [11,2], [anyT], "asdf" ~> VInt, []),
+	extendOp "\\\"" genericReason ("tbd", [11,2], [], "asdf" ~> VInt, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	extendOp "\\." genericReason ("tbd", [11,12], [list], "asdf" ~> a1, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	extendOp "\\&" genericReason ("tbd", [11,9], [list], "asdf" ~> a1, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),

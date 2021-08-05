@@ -11,7 +11,6 @@ value at of a range (although depending on OOB behavior...)
 commutative/associative
 opcode 15, mismatched 2d+ lists
 debruijn index 7+ (tbd input)
-reverse map / map reverse (depending on prev/etc)
 
 unterminated int/str at end of program (or even partial string byte)
 
@@ -93,21 +92,21 @@ iterate until fixed point / seen = last of map isUniq prefixes
 to add
 ------
 int
-	abs
-	2** (auto 8) (if space)
-	bitwise xor / or / and
-	to base / from base
-	could vectorize more ops if space
+	abs | int/num ->
+	2** (auto 8) (if space) | int/num ->
+	bitwise xor / or / and | num -> num ->
+	to base / from base | num -> num -> \ num -> [num] ->
+	could vectorize more ops if space | num -> any ->
 
 list
-	transpose
-	takeWhile / dropWhile / span
-	splitAt
-	split, keep empties
-	intersperse
-	chunk [while]
-	group [by]
-	index by
+	transpose | [[any]] ->
+	takeWhile / dropWhile / span | [any] -> fn ->
+	splitAt | num -> [any] ->
+	split, keep empties | [a] -> [a] ->
+	intersperse | a -> [a] ->
+	chunk [while] | [any] ->   while | [any] -> fn
+	group [by] | same as chunk
+	index by | [any] -> fn ->
 	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
 	zip prevs
 
