@@ -6,11 +6,11 @@ available extensions (besides the tbd in quickref)
 constant + constant (*) too
 constant in loop
 ~ auto valued int (2 in *) (could mean infinity)
-length of drop/take? not if they weren't as long as the int
+length of drop/take? not if they weren't as long as the int, although could be as short with 1 op min (todo)
 value at of a range (although depending on OOB behavior...)
 commutative/associative
 opcode 15, mismatched 2d+ lists
-debruijn index 6+ (tbd input)
+debruijn index 7+ (tbd input)
 reverse map / map reverse (depending on prev/etc)
 
 unterminated int/str at end of program (or even partial string byte)
@@ -19,53 +19,109 @@ unterminated int/str at end of program (or even partial string byte)
 	could have it mean: set separator to custom value (used for both input and output)
 
 desired features
-min/max
-not
-and
-more vectorized ops (- / %)
-more special folds
-something to convert to truthiness
-2** (or 10** if auto 2) (or bitshift)
-empty str, empty list of various types
+----------------
+min/max - commutative +/* (todo)
+not - don't need
+and - * (if both pos) ^b ,a ... for lists: implicit >>= 
+or - + (if both pos), :,a,b ... for lists: :
+more vectorized ops (- / %) - don't need (for now)
+more special folds - don't need (for now)
+something to convert to truthiness (don't need?)
+empty str, empty list of various types (don't need for now)
 
-;;$ / etc could be these since wouldn't want 
-iterate (fn first) / unfold / until / etc
-map [1..inf]
+bit ops (todo consider):
+	2^
+	shift left = *2^
+	shift right = /2^
+	bit at = .&. 2^
+	not = 1-
+	or = need
+	and = need
+	xor = need
+	bits length = base / length
+	rotate? = use array ops
+	to/from str = to base + '0'
+	popcount = make from base/sum
 
-prepend Nothing
-chunk/while
-splitWhen
-last/init (can use reverse or foldr for this now)
-takeWhile (instead of first of split?)
-things that return pair of two things, i.e head, tail ?
-group
-transpose
-array split, not removing empties
-maybe version of things that throw?
-==, list comparison < >, etc
-bitwise ^ & |
-string + int coercing the otherway (old idea was to use opcode of *int str)
-	if could reverse operands of + could make it +str int for good literal form
-abs/sig
+iterate = fold [infinite list] (not using $) (let's create it though)
+unfold = iterate with takewhile/map
+until = iterate with takeUntil
+map accum = scan + ~ + map$
+
+map [1..inf] # could have fn first (don't need)
+
+prepend Nothing (skip for now)
+chunk/while (add)
+last/init (last = /@, init = \>~\ )
+takeWhile (add, also would be first of split)
+
+group [by] (add)
+transpose (add it)
+array split, not removing empties (add it)
+intercalate aka join = concat intersperse
+intersperse = tail (concat map : ) (add)
+list == = singleton index
+list comparison < >, etc (don't need, could get from sort)
+index by (add)
+first by = first of filter
+replace = split+join
+count = length split - 1
+uniq, setwise op [by] (add)
+zipWith = map zip
+zip prevs = zip dup tail (add)
+zip index = zip nats
+
 ljust/etc
-uniq, setwise op [by]
-auto rec (base case is arg, condition is arg).
-
 downcase/upcase
 
-autorec (base case and cond = $) (or maybe version)
-
 chr ops:
-(l/r just)
 replace chr 
 split/join char
 count chr
 add int as a char
 
+todo consider monads/seq/etc.
+
 -- "too complicated"
 sqrt
-list of strs shorthand (use 32 value of str?)
+list of strs/ints shorthand (use 32 value of str?)
 permutations/combinations
-prefixes/suffixes
-base conversion
-popcount
+prefixes/suffixes = foldr [] : (but not so eloquently)
+iterate until fixed point / seen = last of map isUniq prefixes
+
+------
+to add
+------
+int
+	abs
+	2** (auto 8)
+	bitwise xor / or / and
+	to base / from base
+	could vectorize more ops if space
+
+list
+	transpose
+	takeWhile / dropWhile / span
+	splitAt
+	split, keep empties
+	intersperse
+	chunk [while]
+	group [by]
+	index by
+	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
+	zip prevs
+
+str
+	str= more useful than list=
+	l/rjust
+	down/upcase (if space)
+	tbd
+
+chr
+	tbd
+
+misc
+	autorec (base case and cond = $) (or maybe version)
+	iterate
+	nats
+

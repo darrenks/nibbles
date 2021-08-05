@@ -165,7 +165,7 @@ rawOps = [
 	-- Example: 0 -> 0
 	op("tbd", [8], [str, num], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: subtract
-	-- Example: - 5 3 -> 2
+	-- Example: -5 3 -> 2
 	-- Test: -'b''a' -> 1
 	-- Test: -'d'1 -> 'c'
 	op("-", [9], [num, num], "-" ~> xorChr, [1, 1]),
@@ -188,11 +188,11 @@ rawOps = [
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +$@ -> [0,1,3,6]
 	-- todo coerce ret
-	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl ((\\f t1->"++uncurryN (length (ret a2))++"(f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
+	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl ((\\f t1->"++uncurryN (length (ret a2))++"(flip f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
 	-- Desc: scanl1
 	-- Example: sc,3+$@ -> [1,3,6]
 	-- todo make/test empty
-	extendOp ",\\" genericReason ("sc", [13,11], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->scanl1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). f) a") ~> VList .actualElemT.a1, []),
+	extendOp ",\\" genericReason ("sc", [13,11], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->scanl1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). flip f) a") ~> VList .actualElemT.a1, []),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +$@ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++$@_ -> 13
@@ -216,6 +216,9 @@ rawOps = [
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
 	op("/~", [11,0], [num, num], "divMod" ~> [VInt, VInt], [2]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("/~", [11,0], [num, list], "asdf" ~> VInt, []),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
@@ -241,6 +244,9 @@ rawOps = [
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
 	op("%~", [12,0], [num, num], "(swap.).divMod" ~> [VInt,VInt], [2]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("%~", [12,0], [num, list], "asdf" ~> VInt, []),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- todo test negatives

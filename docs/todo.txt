@@ -1,11 +1,15 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
+other ~ in + should be -1 or 2
+replicate ~ should be inf
+=~ is redundant with / ... $
+maybe make leading bin 0 in digit be negative again? need special var for 10 then
+fix p (extension check fails it)
 
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
 	-but should it default to using first or both?
 -more extensions
--clean up install instructions
 
 debug features to add:
 	gather rest of program
@@ -32,7 +36,7 @@ fyi instead of coerce in user fn, could skip it in context lookup
 for multipage quickref (coerce, etc)
 https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
-website design
+website design art
 
 ParseError in parse instead of regular (need refactor to monad)
 
@@ -50,7 +54,8 @@ more extensions
 
 quickref to show return types
 
-debugging commands that use error to exit, surpress callstack/etc.
-
 switch to integer and char everywhere
 bounded integers/list size for more efficient math ops and no need for maybe on some list ops
+could support parenthesis that do nothing but cause error if parse isn't as expected
+also could support named lambdas/assignments that get converted into debruijns
+interpret instead of compile
