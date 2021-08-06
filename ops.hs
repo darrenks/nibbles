@@ -142,7 +142,7 @@ rawOps = [
 	-- Test 2d vectorized: +1 .,2 ,2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
-	op("+", [8], [num, vec], vectorize "+" xorChr, [1,2]),
+	op("+", [8], [num, vec], vectorize "+" xorChr, [1,2 {- this one will go away to make way for max 0 when we have that extension-}]),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
@@ -337,7 +337,7 @@ rawOps = [
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c a b" ~> coercedType
 		, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index by
-	-- Example: ?\,5~ -2$ -> 5
+	-- Example: ?"...a.."~ a$ -> 4
 	op("?", [15], [list, auto, fn (actualElemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (todoAssumeFst $ ret a2)++".("++uncurryN (length (actualElemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2

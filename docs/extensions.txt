@@ -11,6 +11,7 @@ value at of a range (although depending on OOB behavior...)
 commutative/associative
 opcode 15, mismatched 2d+ lists
 debruijn index 7+ (tbd input)
+many uses of num in extensions are actually int (many chr available)
 
 unterminated int/str at end of program (or even partial string byte)
 
@@ -53,6 +54,7 @@ prepend Nothing (skip for now)
 chunk/while (add)
 last/init (last = /@, init = \>~\ )
 takeWhile (add, also would be first of split)
+	takeWhile = assign, index_by, take $
 
 group [by] (add)
 transpose (add it)
@@ -91,6 +93,8 @@ iterate until fixed point / seen = last of map isUniq prefixes
 ------
 to add
 ------
+any any
+
 int
 	bitwise xor / or / and | num -> num ->
 	to base / from base | num -> num -> \ num -> [num] ->
@@ -101,9 +105,9 @@ list
 	takeWhile / dropWhile / span | [any] -> fn ->
 	splitAt | num -> [any] ->
 	split, keep empties | [a] -> [a] ->
-	intersperse | a -> [a] ->
+	intersperse | a -> [a] -> (intercalate could be useful too)
 	group by
-	index by | [any] -> fn ->
+	indices [by]
 	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
 	zip prevs
 
