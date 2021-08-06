@@ -114,8 +114,9 @@ rawOps = [
 	-- Desc: iterate
 	-- Example: <3 it 3 +1$ -> [3,4,5]
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
-	extendOp "::" associativeReason ("it", [7,7], [fn noArgs, fn $ ret.a1],
-		\[a1,a2]->"\\i f->iterate ("++coerceTo(todoAssumeFst (ret a1), todoAssumeFst (ret a2))++".f) (i())" ~> VList (ret a1), []),
+	-- Test tuple: <2 it ~1'a' +$1 +@1 -> [(1,'a'),(2,'b')]
+	extendOp "::" associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
+		\[a1,a2]->"\\i f->iterate ("++coerceTo(todoAssumeFst (ret a1), todoAssumeFst (ret a2))++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1), []),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	-- Test tuple: :~~1 2 -> [(1,2)]
@@ -124,15 +125,25 @@ rawOps = [
 	-- Example: ab *~5 -> 5
 	op("ab", [7], [num, BinAuto], "abs" ~> a1, [autoTodo, impossibleAuto]),
 	-- Desc: cons
-	-- Example: :"a"~"b" -> ["a","b"]
-	-- Test (coerce, but pointless todo): :,2~ "34" -> "1234"
-	op(":", [7], [list, auto, anyT], cons, [impossibleAuto, impossibleAuto, autoTodo]),
+	-- Example: :"ab"~"cd" -> ["ab","cd"]
+	-- Test coerce: :,2~ "34" -> ["12","34"]
+	op(":", [7], [list, auto, anyT], \[a,_,c]->
+			let (coercedType, coerceFn) = coerceEither [a] [c] in
+				"\\a _ c->map"++coerceFn++"$[Left a,Right c]"~>VList coercedType
+		, [impossibleAuto, impossibleAuto, autoTodo]),
 	-- Desc: append
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
+	--- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
 	-- Test promoting to list: :1 2 -> [1,2]
-	op(":", [7], [anyT, anyT], composeOp promoteList (coerce "(++)" [0,1] id), []),
+	op(":", [7], [anyT, anyT], \[a,b]->
+		let
+			(ap,apFn) = promoteList a
+			(coercedType, coerceFnA, coerceFnB) = coerce [ap] [b]
+		in
+			"\\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"~>coercedType
+		, []),
 	-- Desc: add
 	-- Example: +1 2 -> 3
 	-- Test: +2 'a' -> 'c'
@@ -318,23 +329,25 @@ rawOps = [
 	op("z", [14], [list, list], "zip" ~>  (VList .(concatMap actualElemT) :: [VT] -> VT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [15,1], [anyT], "asdf" ~> VInt, [autoTodo]),
-	-- Desc: if (for lists - lazy)
+	op("?~", [15,0], [], "asdf" ~> VInt, []),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [15,1], [], "asdf" ~> VInt, [autoTodo]),
+	-- Desc: if nonnull (lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
 	-- Test: ?,"hi" $ 0 -> "hi"
 	-- todo, the arg passed in should be marked optional used
-	op("?,", [15,13], [list, fn ((:[]).a1), anyT], \ts -> let (coercedType, coerceFn) = coerceEither (todoAssumeFst$ret$ts!!1) (ts!!2) in
-		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) b" ~> coercedType
-		, [impossibleAuto, autoTodo, autoTodo]), 
+	op("?,", [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
+		, [impossibleAuto, autoTodo, autoTodo]),
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +0 1 1 "F" -> "1"
+	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
 	-- todo add ability to see c with $, but should it be for true value or both?
-	-- todo args could be fn's with orig value (orig list if ?,)
-	-- todo able to return multiple args with ~ (make true/false clause fn noArgs)
-	op("?", [15], [num, anyT, anyT], \ts -> let (coercedType, coerceFn) = coerceEither (ts!!1) (ts!!2) in
-		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c a b" ~> coercedType
+	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c (a()) (b())" ~> coercedType
 		, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index by
 	-- Example: ?"...a.."~ a$ -> 4
@@ -471,9 +484,6 @@ actualElemT s = error $ show s
 -- todo consider arg matching in opcode 15
 elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
-
-cons [a,b,c] = (t, "\\a b c->"++code++"[a] b c") where
-	(t, code) = coerce "(\\a b c->a++c)" [0,2] id [VList [a],b,c]
 
 testCoerce2 :: [VT] -> String
 testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2

@@ -188,7 +188,7 @@ pushLambdaArg argType argUsedness f = do
 	rets <- f newArg
 	let body = makePairs argType rets
 	finalContext <- gets pdContext
-	let newArgFinal = head $ filter (\arg -> argKind arg == LambdaArg) finalContext
+	let newArgFinal = reverse finalContext !! (depth - 1) -- todo inefficient
 	bodyWithLets <- popArg depth body
 	return (newArgFinal, bodyWithLets)
 

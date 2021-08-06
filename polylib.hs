@@ -8,7 +8,6 @@ module Polylib(
 	coerce,
 	coerceEither,
 	coerce2, coerceTo, -- test only
-	composeOp,
 	uncurryN,
 	curryN,
 	flattenTuples,
@@ -116,31 +115,35 @@ sdim VInt = 1
 sdim VChr = 0
 sdim (VList a) = 1+sdim (todoAssumeFst a)
 
--- todo get rid of this complicated way of coercing (use coerceEither)
-coerce :: String -> [Int] -> (VT -> VT) -> [VT] -> (VT, String)
-coerce op coerceArgIndices rtf vts = (rtf coercedType, rop) where
-	coercedType = foldr1 (curry coerce2) [vts!!j | j <- coerceArgIndices]
-	r = [0..length vts-1]
-	rop = "(\\" ++ concatMap ((" c"++).show) r ++ " -> " ++ op ++ concatMap (\n->"("++ctn n++"c"++show n++")") r ++")"
-	ctn n
-		| elem n coerceArgIndices = coerceTo (coercedType, vts !! n)
-		| otherwise = ""
+-- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
+appTuple :: [String] -> String
+appTuple ops = "(\\"++recParen (reverse varNames)++"->"++recParen (reverse $ zipWith (++) ops varNames)++")"
+	where
+		n = length ops
+		recParen [a] = a -- todo reuse this above and add in reverse
+		recParen (a:as) = "("++recParen as++","++a++")"
+		varNames = map (\tn -> "a"++show tn) [1..n]
 
-coerceEither :: VT -> VT -> (VT, String)
+coerce :: [VT] -> [VT] -> ([VT], String, String)
+coerce leftType rightType =
+	let
+		coercedType = zipWith (curry coerce2) leftType rightType
+		coerceFn fromType = appTuple (zipWith (curry coerceTo) coercedType fromType)
+	in (coercedType, coerceFn leftType, coerceFn rightType)
+
+coerceEither :: [VT] -> [VT] -> ([VT], String)
 coerceEither leftType rightType =
-	let coercedType = coerce2 (leftType, rightType) in
-		(coercedType, "(either ("++coerceTo (coercedType,leftType)++") ("++coerceTo (coercedType,rightType)++"))")
+	let
+		coercedType = zipWith (curry coerce2) leftType rightType
+		coerceFn fromType = appTuple (zipWith (curry coerceTo) coercedType fromType)
+	in
+		(coercedType, "(either "++coerceFn leftType++coerceFn rightType++")")
 
--- not a true compose as assumes return type of b is just the one thing (same for all)
-composeOp :: (String -> VT -> (VT, String)) -> ([VT] -> (VT, String)) -> [VT] -> (VT, String)
-composeOp a b vts = a op rts where
-	(rts, op) = b vts
 
--- promote all args to lists from a type t
--- todo hardcoded to be 2 args
-promoteList :: String -> VT -> (VT, String)
-promoteList op (VList t) = (VList t, op)
-promoteList op t = (VList [t], "(\\x y->"++op++" [x] [y])")
+-- promote all arg to a list if not a list
+promoteList :: VT -> (VT, String)
+promoteList (VList t) = (VList t, " id ")
+promoteList t = (VList [t], "(:[])")
 
 flatten :: VT -> String
 flatten (VList [a]) = "concat." ++ flatten a
