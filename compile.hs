@@ -279,7 +279,7 @@ getNArgs argTypes = do
 	return $ zipWith coerceImpl args argTypes
 
 coerceImpl :: Impl -> VT -> Impl
-coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo(t,et)) hs) dep undefined undefined
+coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo [t] [et]) hs) dep undefined undefined
 
 convertPairToLet :: Impl -> [VT] -> ParseState Impl
 convertPairToLet (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined

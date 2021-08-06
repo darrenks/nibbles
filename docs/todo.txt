@@ -1,5 +1,6 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
+-- todo not all 3 tuples/etc are ((,),)...
 
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)

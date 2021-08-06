@@ -116,7 +116,7 @@ rawOps = [
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
 	-- Test tuple: <2 it ~1'a' +$1 +@1 -> [(1,'a'),(2,'b')]
 	extendOp "::" associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
-		\[a1,a2]->"\\i f->iterate ("++coerceTo(todoAssumeFst (ret a1), todoAssumeFst (ret a2))++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1), []),
+		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1), []),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	-- Test tuple: :~~1 2 -> [(1,2)]
@@ -171,9 +171,13 @@ rawOps = [
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
+	--- \a -> (sum (map fst a), map snd a)
 	op("+", [8], [listOf int], "sum" ~> VInt, []),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
+	-- Test tuple: +.,2 z ,2 "ab" -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
+	--- Test tuple2: +z .,2,2 "ab" -> 
+	-- \a -> (concat (map fst a), map snd a)
 	op("+", [8], [listOf list], "concat" ~> elemT.a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -184,43 +188,44 @@ rawOps = [
 	-- Test: -'d'1 -> 'c'
 	op("-", [9], [num, num], "-" ~> xorChr, [1, 1]),
 	-- Desc: step
-	-- todo test/make negative
 	-- Example: %2,5 -> [1,3,5]
+	-- Test: % *~2,5 -> [5,3,1]
+	-- Test todo?: % 0 ,5 -> error
+	-- Test: % 1 ,0 -> []
+	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: reject
 	-- Example: &,5~%$2 -> [2,4]
-	op("&", [9], [list, auto, fn (actualElemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".("++uncurryN (length (actualElemT a1))++"f)) l") ~> a1, [impossibleAuto, autoTodo]),
+	op("&", [9], [list, auto, fn (elemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".("++uncurryN (length (elemT a1))++"f)) l") ~> a1, [impossibleAuto, autoTodo]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &:""~"b"$ -> ["b"]
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
-	op("&", [9], [list, fn (actualElemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret1 a2)++".("++uncurryN (length (actualElemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
+	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret1 a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
 	op("*", [10], [num, vec], vectorize "*" (const VInt), [-1, 2]),
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +$@ -> [0,1,3,6]
-	-- todo coerce ret
-	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl ((\\f t1->"++uncurryN (length (ret a2))++"(flip f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
+	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
 	-- Desc: scanl1
-	-- Example: sc,3+$@ -> [1,3,6]
+	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- todo make/test empty
-	-- todo handle tuple
-	extendOp ",\\" genericReason ("sc", [13,11], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->scanl1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). flip f) a") ~> VList .actualElemT.a1, []),
+	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
+	extendOp ",\\" genericReason ("sc", [13,11], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1, []),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +$@ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++$@_ -> 13
 	-- Test(accum has tuple): / ,3 ~ ~0 "" +$@ :$_ $ -> 6,"123"
-	-- todo coerce ret
-	op("/", [10], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, actualElemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->foldr ((\\f t1->"++uncurryN (length (ret a2))++"(f t1))("++uncurryN (length (actualElemT a1))++"f)) (i()) a" ~> ret a2), [impossibleAuto, impossibleAuto]),
+	-- Test coerce: / ,3 ~ 0 "5" -> 5
+	op("/", [10], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) x) y) (i()) a" ~> ret a2), [impossibleAuto, impossibleAuto]),
 	-- Desc: foldr1
 	-- Example: /,3+$@ -> 6
-	-- Test: /,3"5" -> 5
+	-- Test coerce: /,3"5" -> 5
 	-- todo make/test empty
-	-- todo handle tuple
-	op("/", [10], [list, fn $ dup.elemT.a1], (\[a1,a2]->"\\a f->foldr1 ((("++coerceTo (elemT a1, todoAssumeFst $ ret a2)++").). f) a") ~> elemT.a1, []),
+	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f x) y) a") ~> elemT.a1, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
@@ -243,8 +248,8 @@ rawOps = [
 	-- Desc: chunkWhile
 	-- todo could have also made this chunk while values same, or other behaviors
 	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
-	extendOp "\\&" genericReason ("ck", [11,9], [list, fn (actualElemT.a1)],
-		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (safeOnlyElem $ ret a2) ++".("++uncurryN (length (actualElemT a1))++"f)) a" ~> vList1 a1, []),
+	extendOp "\\&" genericReason ("ck", [11,9], [list, fn (elemT.a1)],
+		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (safeOnlyElem $ ret a2) ++".("++uncurryN (length (elemT a1))++"f)) a" ~> vList1 a1, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
@@ -255,22 +260,23 @@ rawOps = [
 	-- Example: 0 -> 0
 	op("/~", [11,0], [num, list], "asdf" ~> VInt, []),
 	-- Desc: divide
+	-- todo protect div 0?
 	-- Example: /7 2 -> 3
+	-- Test: / *~2 7 -> -1
+	-- Test: / *~2 *~7 -> 0
+	-- Test: / 2 *~7 -> -1
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
-	-- Desc: map accum L
-	-- Example: mapAccum,3 0 +@$ $ $ -> [0,1,3],6
-	-- Test: mapAccum,3 :~0 :$@ $ $ -> [[0],[0,1],[0,1,2]],[0,1,2,3]
-	op("mapAccum", [], [list, anyT, fn2 (\[l, x]->[x,elemT l])], "\\l i f->swap $ mapAccumL f i l" ~> (\[_,x,ft2] -> [vList1$last$ret ft2,x]), [autoTodo]),
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
-	extendOp ",." genericReason ("sb", [13,12], [list, fn ((:[]).elemT.a1)], "flip sortOn" ~> a1, []),
+	-- Test tuple: sb z ,3 "bca" @ -> [(3,'a'),(1,'b'),(2,'c')]
+	extendOp ",." genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, fn (actualElemT.a1)], (\[a1,a2]->"(\\a f->map ("++uncurryN (length (actualElemT a1))++"f) a)") ~> VList .ret.a2, []),
+	op(".", [12], [list, fn (elemT.a1)], (\[a1,a2]->"(\\a f->map ("++uncurryN (length (elemT a1))++"f) a)") ~> VList .ret.a2, []),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -284,13 +290,16 @@ rawOps = [
 	op("%~", [12,0], [num, list], "asdf" ~> VInt, []),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
-	-- todo test negatives
+	-- Test: % *~2 7 -> 5
+	-- Test: % *~2 *~7 -> -2
+	-- Test: % 2 *~7 -> -5
 	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp ",," genericReason ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
+	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	extendOp ",%" genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -302,8 +311,8 @@ rawOps = [
 	-- Example: ,~3 -> [0,1,2]
 	op(",~", [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [autoTodo]),
 	-- Desc: range from 1 to
-	-- todo test negative
 	-- Example: ,3 -> [1,2,3]
+	-- Test: ,*~3 -> []
 	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [impossibleAuto]),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
@@ -312,21 +321,24 @@ rawOps = [
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
-	op("^", [14], [int, num], "^" ~> a1, [10,2]),
+	-- Test: ^2 *~3 -> 0
+	-- Test: ^0 0 -> 1
+	-- todo handle 0**-3 (maybe should be infinity?)
+	op("^", [14], [int, num], "\\a b->if b<0 then 0 else a^b" ~> a1, [10,2]),
 	-- Desc: replicate
-	-- todo test/make negative
 	-- Example: ^3 "ab" -> "ababab"
+	-- Test: ^ *~3 "ab" -> ""
 	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [2^128]),
 	-- Desc: subscript. Wrapped.
 	-- Example: ="asdf" 2 -> 's'
 	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
-	-- todo empty list will error, maybe it should use maybe??
+	-- todo empty list will error, maybe it should use maybe or default??
 	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, autoTodo]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]
 	-- Test 3 tuple: .z z,3,3,3++$@_ -> [3,6,9]
-	op("z", [14], [list, list], "zip" ~>  (VList .(concatMap actualElemT) :: [VT] -> VT), []),
+	op("z", [14], [list, list], "zip" ~>  (VList .(concatMap elemT) :: [VT] -> VT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("?~", [15,0], [], "asdf" ~> VInt, []),
@@ -351,7 +363,7 @@ rawOps = [
 		, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index by
 	-- Example: ?"...a.."~ a$ -> 4
-	op("?", [15], [list, auto, fn (actualElemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (todoAssumeFst $ ret a2)++".("++uncurryN (length (actualElemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
+	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (todoAssumeFst $ ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
@@ -369,7 +381,7 @@ rawOps = [
 	-- todo there are some type combinations that are invalid for bin 15
 	
 	-- Desc: hash (md5) mod
-	-- todo auto parse int (would save 1 nibble per use)
+	-- todo auto parse int (would save 1 nibble per use) (or consider using an int str op combo
 	-- todo provide an option to easily add salt
 	-- Example: hm "asdf" 256 -> 112
 	-- Test: hm 5 10 -> 9
@@ -463,12 +475,10 @@ list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
 listOf (Exact t) =  Exact $ VList [t]
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
-	t@(VList _) -> c [elemT $ t]
+	t@(VList _) -> c [safeElemT $ t] -- match only first tuple type (todoAssumeFst - check that done where used)
 	_ -> False
 
 ret1 (VFn from [to]) = to
-elemT (VList e) = todoAssumeFst e
-elemT s = error $ show s
 
 safeElemT (VList [e]) = e
 safeElemT t = error $ "safeElemT: " ++ show t
@@ -476,13 +486,13 @@ safeElemT t = error $ "safeElemT: " ++ show t
 safeOnlyElem [e] = e
 safeOnlyElem t = error $ "safeOnlyElem: " ++ show t
 
-actualElemT :: VT -> [VT]
-actualElemT (VList e) = e
-actualElemT s = error $ show s
+elemT :: VT -> [VT]
+elemT (VList e) = e
+elemT s = error $ show s
 
 
 -- todo consider arg matching in opcode 15
-elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1)
+elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1) -- todoAssumeFst ?
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
 
 testCoerce2 :: [VT] -> String
@@ -494,7 +504,7 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 		ct2 = coerce2(a2,a1)
 
 testCoerceTo :: VT -> [VT] -> (VT, String)
-testCoerceTo to [a1] =  (to, coerceTo(to, a1))
+testCoerceTo to a1 =  (to, coerceTo [to] a1)
 
 ops = map (convertNullNib.last) rawOps -- the others are for invalid literate warning
 allOps = concat [atom(

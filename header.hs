@@ -27,7 +27,7 @@ at (x:xs) n
  | n == 0    = Just x
  | otherwise = at xs (n-1)
 
-step n a = map fst $ filter ((==0).(`mod`n).snd) (zip a [0..])
+step n a = map fst $ filter ((==0).(`mod`n).snd) (zip (if n<0 then reverse a else a) [0..])
 reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a
 
 iff :: Bool -> a -> b -> Either a b

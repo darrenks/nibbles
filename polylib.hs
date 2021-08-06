@@ -12,6 +12,7 @@ module Polylib(
 	curryN,
 	flattenTuples,
 	promoteList,
+	appTuple,
 	flatten) where
 
 import Types
@@ -58,7 +59,7 @@ finishH (VList tt)
 	where
 		t = todoAssumeFst tt
 		d = sdim t
-		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join t
+		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join [t] -- todo
 finishH (VList [VChr]) = "(id)"
 finishH VInt = inspect VInt
 finishH VChr = "(:[])"
@@ -74,9 +75,10 @@ app1 a b = "(" ++ a ++ b ++ ")"
 -- removePairs (VList a) = (VList rt, app1 "map" rs) where (rt, rs) = removePairs a
 -- removePairs a = (a, "(id)")
 
-join VInt = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
-join (VList [VChr]) = (vstr, "intercalate")
-join (VList e) = (VList [rt], "(map."++ej++")") where (rt, ej)=join $ todoAssumeFst e
+-- todo
+join [VInt] = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
+join [VList [VChr]] = (vstr, "intercalate")
+join [VList e] = (VList [rt], "(map."++ej++")") where (rt, ej)=join e
 
 vectorize :: String -> ([VT] -> VT) -> [VT] -> (VT, String)
 vectorize op rtf [t1, VList t2] = (VList [rt], rop) where
@@ -97,15 +99,18 @@ coerce2(VList a, b) | isNum b = VList [coerce2(todoAssumeFst a, b)]
 coerce2(b, VList a) | isNum b = coerce2(VList a, b)
 coerce2(VList a, VList b) = VList [coerce2(todoAssumeFst a, todoAssumeFst b)]
 
-coerceTo (a, b) | a==b || (baseElem a == VInt && dim a == dim b) || (isNum a && isNum b) = "(id)"
-coerceTo (VList [VChr], VInt) = "(sToA.show)"
-coerceTo (VInt, VList [VChr]) = "((fromMaybe 0).readMaybe.aToS)"
-coerceTo (VInt, VList a) = "(sum.(map"++coerceTo(VInt,todoAssumeFst a)++"))"
+coerceToH (a, b) | a==b || (baseElem a == VInt && dim a == dim b) || (isNum a && isNum b) = "(id)"
+coerceToH (VList [VChr], VInt) = "(sToA.show)"
+coerceToH (VInt, VList [VChr]) = "((fromMaybe 0).readMaybe.aToS)"
+coerceToH (VInt, VList a) = "(sum.(map"++coerceToH(VInt,todoAssumeFst a)++"))"
 -- coerceTo (VList VInt, VList VChr) = "(id)"
-coerceTo (VChr, VList a) = "(head."++coerceTo(VChr,todoAssumeFst a)++")"
-coerceTo (VList a, b) | sdim (VList a) > sdim b = "((:[])."++coerceTo(todoAssumeFst a, b)++")"
-coerceTo (VList a, VList b) | sdim (todoAssumeFst a) == sdim (todoAssumeFst b) = "(map"++coerceTo(todoAssumeFst a, todoAssumeFst b)++")"
-coerceTo (a, VList b) | sdim a < sdim (VList b) = "(concatMap"++coerceTo(a, todoAssumeFst b)++")"
+coerceToH (VChr, VList a) = "(head."++coerceToH(VChr,todoAssumeFst a)++")"
+coerceToH (VList a, b) | sdim (VList a) > sdim b = "((:[])."++coerceToH(todoAssumeFst a, b)++")"
+coerceToH (VList a, VList b) | sdim (todoAssumeFst a) == sdim (todoAssumeFst b) = "(map"++coerceToH(todoAssumeFst a, todoAssumeFst b)++")"
+coerceToH (a, VList b) | sdim a < sdim (VList b) = "(concatMap"++coerceToH(a, todoAssumeFst b)++")"
+
+coerceTo :: [VT] -> [VT] -> String
+coerceTo to from = appTuple (zipWith (curry coerceToH) to from)
 
 dim VInt = 1
 dim VChr = 1
@@ -128,14 +133,14 @@ coerce :: [VT] -> [VT] -> ([VT], String, String)
 coerce leftType rightType =
 	let
 		coercedType = zipWith (curry coerce2) leftType rightType
-		coerceFn fromType = appTuple (zipWith (curry coerceTo) coercedType fromType)
+		coerceFn = coerceTo coercedType
 	in (coercedType, coerceFn leftType, coerceFn rightType)
 
 coerceEither :: [VT] -> [VT] -> ([VT], String)
 coerceEither leftType rightType =
 	let
 		coercedType = zipWith (curry coerce2) leftType rightType
-		coerceFn fromType = appTuple (zipWith (curry coerceTo) coercedType fromType)
+		coerceFn = coerceTo coercedType
 	in
 		(coercedType, "(either "++coerceFn leftType++coerceFn rightType++")")
 
