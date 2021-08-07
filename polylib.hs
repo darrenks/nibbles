@@ -13,14 +13,20 @@ module Polylib(
 	flattenTuples,
 	promoteList,
 	appTuple,
-	flatten) where
+	firstOf,
+	flatten,
+	appFst,
+	unzipTuple) where
 
 import Types
 import Data.List
 
-truthy VInt = "(>0)"
-truthy VChr = "(not.isSpace.chr)"
-truthy (VList _) = "(not.null)"
+truthy [VInt] = "(>0)"
+truthy [VChr] = "(not.isSpace.chr)" -- todo should \0 be false too?
+truthy [VList _] = "(not.null)"
+truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
+
+firstOf xs = tupleLambda (length xs) $ head
 
 inspect VInt = "(sToA.show)"
 inspect VChr = "(sToA.show.chr.fromIntegral)"
@@ -36,11 +42,23 @@ inspectElem ts = "(\\("++intercalate "," varNames++")->sToA \"(\"++"++
 	varNames = map (\tn -> "a"++show tn) [1..length ts]
 
 
-uncurryN n = "(\\f z->let "++recParen (reverse varNames)++"=z in f "++intercalate " " varNames ++ ")"
-	where
-		recParen [a] = a
-		recParen (a:as) = "("++recParen as++","++a++")"
-		varNames = map (\tn -> "a"++show tn) [1..n]
+uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
+
+tupleLambda n f = "(\\"++recParen varNames++"->"++f varNames++")"
+	where varNames = map (\tn -> "a"++show tn) [1..n]
+
+recParenH [a] = a
+recParenH (a:as) = "("++recParenH as++","++a++")"
+recParen = recParenH . reverse
+
+appFst :: [VT] -> String -> String
+appFst t op = tupleLambda (length t) $ \args -> recParen ((op++" "++head args) : tail args)
+
+unzipTuple :: VT -> ([VT], String)
+unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(recParen $ map (\i->
+	"map "++tupleLambda (length ts) (\args -> args!!i)++"a"
+	) [0..length ts-1]) ++ ")")
+
 -- 
 -- uncurryN n = "(\\f ("++intercalate "," varNames++")->f "++intercalate " " varNames ++ ")"
 -- 	where varNames = map (\tn -> "a"++show tn) [1..n]
@@ -122,12 +140,7 @@ sdim (VList a) = 1+sdim (todoAssumeFst a)
 
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
 appTuple :: [String] -> String
-appTuple ops = "(\\"++recParen (reverse varNames)++"->"++recParen (reverse $ zipWith (++) ops varNames)++")"
-	where
-		n = length ops
-		recParen [a] = a -- todo reuse this above and add in reverse
-		recParen (a:as) = "("++recParen as++","++a++")"
-		varNames = map (\tn -> "a"++show tn) [1..n]
+appTuple ops = tupleLambda (length ops) $ \varNames -> (recParen $ zipWith (++) ops varNames)
 
 coerce :: [VT] -> [VT] -> ([VT], String, String)
 coerce leftType rightType =

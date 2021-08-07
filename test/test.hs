@@ -70,7 +70,7 @@ main=do
 	testCases <- getTestsFromAnnotations
 	let tests = map toTest $ take 1000 $ filter (not.isErrorResult) testCases
 	let (_,(_,_,x,_,_,_,_)) = last tests
-	putStrLn $ show $ x
+	putStrLn $ x
 	header <- readFile "header.hs"
 	let prog = header ++ "\nmain=do" ++ concatMap fst tests
 	result <- runHs prog

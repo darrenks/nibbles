@@ -97,7 +97,7 @@ rawOps = [
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
 		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++"f x ("++ curryN a1L ++"rec) in if "
-		++truthy (head $ ret a2)++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
+		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
 		rt ++ [VFn (ret a1) rt]), []),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
@@ -167,18 +167,26 @@ rawOps = [
 	-- Desc: product
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
-	extendOp "+\\" genericReason ("pd", [8,11], [listOf int], "product" ~> VInt, []),
+	-- Test tuple: pd z,4 "abcd" $ -> 24,"abcd"
+	extendOp "+\\" genericReason ("pd", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
+		, []),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
-	--- \a -> (sum (map fst a), map snd a)
-	op("+", [8], [listOf int], "sum" ~> VInt, []),
+	-- Test tuple: +z ,3 "abc" $ -> 6,"abc"
+	op("+", [8], [listOf int], \[a1]->
+		let (uzT,uzF)=unzipTuple a1 in
+			appFst uzT "sum" ++ "." ++ uzF ~> VInt : tail uzT
+		, []),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
 	-- Test tuple: +.,2 z ,2 "ab" -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
-	--- Test tuple2: +z .,2,2 "ab" -> 
+	-- Test tuple2: +z .,2,2 "ab" $ -> [1,2,1,2],"ab"
 	-- \a -> (concat (map fst a), map snd a)
-	op("+", [8], [listOf list], "concat" ~> elemT.a1, []),
+	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
+		, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [8], [str, num], "asdf" ~> VInt, [autoTodo]),
@@ -196,13 +204,14 @@ rawOps = [
 	op("%", [9], [num, list], "step" ~> a2, [2]),
 	-- Desc: reject
 	-- Example: &,5~%$2 -> [2,4]
-	op("&", [9], [list, auto, fn (elemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret1 $ a2)++".("++uncurryN (length (elemT a1))++"f)) l") ~> a1, [impossibleAuto, autoTodo]),
+	-- Test truthy tuple: &,5~ ~%$2 1 -> [2,4]
+	op("&", [9], [list, auto, fn (elemT.a1)], (\[a1,_,a2] -> "\\l _ f->filter (not."++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l") ~> a1, [impossibleAuto, autoTodo]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &:""~"b"$ -> ["b"]
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
-	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret1 a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
+	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
@@ -239,7 +248,7 @@ rawOps = [
 	-- Test 1 dim: tr "abc" -> ["a","b","c"]
 	extendOp "\\." genericReason ("tr", [11,12], [list], \[a1] ->
 		case a1 of
-			VList [VList _] -> "transpose" ~> a1 -- todoAssumeFst
+			VList [VList _] -> "transpose" ~> a1 -- todo could do fancy unzipping if tuple
 			otherwise -> "transpose.(:[])" ~> VList [a1]
 		, []),
 	-- Desc: chunk
@@ -249,7 +258,7 @@ rawOps = [
 	-- todo could have also made this chunk while values same, or other behaviors
 	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
 	extendOp "\\&" genericReason ("ck", [11,9], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (safeOnlyElem $ ret a2) ++".("++uncurryN (length (elemT a1))++"f)) a" ~> vList1 a1, []),
+		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (ret a2) ++".("++uncurryN (length (elemT a1))++"f)) a" ~> vList1 a1, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
@@ -359,15 +368,16 @@ rawOps = [
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
 	-- todo add ability to see c with $, but should it be for true value or both?
 	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
-		"\\c a b->"++coerceFn ++ "$ (iff."++truthy (a1 ts)++") c (a()) (b())" ~> coercedType
+		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a()) (b())" ~> coercedType
 		, [autoTodo, autoTodo, autoTodo]),
 	-- Desc: index by
 	-- Example: ?"...a.."~ a$ -> 4
-	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (todoAssumeFst $ ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
+	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
-	op("?", [15], [list, elemOfA1], "\\a e->1+(fromMaybe (-1) $ elemIndex e a)" ~> VInt, []),
+	-- Test tuple: ? z ,3 "abc" 2 -> 2
+	op("?", [15], [list, elemOfA1], \[a1,a2]->"\\a e->1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt, []),
 	-- Desc: diff
 	-- Example: -"abcd""bd" -> "ac"
 	-- Test non existant elements: -"abc""de" -> "abc"
@@ -379,6 +389,7 @@ rawOps = [
 	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
 	
 	-- todo there are some type combinations that are invalid for bin 15
+	-- diff could work with non matching tuples too, aka diff by?
 	
 	-- Desc: hash (md5) mod
 	-- todo auto parse int (would save 1 nibble per use) (or consider using an int str op combo
@@ -458,7 +469,7 @@ instance OpImpl ([VT] -> ([VT], String)) where
 	toImpl f context = f context
 
 
-int = Exact VInt
+int = Cond "int" $ \vts -> last vts==VInt || last vts==VAuto
 char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
@@ -473,18 +484,10 @@ num = Cond "num" $ isNum . last
 vec = Cond "vec" $ const True
 list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
-listOf (Exact t) =  Exact $ VList [t]
+listOf (Exact t) = Exact $ VList [t]
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
-	t@(VList _) -> c [safeElemT $ t] -- match only first tuple type (todoAssumeFst - check that done where used)
+	t@(VList _) -> c [head $ elemT t]
 	_ -> False
-
-ret1 (VFn from [to]) = to
-
-safeElemT (VList [e]) = e
-safeElemT t = error $ "safeElemT: " ++ show t
-
-safeOnlyElem [e] = e
-safeOnlyElem t = error $ "safeOnlyElem: " ++ show t
 
 elemT :: VT -> [VT]
 elemT (VList e) = e
@@ -492,7 +495,7 @@ elemT s = error $ show s
 
 
 -- todo consider arg matching in opcode 15
-elemOfA1 = Cond "a" (\[a1,a2]->VList [a2]==a1) -- todoAssumeFst ?
+elemOfA1 = Cond "a" (\[a1,a2]->isList a1 && head (elemT a1) == a2)
 sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
 
 testCoerce2 :: [VT] -> String
