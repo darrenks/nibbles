@@ -5,7 +5,7 @@ import Control.Monad (msum)
 import Data.Maybe
 import State
 
-import Polylib(coerceTo)
+import Polylib(coerceTo,fillAccums)
 import Ops
 import Types
 import Expr
@@ -57,6 +57,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
 	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
 
+	mainCombiner :: Impl -> ParseState Impl
 	mainCombiner prev = do
 		let finishedPrev = finishIt prev
 		ParseData code _ _ _ <- get
@@ -66,22 +67,24 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 				VInt -> do
 					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
 					if last argsUsed then do
-						return $ (applyImpl (app1Hs "(\\a f -> foldr1 f [1..a])" prev) impl1) { implType = todoAssumeFst $ ret $ implType impl1 }
+						return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
 					else if argsUsed == [True,False] then do
 						return $ (applyImpl (app1Hs "(\\a f -> map (flip f ()) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 					else do
-						return $ join2 finishedPrev (finishIt $ (app1Hs "(\\f->f()())" impl1) { implType = todoAssumeFst $ ret $ implType $ impl1 } )
+						rhsImpl <- convertPairToLet (app1Hs "(\\f->f()())" impl1) (ret $ implType impl1)
+						return $ join2 finishedPrev (finishIt rhsImpl)
 				VList e | e /= [VChr] -> do
-					(impl1,argsUsed) <- getLambdaValue (length e) (e++e) OptionalArg
+					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
 					if or $ drop (length e) argsUsed then do
-						return $ (applyImpl (app1Hs "foldr1" impl1) prev) { implType = todoAssumeFst $ ret $ implType impl1 }
+						convertPairToLet (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
 					else if or $ take (length e) argsUsed then do
-						return $ (applyImpl (app1Hs "(\\a f -> map (flip f ()) a)" prev) impl1) { implType = VList $ ret $ implType impl1 }
-					else if todoAssumeFst (ret (implType impl1)) == vstr then do
-						return $ ((applyImpl (app1Hs "(\\f a->intercalate (f()()) a)" impl1) (app1Hs ("map"++finishFn (todoAssumeFst e)) prev))) { implType = vstr }
+						return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
+					else if ret (implType impl1) == [vstr] then do
+						return $ ((applyImpl (app1Hs "intercalate" (app1Hs (fillAccums (2*length e) (2*length e)) impl1)) (app1Hs ("map"++finishFn (todoAssumeFst e)) prev))) { implType = vstr }
 					else do
-						return $ join2 finishedPrev (finishIt $ (app1Hs "(\\f->f()())" impl1) { implType = todoAssumeFst $ ret $ implType $ impl1 } )
-				_ -> do
+						rhsImpl <- convertPairToLet (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
+						return $ join2 finishedPrev (finishIt rhsImpl)
+				otherwise -> do
 					impl1 <- get1Value
 					return $ join2 finishedPrev (finishIt impl1)
 			

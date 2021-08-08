@@ -21,3 +21,7 @@ isList (VList _) = True
 isList _ = False
 
 ret (VFn from to) = to
+
+elemT :: VT -> [VT]
+elemT (VList e) = e
+elemT s = error $ show s

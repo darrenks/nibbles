@@ -16,7 +16,8 @@ module Polylib(
 	firstOf,
 	flatten,
 	appFst,
-	unzipTuple) where
+	unzipTuple,
+	fillAccums) where
 
 import Types
 import Data.List
@@ -38,14 +39,14 @@ inspectElem [et] = inspect et
 -- inspectElem [et1,et2] = "(\\(a1,a2)->sToA \"(\" ++"++inspect et1++"a1++sToA \",\"++" ++ inspect et2 ++ "a2 ++ sToA \")\")"
 inspectElem ts = "(\\("++intercalate "," varNames++")->sToA \"(\"++"++
 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)
-	++"++sToA \")\")" where
-	varNames = map (\tn -> "a"++show tn) [1..length ts]
+	++"++sToA \")\")" where varNames = varNamesN $ length ts
 
+varNamesN n = map (\tn -> "a"++show tn) [1..n]
 
 uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
 
 tupleLambda n f = "(\\"++recParen varNames++"->"++f varNames++")"
-	where varNames = map (\tn -> "a"++show tn) [1..n]
+	where varNames = varNamesN n
 
 recParenH [a] = a
 recParenH (a:as) = "("++recParenH as++","++a++")"
@@ -63,7 +64,7 @@ unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(recParen $ map (\i->
 -- uncurryN n = "(\\f ("++intercalate "," varNames++")->f "++intercalate " " varNames ++ ")"
 -- 	where varNames = map (\tn -> "a"++show tn) [1..n]
 curryN n = "(\\f "++intercalate " " varNames++"->f ("++intercalate "," varNames ++ "))"
-	where varNames = map (\tn -> "a"++show tn) [1..n]
+	where varNames = varNamesN n
 
 flattenTuples :: Int -> Int -> [Char]
 flattenTuples t1 t2 = "(\\(("++varsFrom 1 t1++"),"++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
@@ -166,3 +167,10 @@ promoteList t = (VList [t], "(:[])")
 flatten :: VT -> String
 flatten (VList [a]) = "concat." ++ flatten a
 flatten _ = "(:[])"
+
+-- Easier would be to modify the lambda if we had that structure still
+-- e.g. 2 4 = "(\\f a1 a2 ->f a1 a2 () ())"
+fillAccums c n = "(\\f "++intercalate" "varNames++"->f "++intercalate" "rhs++")"
+	where
+		varNames = varNamesN (n-c)
+		rhs = varNames ++ replicate c "()"

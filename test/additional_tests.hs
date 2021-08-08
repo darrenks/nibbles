@@ -95,3 +95,12 @@
 -- Test "": ;$ -> 1000
 
 -- RawTest "1 2 3": *2$ -> "2\n4\n6\n"
+
+----- Test implicit ops with tuples:
+-- RawTest: z,3"abc" ~$;$ "" $ -> "1c\n"
+-- RawTest: z,3"abc" $ -> "1\n2\n3\n"
+-- todo need finish list tuple
+--- RawTest: ,3 ~$"c" -> 
+--- RawTest: z,3"abc" "-" -> 
+--- RawTest: z,3"abc" 5 -> 
+--- RawTest: ,3~$"c" -> 

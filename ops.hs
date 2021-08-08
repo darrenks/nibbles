@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), ops, allOps, impossibleAuto, autoTodo) where
+module Ops (Operation(..), ops, allOps, impossibleAuto, autoTodo, foldr1Fn, mapFn) where
 
 import Types
 import Polylib
@@ -234,7 +234,7 @@ rawOps = [
 	-- Example: /,3+$@ -> 6
 	-- Test coerce: /,3"5" -> 5
 	-- todo make/test empty
-	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f x) y) a") ~> elemT.a1, []),
+	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
@@ -285,7 +285,7 @@ rawOps = [
 	extendOp ",." genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, fn (elemT.a1)], (\[a1,a2]->"(\\a f->map ("++uncurryN (length (elemT a1))++"f) a)") ~> VList .ret.a2, []),
+	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2, []),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -432,6 +432,9 @@ convertNullNib (lit, nib, op) = (lit, if null nib
 		then [16, error $ "attempt to convert "++lit++" to bin (it is only for literate mode)"]
 		else nib
 	, op)
+
+foldr1Fn = (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f x) y) a")
+mapFn = (\[a1,a2]->"(\\a f->map ("++uncurryN (length (elemT a1))++"f) a)")
 	
 a1 = head :: [VT] -> VT
 a2 = (!!1) :: [VT] -> VT
@@ -484,15 +487,9 @@ num = Cond "num" $ isNum . last
 vec = Cond "vec" $ const True
 list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
-listOf (Exact t) = Exact $ VList [t]
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
 	t@(VList _) -> c [head $ elemT t]
 	_ -> False
-
-elemT :: VT -> [VT]
-elemT (VList e) = e
-elemT s = error $ show s
-
 
 -- todo consider arg matching in opcode 15
 elemOfA1 = Cond "a" (\[a1,a2]->isList a1 && head (elemT a1) == a2)
