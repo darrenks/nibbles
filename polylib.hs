@@ -76,12 +76,9 @@ finishH (VList tt)
 	| d == 2 = joinC "[32]"
 	| d == 1 = compose1 "(++[10])" $ joinC "[10]" -- todo might not want that newline for empty list? like unlines
 	where
-		t = todoAssumeFst tt
-		d = sdim t
-		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join [t] -- todo
-finishH (VList [VChr]) = "(id)"
-finishH VInt = inspect VInt
-finishH VChr = "(:[])"
+		d = sdim tt
+		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join (VList tt)
+finishH t = toStr t
 -- finishH a = error $ show a
 finish = finishH
 -- = composez finishH removePairs
@@ -94,10 +91,22 @@ app1 a b = "(" ++ a ++ b ++ ")"
 -- removePairs (VList a) = (VList rt, app1 "map" rs) where (rt, rs) = removePairs a
 -- removePairs a = (a, "(id)")
 
--- todo
-join [VInt] = (vstr, "(\\a b->intercalate a (map "++inspect VInt++" b))")
-join [VList [VChr]] = (vstr, "intercalate")
-join [VList e] = (VList [rt], "(map."++ej++")") where (rt, ej)=join e
+toStr VInt = inspect VInt
+toStr VChr = "(:[])"
+toStr (VList [VChr]) = " id "
+
+joinH t 0 = (vstr, "(const"++toStr t++")")
+joinH (VList [e]) 1 = (vstr, "(\\a b->intercalate a $ map "++toStr e++" b)")
+joinH (VList [VList e]) depth = (VList [rt], "(map."++ej++")") where (rt, ej)=joinH (VList e) (depth - 1)
+joinH (VList (ts@(_:_))) 2 = (VList [vstr], "(\\a b->map (intercalate a . "++tuple2List (length ts) ++ "."++(appTuple $ map toStr ts) ++ ") b)")
+joinH (VList (ts@(_:_))) depth = (VList rts, "(\\a b->map ("++appTuple rfsa++") b)") where
+	(rts, rfs)=unzip $ map (\t->joinH t (depth-2)) ts
+	rfsa = map (\f->f++" a ") rfs
+joinH ts _ = (ts, "(\\_ b->b)")
+
+join t = joinH t (sdim $ elemT t)
+
+tuple2List n = tupleLambda n $ \args -> "["++intercalate "," args++"]"
 
 vectorize :: String -> ([VT] -> VT) -> [VT] -> (VT, String)
 vectorize op rtf [t1, VList t2] = (VList [rt], rop) where
@@ -124,9 +133,9 @@ coerceToH (VInt, VList [VChr]) = "((fromMaybe 0).readMaybe.aToS)"
 coerceToH (VInt, VList a) = "(sum.(map"++coerceToH(VInt,todoAssumeFst a)++"))"
 -- coerceTo (VList VInt, VList VChr) = "(id)"
 coerceToH (VChr, VList a) = "(head."++coerceToH(VChr,todoAssumeFst a)++")"
-coerceToH (VList a, b) | sdim (VList a) > sdim b = "((:[])."++coerceToH(todoAssumeFst a, b)++")"
-coerceToH (VList a, VList b) | sdim (todoAssumeFst a) == sdim (todoAssumeFst b) = "(map"++coerceToH(todoAssumeFst a, todoAssumeFst b)++")"
-coerceToH (a, VList b) | sdim a < sdim (VList b) = "(concatMap"++coerceToH(a, todoAssumeFst b)++")"
+coerceToH (VList a, b) | sdim [VList a] > sdim [b] = "((:[])."++coerceToH(todoAssumeFst a, b)++")"
+coerceToH (VList a, VList b) | sdim [todoAssumeFst a] == sdim [todoAssumeFst b] = "(map"++coerceToH(todoAssumeFst a, todoAssumeFst b)++")"
+coerceToH (a, VList b) | sdim [a] < sdim [VList b] = "(concatMap"++coerceToH(a, todoAssumeFst b)++")"
 
 coerceTo :: [VT] -> [VT] -> String
 coerceTo to from = appTuple (zipWith (curry coerceToH) to from)
@@ -135,9 +144,10 @@ dim VInt = 1
 dim VChr = 1
 dim (VList a) = 1+dim (todoAssumeFst a)
 
-sdim VInt = 1
-sdim VChr = 0
-sdim (VList a) = 1+sdim (todoAssumeFst a)
+sdim [VInt] = 1
+sdim [VChr] = 0
+sdim [VList a] = 1+sdim a
+sdim (t:ts) = 1+max (sdim [t]) (sdim ts)
 
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
 appTuple :: [String] -> String

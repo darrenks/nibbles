@@ -1,6 +1,7 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
 -- todo not all 3 tuples/etc are ((,),)... zip zip or ~1~
+swap order of = to int array to match < and >
 
 For alpha release:
 -make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)

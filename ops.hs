@@ -163,7 +163,10 @@ rawOps = [
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
-	op("*", [8], [str, list], join.elemT.a2, []),
+	-- Test tuple: *" "z,3"abc" -> ["1 a","2 b","3 c"]
+	-- Test lopsided tuple: *" "z.,2,2"ab" -> [("1 2",'a'),("1 2",'b')]
+	-- Test: *" "z.,2,2.,2,2 -> [("1 2","1 2"),("1 2","1 2")]
+	op("*", [8], [str, list], join.a2, []),
 	-- Desc: product
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
