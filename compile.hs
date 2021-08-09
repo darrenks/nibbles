@@ -5,7 +5,7 @@ import Control.Monad (msum)
 import Data.Maybe
 import State
 
-import Polylib(coerceTo,fillAccums)
+import Polylib(coerceTo,fillAccums,join)
 import Ops
 import Types
 import Expr
@@ -80,7 +80,9 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 					else if or $ take (length e) argsUsed then do
 						return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
 					else if ret (implType impl1) == [vstr] then do
-						return $ ((applyImpl (app1Hs "intercalate" (app1Hs (fillAccums (2*length e) (2*length e)) impl1)) (app1Hs ("map"++finishFn (todoAssumeFst e)) prev))) { implType = vstr }
+						let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
+						let (rt,f) = join (VList e)
+						return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
 					else do
 						rhsImpl <- convertPairToLet (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
 						return $ join2 finishedPrev (finishIt rhsImpl)

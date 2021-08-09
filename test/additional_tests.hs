@@ -80,7 +80,7 @@
 -- Test: testFinish .,3"abc" -> "abc\nabc\nabc\n"
 -- Test: testFinish .,2.,2,2 -> "12 12\n12 12\n"
 -- Test: testFinish .,2.,2"ab" -> "ab ab\nab ab\n"
---- Test: testFinish z ,3 "abc" -> "1\n2\n3\n"
+-- Test: testFinish z ,3 "abc" -> "1 a\n2 b\n3 c\n"
 
 -- Test "hi\n": \@ -> "ih"
 -- RawTest: 1 2 -> "12\n"
@@ -99,8 +99,7 @@
 ----- Test implicit ops with tuples:
 -- RawTest: z,3"abc" ~$;$ "" $ -> "1c\n"
 -- RawTest: z,3"abc" $ -> "1\n2\n3\n"
--- todo need finish list tuple
---- RawTest: ,3 ~$"c" -> 
---- RawTest: z,3"abc" "-" -> 
---- RawTest: z,3"abc" 5 -> 
---- RawTest: ,3~$"c" -> 
+-- RawTest: ,3 ~$"c" -> "1 c\n2 c\n3 c\n"
+-- RawTest: z,3"abc" "-" -> "1-a\n2-b\n3-c\n"
+-- RawTest: z,3"abc" 5 -> "1 a\n2 b\n3 c\n5\n"
+-- RawTest: 3~$"c" -> "1 c\n2 c\n3 c\n"
