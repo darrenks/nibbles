@@ -101,9 +101,10 @@ join t = joinH t (sdim $ elemT t)
 tuple2List n = tupleLambda n $ \args -> "["++intercalate "," args++"]"
 
 vectorize :: String -> ([VT] -> VT) -> [VT] -> (VT, String)
-vectorize op rtf [t1, VList t2] = (VList [rt], rop) where
-	(rt, rop) = vectorize ("(\\a1->map ("++op++" a1))") rtf [t1, todoAssumeFst t2]
-vectorize op rtf [t1, t2] = (rtf [t1, t2], op)
+vectorize op rtf [t1, VList t2] =
+	(VList rts, "(\\a->map "++appTuple (map (\rop->"("++rop++"a)") rops)++")") where
+		(rts, rops) = unzip $ map (\t->vectorize op rtf [t1,t]) t2
+vectorize op rtf [t1, t2] = (rtf [t1, t2], "("++op++")")
 
 isBaseElemChr VChr = True
 isBaseElemChr (VList [e]) = isBaseElemChr e

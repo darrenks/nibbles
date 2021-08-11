@@ -153,6 +153,7 @@ rawOps = [
 	-- Test 2d vectorized: +1 .,2 ,2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
+	-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
 	op("+", [8], [num, vec], vectorize "+" xorChr, [1,2 {- this one will go away to make way for max 0 when we have that extension-}]),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
