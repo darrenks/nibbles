@@ -110,6 +110,7 @@ list
 	indices [by]
 	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
 	zip prevs
+	nChunks = reshape (length/x) | num -> [any] ->
 
 str
 	str= more useful than list=

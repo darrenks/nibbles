@@ -7,6 +7,8 @@ matrix input
 	line of words
 	matrix of words
 
+consider that extensions may make other extensions codes not useless
+
 : really should be revamped to allow easier tuple construction but its complicated
 	should accept fn as first arg
 	singleton needs auto value from second arg, but this is hard because first arg fn breaks arg matching after (need to revamp convertop)

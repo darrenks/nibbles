@@ -37,7 +37,7 @@ rawOps = [
 	op("~", [0], [], (error"undefined auto"::String)~>VAuto, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	atom("tbd", [1,0], undefined),
+	atom("tbd", [1,0], undefined), -- note things rely on this being an integer for extensions
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 2): 0 -> 0
@@ -120,7 +120,7 @@ rawOps = [
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	-- Test tuple: :~~1 2 -> [(1,2)]
-	op(":~", [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1, [autoTodo]),
+	op(":~", [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1, []),
 	-- Desc: abs
 	-- Example: ab *~5 -> 5
 	op("ab", [7], [num, BinAuto], "abs" ~> a1, [autoTodo, impossibleAuto]),
@@ -161,6 +161,12 @@ rawOps = [
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> vList1 .a1, []),
+	-- Desc: words
+	-- Example: %"a\nb c.d"~ -> ["a","b","c.d"]
+	op("%", [8], [str, auto], "\\a _->map sToA $ words (aToS a)" ~> vList1 .a1, [impossibleAuto,impossibleAuto]),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [8], [str, num], "asdf" ~> VInt, [impossibleAuto]),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
@@ -191,18 +197,18 @@ rawOps = [
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		, []),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [8], [str, num], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: subtract
 	-- Example: -5 3 -> 2
 	-- Test: -'b''a' -> 1
 	-- Test: -'d'1 -> 'c'
 	op("-", [9], [num, num], "-" ~> xorChr, [1, 1]),
+	-- Desc: square
+	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
+	-- Test: sqr ,11 -> [[1,2,3,4],[5,6,7,8],[9,10,11]]
+	extendOp "%0" genericReason ("sqr", [9,1,8], [list], "\\a->reshape (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1, []),
 	-- Desc: step
 	-- Example: %2,5 -> [1,3,5]
 	-- Test: % *~2,5 -> [5,3,1]
-	-- Test todo?: % 0 ,5 -> error
 	-- Test: % 1 ,0 -> []
 	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
 	op("%", [9], [num, list], "step" ~> a2, [2]),
@@ -326,7 +332,7 @@ rawOps = [
 	op(",", [13], [list], "length" ~> VInt, []),
 	-- Desc: range from 0 ...
 	-- Example: ,~3 -> [0,1,2]
-	op(",~", [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [autoTodo]),
+	op(",~", [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [2^128]),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
@@ -369,7 +375,7 @@ rawOps = [
 	-- todo, the arg passed in should be marked optional used
 	op("?,", [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
-		, [impossibleAuto, autoTodo, autoTodo]),
+		, []),
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +0 1 1 "F" -> "1"
@@ -377,7 +383,7 @@ rawOps = [
 	-- todo add ability to see c with $, but should it be for true value or both?
 	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a()) (b())" ~> coercedType
-		, [autoTodo, autoTodo, autoTodo]),
+		, []),
 	-- Desc: index by
 	-- Example: ?"...a.."~ a$ -> 4
 	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
