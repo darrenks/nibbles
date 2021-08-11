@@ -337,16 +337,16 @@ rawOps = [
 	-- Test: ^2 *~3 -> 0
 	-- Test: ^0 0 -> 1
 	-- todo handle 0**-3 (maybe should be infinity?)
-	op("^", [14], [int, num], "\\a b->if b<0 then 0 else a^b" ~> a1, [10,2]),
+	op("^", [14], [int, int], "\\a b->if b<0 then 0 else a^b" ~> a1, [10,2]),
 	-- Desc: replicate
-	-- Example: ^3 "ab" -> "ababab"
-	-- Test: ^ *~3 "ab" -> ""
-	op("^", [14], [int, list], "(concat.).(replicate.fromIntegral)" ~> a2, [2^128]),
+	-- Example: ^"ab"3 -> "ababab"
+	-- Test: ^"ab" *~3 -> ""
+	op("^", [14], [list, int], "flip$(concat.).(replicate.fromIntegral)" ~> a1, [impossibleAuto, 2^128]),
 	-- Desc: subscript. Wrapped.
-	-- Example: ="asdf" 2 -> 's'
-	-- Test 0 (wrapped): ="asdf" 0 -> 'f'
+	-- Example: =2 "asdf" -> 's'
+	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- todo empty list will error, maybe it should use maybe or default??
-	op("=", [14], [list, num], "\\a i->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a1, [impossibleAuto, autoTodo]),
+	op("=", [14], [int, list], "\\i a->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a2, [autoTodo]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]

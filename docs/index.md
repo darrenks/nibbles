@@ -6,7 +6,7 @@ $Intro
 
 Although this program appears as 28 characters here, characters (except for the digits and string text) take only half a byte in binary form. It is trivially encoded as **18 bytes**. That's pretty decent considering 8 of those bytes are for the text FizzBuzz.
 
-	$?,:^-~%$3"Fizz"^-~%$5"Buzz"
+	$?,:^"Fizz"-~%$3^"Buzz"-~%$5
 $HiddenOutput
 	1
 	2

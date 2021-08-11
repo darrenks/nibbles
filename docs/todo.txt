@@ -1,15 +1,19 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
 	1 op folds, 1 char shorter using non matching string/int constants
--- todo not all 3 tuples/etc are ((,),)... zip zip or ~1~
-swap order of = to int array to match < and >
 put rep in arg list instead of using istildastart
 matrix input
 	matrix of ints
 	line of words
 	matrix of words
 
-: really should be revamped, should be able to accept fn0 and probably could support more type overloading
+: really should be revamped to allow easier tuple construction but its complicated
+	should accept fn as first arg
+	singleton needs auto value from second arg, but this is hard because first arg fn breaks arg matching after (need to revamp convertop)
+	abs needs to be something else
+		-after can revert hacky stuff from https://github.com/darrenks/nibbles/commit/9eccacbd5c4d0e3a4f256a7e33e29630f457543a
+	delete cons, instead have special way to create list of strings
+	if : with first value as a tuple then number of rets for second arg should match unless it is a list of a tuple
 
 For alpha release:
 -more extensions
