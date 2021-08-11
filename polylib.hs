@@ -27,23 +27,29 @@ truthy [VChr] = "(not.isSpace.chr)" -- todo should \0 be false too?
 truthy [VList _] = "(not.null)"
 truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
 
-firstOf xs = tupleLambda (length xs) $ head
-
 inspect VInt = "(sToA.show)"
 inspect VChr = "(sToA.show.chr.fromIntegral)"
 inspect (VList [VChr]) = "(sToA.show.aToS)"
--- inspect (VList [t]) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspectElem et++" v)) ++ (sToA \"]\"))"
 inspect a = error $ show a
 inspectElem [et] = inspect et
--- inspectElem [et1,et2] = "(\\(a1,a2)->sToA \"(\" ++"++inspect et1++"a1++sToA \",\"++" ++ inspect et2 ++ "a2 ++ sToA \")\")"
+-- need correctly balanced tuples first v todoassumefst
+-- inspectElem ts = tupleLambda (length ts) $ \varNames -> "sToA \"(\"++"++
+-- 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)
+-- 	++"++sToA \")\""
 inspectElem ts = "(\\("++intercalate "," varNames++")->sToA \"(\"++"++
 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)
 	++"++sToA \")\")" where varNames = varNamesN $ length ts
 
+firstOf xs = tupleLambda (length xs) $ head
+
 varNamesN n = map (\tn -> "a"++show tn) [1..n]
 
 uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
+
+-- todoassumefst improperly balanced nested parens
+curryN n = "(\\f "++intercalate " " varNames++"->f ("++intercalate "," varNames ++ "))"
+	where varNames = varNamesN n
 
 tupleLambda n f = "(\\"++recParen varNames++"->"++f varNames++")"
 	where varNames = varNamesN n
@@ -60,36 +66,22 @@ unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(recParen $ map (\i->
 	"map "++tupleLambda (length ts) (\args -> args!!i)++"a"
 	) [0..length ts-1]) ++ ")")
 
--- 
--- uncurryN n = "(\\f ("++intercalate "," varNames++")->f "++intercalate " " varNames ++ ")"
--- 	where varNames = map (\tn -> "a"++show tn) [1..n]
-curryN n = "(\\f "++intercalate " " varNames++"->f ("++intercalate "," varNames ++ "))"
-	where varNames = varNamesN n
-
 flattenTuples :: Int -> Int -> [Char]
 flattenTuples t1 t2 = "(\\(("++varsFrom 1 t1++"),"++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
 	where varsFrom a b = intercalate "," $ map (\tn->"a"++show tn) [a..b]
 
-finishH :: VT -> String
-finishH (VList tt)
+finish :: VT -> String
+finish (VList tt)
 	| d >= 3 = joinC "[]"
 	| d == 2 = joinC "[32]"
 	| d == 1 = compose1 "(++[10])" $ joinC "[10]" -- todo might not want that newline for empty list? like unlines
 	where
 		d = sdim tt
-		joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join (VList tt)
-finishH t = toStr t
--- finishH a = error $ show a
-finish = finishH
--- = composez finishH removePairs
+		joinC s = compose1 (finish jt) $ app1 js s where (jt,js) = join (VList tt)
+finish t = toStr t
 
--- composez a b t = compose1 (a t2) s where (t2, s) = b t
 compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
 app1 a b = "(" ++ a ++ b ++ ")"
-
--- removePairs (VPair a b) = (a, "(fst)")
--- removePairs (VList a) = (VList rt, app1 "map" rs) where (rt, rs) = removePairs a
--- removePairs a = (a, "(id)")
 
 toStr VInt = inspect VInt
 toStr VChr = "(:[])"
@@ -113,41 +105,66 @@ vectorize op rtf [t1, VList t2] = (VList [rt], rop) where
 	(rt, rop) = vectorize ("(\\a1->map ("++op++" a1))") rtf [t1, todoAssumeFst t2]
 vectorize op rtf [t1, t2] = (rtf [t1, t2], op)
 
-baseElem (VList e) = baseElem $ todoAssumeFst e
-baseElem t = t
+isBaseElemChr VChr = True
+isBaseElemChr (VList [e]) = isBaseElemChr e
+isBaseElemChr _ = False
 
-coerce2 :: (VT, VT) -> VT
-coerce2(VChr, VChr) = VChr
-coerce2(a, b) | isNum a && isNum b = VInt
-coerce2(a, VList [VChr])
-	| VChr == a || (VInt == baseElem a) = vstr
-	| otherwise = a
-coerce2(VList [VChr], a) = coerce2(a, vstr)
-coerce2(VList a, b) | isNum b = VList [coerce2(todoAssumeFst a, b)]
-coerce2(b, VList a) | isNum b = coerce2(VList a, b)
-coerce2(VList a, VList b) = VList [coerce2(todoAssumeFst a, todoAssumeFst b)]
+coerce2 :: [VT] -> [VT] -> [VT]
+coerce2 [VChr] [VChr] = [VChr]
+coerce2 [a] [b] | isNum a && isNum b = [VInt]
+coerce2 [a] [VList [VChr]]
+	| VChr == a || (not $ isBaseElemChr a) = [vstr]
+	| otherwise = [a]
+coerce2 [VList [VChr]] [a] = coerce2 [a] [vstr]
+coerce2 [VList a] [b] | isNum b = [VList (coerce2 a [b])]
+coerce2 [b] [VList a] | isNum b = coerce2 [VList a] [b]
+coerce2 [VList a] [VList b] = [VList $ coerce2 a b]
+-- definitely could do something fancier for imbalance tuple coerce, but should be very rare
+coerce2 [a] (b:_) = coerce2 [a] [b]
+coerce2 (a:_) [b] = coerce2 [a] [b]
+coerce2 (a:as) (b:bs) = coerce2 [a] [b] ++ coerce2 as bs
 
-coerceToH (a, b) | a==b || (baseElem a == VInt && dim a == dim b) || (isNum a && isNum b) = "(id)"
+-- || (baseElem a == VInt && cidim [a] == cidim [b])
+coerceToH (a, b) | a==b || (isNum a && isNum b) = "(id)"
+coerceToH (VList [VInt], VList [VChr]) = "(id)"
 coerceToH (VList [VChr], VInt) = "(sToA.show)"
-coerceToH (VInt, VList [VChr]) = "((fromMaybe 0).readMaybe.aToS)"
-coerceToH (VInt, VList a) = "(sum.(map"++coerceToH(VInt,todoAssumeFst a)++"))"
--- coerceTo (VList VInt, VList VChr) = "(id)"
-coerceToH (VChr, VList a) = "(head."++coerceToH(VChr,todoAssumeFst a)++")"
-coerceToH (VList a, b) | sdim [VList a] > sdim [b] = "((:[])."++coerceToH(todoAssumeFst a, b)++")"
-coerceToH (VList a, VList b) | sdim [todoAssumeFst a] == sdim [todoAssumeFst b] = "(map"++coerceToH(todoAssumeFst a, todoAssumeFst b)++")"
-coerceToH (a, VList b) | sdim [a] < sdim [VList b] = "(concatMap"++coerceToH(a, todoAssumeFst b)++")"
+coerceToH (VInt, VList [VChr]) = "(fromMaybe 0.readMaybe.aToS)"
+coerceToH (VInt, VList a) = "(sum.(map"++coerceTo [VInt] a++"))" -- questionable choice here but maybe more useful
+coerceToH (VChr, VList a) = "(head."++coerceTo [VChr] a++")"
+
+coerceToH (a, VList b) | csdim [a] < csdim [VList b] = "(concatMap"++coerceTo [a] b++")"
+coerceToH (VList a, b) | baseElem (head a) == VInt && cidim [VList a] > cidim [b] = "((:[])."++coerceTo a [b]++")"
+coerceToH (VList a, b) | baseElem (head a) == VChr && csdim [VList a] > csdim [b] = "((:[])."++coerceTo a [b]++")"
+coerceToH (VList a, VList b) -- | csdim a == csdim b -- (sorta, not quite since difference in base types
+	= "(map"++coerceTo a b++")"
 
 coerceTo :: [VT] -> [VT] -> String
-coerceTo to from = appTuple (zipWith (curry coerceToH) to from)
+coerceTo to from = tupleLambda (length from) $ \args -> recParen $
+	zipWith3 (\t f a->"("++coerceToH(t,f)++" "++a++")") to from args ++ defaults
+	where defaults = map defaultValue $ drop (length from) to
 
-dim VInt = 1
-dim VChr = 1
-dim (VList a) = 1+dim (todoAssumeFst a)
+defaultValue VInt = "0"
+defaultValue VChr = "32"
+defaultValue (VList _) = "[]"
 
+baseElem (VList e) = baseElem $ head e
+baseElem t = t
+
+cidim [VInt] = 1
+cidim [VChr] = 1
+cidim [VList a] = 1+cidim a
+cidim (t:_) = cidim [t]
+
+sdim :: [VT] -> Int
 sdim [VInt] = 1
 sdim [VChr] = 0
 sdim [VList a] = 1+sdim a
-sdim (t:ts) = 1+max (sdim [t]) (sdim ts)
+sdim (t:ts) = 1+ maximum (map (sdim.(:[])) (t:ts))
+
+csdim [VInt] = 1
+csdim [VChr] = 0
+csdim [VList a] = 1+csdim a
+csdim (t:_) = csdim [t]
 
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
 appTuple :: [String] -> String
@@ -156,14 +173,14 @@ appTuple ops = tupleLambda (length ops) $ \varNames -> (recParen $ zipWith (++) 
 coerce :: [VT] -> [VT] -> ([VT], String, String)
 coerce leftType rightType =
 	let
-		coercedType = zipWith (curry coerce2) leftType rightType
+		coercedType = coerce2 leftType rightType
 		coerceFn = coerceTo coercedType
 	in (coercedType, coerceFn leftType, coerceFn rightType)
 
 coerceEither :: [VT] -> [VT] -> ([VT], String)
 coerceEither leftType rightType =
 	let
-		coercedType = zipWith (curry coerce2) leftType rightType
+		coercedType = coerce2 leftType rightType
 		coerceFn = coerceTo coercedType
 	in
 		(coercedType, "(either "++coerceFn leftType++coerceFn rightType++")")

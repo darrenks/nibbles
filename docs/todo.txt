@@ -1,11 +1,18 @@
 clarify fn0/etc (num rets)
 fold on prefixes (primo)
+	1 op folds, 1 char shorter using non matching string/int constants
 -- todo not all 3 tuples/etc are ((,),)... zip zip or ~1~
 swap order of = to int array to match < and >
+put rep in arg list instead of using istildastart
+matrix input
+	matrix of ints
+	line of words
+	matrix of words
+
+: really should be revamped, should be able to accept fn0 and probably could support more type overloading
 
 For alpha release:
--make sure handle type pair everywhere in Polylib and elsewhere (i.e. take first before operating)
-	-but should it default to using first or both?
+-make sure handle type pair everywhere in Polylib and elsewhere
 -more extensions
 
 debug features to add:
@@ -17,16 +24,18 @@ debug features to add:
 minor things:
 -maybe
 -use of char (and instances to convert for vec)
+-write a how page / document code
+-" " instead of "\n" in auto map inner separator
+-support for other character types in input, i.e. http://golf.shinh.org/p.rb?Major+Scales
 
 
 ------------------------------------------
-compile with wall on? nah, but incomplete patterns would be most useful
 should also have dependency bounds for dlist/etc.
 -------------------------------
 auto input types (for command line args, use delims for list of ints)
 library reference?
 
-non empty list for many [VT]
+non empty list for many [VT] for type safer haskell in compiler
 
 fyi instead of coerce in user fn, could skip it in context lookup
 
@@ -56,3 +65,5 @@ bounded integers/list size for more efficient math ops and no need for maybe on 
 could support parenthesis that do nothing but cause error if parse isn't as expected
 also could support named lambdas/assignments that get converted into debruijns
 interpret instead of compile
+
+interpreter in addition to compiler (auto build it?)

@@ -135,7 +135,7 @@ rawOps = [
 	-- Example: :"abc""def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
-	--- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
+	-- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
 	-- Test promoting to list: :1 2 -> [1,2]
 	op(":", [7], [anyT, anyT], \[a,b]->
 		let
@@ -419,12 +419,13 @@ rawOps = [
 	op("un", [], [], "errorWithoutStackTrace \"undefined (todo put location in msg)\"" ~> vstr, []),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr, []),
-	op("testCoerceToInt", [], [anyT], testCoerceTo VInt, []),
-	op("testCoerceToChr", [], [anyT], testCoerceTo VChr, []),
-	op("testCoerceToListInt", [], [anyT], testCoerceTo (VList [VInt]), []),
-	op("testCoerceToStr", [], [anyT], testCoerceTo vstr, []),
-	op("testCoerceToListListInt", [], [anyT], testCoerceTo (VList [VList [VInt]]), []),
-	op("testCoerceToListStr", [], [anyT], testCoerceTo (VList [vstr]), []),
+	op("testCoerceToInt", [], [anyT], testCoerceTo [VInt], []),
+	op("testCoerceToChr", [], [anyT], testCoerceTo [VChr], []),
+	op("testCoerceToListInt", [], [anyT], testCoerceTo [VList [VInt]], []),
+	op("testCoerceToStr", [], [anyT], testCoerceTo [vstr], []),
+	op("testCoerceToListListInt", [], [anyT], testCoerceTo [VList [VList [VInt]]], []),
+	op("testCoerceToListStr", [], [anyT], testCoerceTo [VList [vstr]], []),
+	op("testCoerceToX", [], [fn noArgs, fn noArgs], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts), []),
 	op("testFinish", [], [anyT], finish.a1 ~> vstr, [])]
 
 infixr 1 ~>
@@ -503,11 +504,11 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 	then show ct1
 	else "flipped mismatch: " ++ show ct1 ++ "," ++ show ct2)
 	where
-		ct1 = coerce2(a1,a2)
-		ct2 = coerce2(a2,a1)
+		ct1 = coerce2[a1][a2]
+		ct2 = coerce2[a2][a1]
 
-testCoerceTo :: VT -> [VT] -> (VT, String)
-testCoerceTo to a1 =  (to, coerceTo [to] a1)
+testCoerceTo :: [VT] -> [VT] -> ([VT], String)
+testCoerceTo to a1 =  (to, coerceTo to a1)
 
 ops = map (convertNullNib.last) rawOps -- the others are for invalid literate warning
 allOps = concat [atom(
