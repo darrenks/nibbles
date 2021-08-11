@@ -102,6 +102,7 @@ toQuickRef True _ = [td ""]
 
 typeToStr (Cond "[list]" _) n = "[[" ++ [n] ++ "]]"
 typeToStr (Cond "list" _) n = "[" ++ [n] ++ "]"
+typeToStr (Cond "clist" _) n = "[" ++ [n] ++ "]|chr"
 typeToStr (Cond desc _) _ = desc
 -- typeToStr (Coerce t) n = "~"++typeToStr t n
 -- typeToStr (Vec t) n = "*"++typeToStr t n

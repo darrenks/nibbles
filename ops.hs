@@ -216,10 +216,14 @@ rawOps = [
 	-- Test list truthy: &:""~"b"$ -> ["b"]
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1, [impossibleAuto, impossibleAuto]),
+	-- Desc: is alpha?
+	-- Example: a'z' -> 1
+	-- Test: a' ' -> 0
+	op("a", [10], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
-	op("*", [10], [num, vec], vectorize "*" (const VInt), [-1, 2]),
+	op("*", [10], [int, vec], vectorize "*" (const VInt), [-1, 2]),
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +$@ -> [0,1,3,6]
 	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
@@ -327,21 +331,20 @@ rawOps = [
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
 	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1, [impossibleAuto]),
-	-- Desc: is alpha?
-	-- Example: a'z' -> 1
-	-- Test: a' ' -> 0
-	op("a", [14], [char], "bToI.isAlpha.safeChr" ~> VInt, []),
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
 	-- Test: ^2 *~3 -> 0
 	-- Test: ^0 0 -> 1
 	-- todo handle 0**-3 (maybe should be infinity?)
-	op("^", [14], [int, int], "\\a b->if b<0 then 0 else a^b" ~> a1, [10,2]),
+	op("^", [14], [int, num], "\\a b->if b<0 then 0 else a^b" ~> a1, [10,2]),
 	-- Desc: replicate
 	-- Example: ^"ab"3 -> "ababab"
 	-- Test: ^"ab" *~3 -> ""
-	op("^", [14], [list, int], "flip$(concat.).(replicate.fromIntegral)" ~> a1, [impossibleAuto, 2^128]),
+	-- Test: ^'a' 3 -> "aaa"
+	op("^", [14], [clist, int], \[a1,_] ->
+		let (ap1, apf) = promoteList a1 in
+		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1, [impossibleAuto, 2^128]),
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
@@ -491,6 +494,7 @@ fn2 e = (Fn $ \prev -> (2, e prev))
 
 num = Cond "num" $ isNum . last
 vec = Cond "vec" $ const True
+clist = Cond "clist" $ \vts -> let t = last vts in isList t || VChr == t
 list = Cond "list" $ isList . last
 anyT = Cond "any" $ const True
 listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
