@@ -174,6 +174,7 @@ All programs actually start off with args available for use.
 - `;$` is the second integer in the input (`int`)
 - `;@` is the second line of input (`str`)
 - `;_` is the entire input (`str`)
+- `;;$` is the entire input as a list of list of ints (`[[int]]`)
 
 For example, if the input is a list of integers we could find the sum as so:
 

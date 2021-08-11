@@ -2,12 +2,6 @@ clarify fn0/etc (num rets)
 fold on prefixes (primo)
 	1 op folds, 1 char shorter using non matching string/int constants
 put rep in arg list instead of using istildastart
-matrix input
-	matrix of ints
-	line of words
-	matrix of words
-
-<~ = init ?
 
 consider that extensions may make other extensions codes not useless
 

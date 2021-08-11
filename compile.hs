@@ -25,6 +25,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		, ("secondInt", VInt, "fromMaybe 1000 $ at intList 1")
 		, ("secondLine", vstr, "fromMaybe [] $ at strLines 1")
 		, ("allInput", vstr, "input")
+		, ("intListList", VList [VList [VInt]], "intMatrix")
 		]
 	letArgs = map (\(name, vt, _) -> noArgsUsed {
 		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=OptionalArg
@@ -39,10 +40,10 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		nib <- gets getNib
 		lit <- gets getLit
 
-		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed] =
+		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
 			tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
-		let autoMap = if allInputUsed then ""
+		let autoMap = if allInputUsed || allInputUsedAsInts then ""
 			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
 			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
 			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"

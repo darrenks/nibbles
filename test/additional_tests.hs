@@ -115,3 +115,14 @@
 -- RawTest: z,3"abc" "-" -> "1-a\n2-b\n3-c\n"
 -- RawTest: z,3"abc" 5 -> "1 a\n2 b\n3 c\n5\n"
 -- RawTest: 3~$"c" -> "1 c\n2 c\n3 c\n"
+
+---- Test input types
+-- RawTest "12a": $ -> "12\n"
+-- RawTest "12a": @ -> "12a\n"
+-- RawTest "1 2 3": p_ -> "[1,2,3]\n"
+-- RawTest "1\n2\n3": p_ -> "[1,2,3]\n"
+-- RawTest "1\n2a": p;$ -> "2\n"
+--- RawTest "1\n2a\n3": p;$ -> "2\n" -- todo if use 2nd but not first, don't map again?
+-- RawTest "1\n2a\n3": ;@ -> "2a\n"
+-- RawTest "ab\ncd": ;_ -> "ab\ncd\n"
+-- RawTest "1 2\n3": p;;$ -> "[[1,2],[3]]\n"
