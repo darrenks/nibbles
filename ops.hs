@@ -289,10 +289,13 @@ rawOps = [
 	-- Test: / *~2 *~7 -> 0
 	-- Test: / 2 *~7 -> -1
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
+	-- Desc: init
+	-- Example: <~,5 -> [1,2,3,4]
+	op("<~", [11,0], [list], "init" ~> a1, []),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
-	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [1]),
+	op("<", [11], [num, list], "take.fromIntegral" ~> a2, [impossibleAuto]),
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
 	-- Test tuple: sb z ,3 "bca" @ -> [(3,'a'),(1,'b'),(2,'c')]
@@ -324,9 +327,10 @@ rawOps = [
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	extendOp ",%" genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(",^", [13,14], [int, list], "asdf" ~> VInt, [autoTodo]),
+	-- Desc: nChunks
+	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
+	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
+	extendOp ",^" genericReason ("nc", [13,14], [int, list], "\\a b->reshape (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt, [2]),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt, []),
@@ -351,6 +355,9 @@ rawOps = [
 	op("^", [14], [clist, int], \[a1,_] ->
 		let (ap1, apf) = promoteList a1 in
 		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1, [impossibleAuto, 2^128]),
+	-- Desc: tails
+	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
+	extendOp "^~" genericReason ("ts", [14,0], [list], "tails"~>VList, [autoTodo]),
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
@@ -411,7 +418,7 @@ rawOps = [
 	-- Example: hm "asdf" 256 -> 112
 	-- Test: hm 5 10 -> 9
 	-- Test: hm :1 2 ~ -> 16914085776040879869467699104040987770
-	op("hm", [], [anyT, int], (\[a1,a2]->"mod.hlist."++flatten a1) ~> VInt, [autoTodo,2^128]),
+	op("hm", [], [anyT, int], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> VInt, [autoTodo,2^128]),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
