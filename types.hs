@@ -14,8 +14,6 @@ isNum VInt = True
 isNum VChr = True
 isNum VAuto = True
 isNum _ = False
-
-todoAssumeFst ts = head ts
 	
 isList (VList _) = True
 isList _ = False

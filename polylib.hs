@@ -33,13 +33,9 @@ inspect (VList [VChr]) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspectElem et++" v)) ++ (sToA \"]\"))"
 inspect a = error $ show a
 inspectElem [et] = inspect et
--- need correctly balanced tuples first v todoassumefst
--- inspectElem ts = tupleLambda (length ts) $ \varNames -> "sToA \"(\"++"++
--- 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)
--- 	++"++sToA \")\""
-inspectElem ts = "(\\("++intercalate "," varNames++")->sToA \"(\"++"++
+inspectElem ts = tupleLambda (length ts) $ \varNames -> "sToA \"(\"++"++
 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)
-	++"++sToA \")\")" where varNames = varNamesN $ length ts
+	++"++sToA \")\""
 
 firstOf xs = tupleLambda (length xs) $ head
 
@@ -47,16 +43,13 @@ varNamesN n = map (\tn -> "a"++show tn) [1..n]
 
 uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
 
--- todoassumefst improperly balanced nested parens
 curryN n = "(\\f "++intercalate " " varNames++"->f ("++intercalate "," varNames ++ "))"
 	where varNames = varNamesN n
 
 tupleLambda n f = "(\\"++recParen varNames++"->"++f varNames++")"
 	where varNames = varNamesN n
 
-recParenH [a] = a
-recParenH (a:as) = "("++recParenH as++","++a++")"
-recParen = recParenH . reverse
+recParen as = "("++intercalate "," as++")"
 
 appFst :: [VT] -> String -> String
 appFst t op = tupleLambda (length t) $ \args -> recParen ((op++" "++head args) : tail args)
@@ -67,7 +60,7 @@ unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(recParen $ map (\i->
 	) [0..length ts-1]) ++ ")")
 
 flattenTuples :: Int -> Int -> [Char]
-flattenTuples t1 t2 = "(\\(("++varsFrom 1 t1++"),"++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
+flattenTuples t1 t2 = "(\\(("++varsFrom 1 t1++"),("++varsFrom (1+t1) (t1+t2)++"))->("++varsFrom 1 (t1+t2)++"))"
 	where varsFrom a b = intercalate "," $ map (\tn->"a"++show tn) [a..b]
 
 finish :: VT -> String

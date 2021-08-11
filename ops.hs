@@ -351,7 +351,8 @@ rawOps = [
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]
 	-- Test 3 tuple: .z z,3,3,3++$@_ -> [3,6,9]
-	op("z", [14], [list, list], "zip" ~>  (VList .(concatMap elemT) :: [VT] -> VT), []),
+	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
+	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT), []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("?~", [15,0], [], "asdf" ~> VInt, []),
