@@ -255,7 +255,7 @@ convertOp isBin valList (Op ats impl autos) = do
 	if all isJust typeMatch then Just $ do
 		let isFns = map fromJust typeMatch
 		argList <- convertLambdas [] $ zip isFns valList
-		let (rt, hs) = impl $ map implType argList
+		let (rt, hs) = impl $ map (convertAutoType . implType) argList
 		let initImpl = noArgsUsed { implCode=hsParen $ hsAtom hs }
 		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
 		convertPairToLet fullImpl rt

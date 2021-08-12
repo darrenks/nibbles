@@ -16,6 +16,9 @@ data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Integer] | Atom (ParseStat
 op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
 atom(lit, nib, impl) = [(lit, nib, Atom impl)]
 
+convertAuto VAuto = VInt
+convertAuto t = t
+
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 
@@ -369,12 +372,27 @@ rawOps = [
 	-- Test 3 tuple: .z z,3,3,3++$@_ -> [3,6,9]
 	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
 	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT), []),
+	-- Desc: hash (md5) mod
+	-- Example: hm "asdf" 256 -> 112
+	-- Test: hm 5 10 -> 9
+	-- Test: hm "" 256 -> 126
+	-- Test: hm :1 2 ~ -> 16914085776040879869467699104040987770
+	op("hm", [15,0], [anyT, num], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> a2, [autoTodo,2^128]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("?~", [15,0], [], "asdf" ~> VInt, []),
+	op("?~", [15,0], [anyT, list], "asdf" ~> VInt, []),
+	-- Desc: to base
+	-- Example: tb 2 10 -> [1,0,1,0]
+	-- Test: tb 2 0 -> []
+	-- todo extendop warning
+	op("tb", [15,1], [num, num], "toBase"~>vList1 .a1, [2, autoTodo]),
+	-- Desc: from base
+	-- Example: fb 2 :1 :0 :1 0 -> 10
+	-- Test: fb 2 <0,3 -> 0
+	op("fb", [15,1], [num, list {-todo 1d-}], "fromBase"~>a1, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [15,1], [], "asdf" ~> VInt, [autoTodo]),
+	op("tbd", [15,1], [list], "asdf" ~> VInt, [autoTodo]),
 	-- Desc: if nonnull (lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
@@ -411,14 +429,6 @@ rawOps = [
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
-	
-	-- Desc: hash (md5) mod
-	-- todo auto parse int (would save 1 nibble per use) (or consider using an int str op combo
-	-- todo provide an option to easily add salt
-	-- Example: hm "asdf" 256 -> 112
-	-- Test: hm 5 10 -> 9
-	-- Test: hm :1 2 ~ -> 16914085776040879869467699104040987770
-	op("hm", [], [anyT, int], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> VInt, [autoTodo,2^128]),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"

@@ -59,7 +59,7 @@ asIntsH (c:rest)
 		(num,after) = span isDigit rest
 
 fromBase b a = foldl (\x y->x*b+y) 0 a
-toBase _ 0 = [0]
+-- toBase _ 0 = [0]
 toBase b n = reverse $ map (flip mod b) $ takeWhile (>0) $ iterate (flip div b) n
 
 hlist :: Integral i => [i] -> Integer

@@ -29,6 +29,8 @@ minor things:
 -" " instead of "\n" in auto map inner separator
 -support for other character types in input, i.e. http://golf.shinh.org/p.rb?Major+Scales
 
+special cases for chr to/from base (base64, dec/oct/bin, base36/16, base256)
+store data efficiently, if ~ in top level, it means treat rest of program as base 16 encoded number that is referenced with $ (first int)
 
 ------------------------------------------
 should also have dependency bounds for dlist/etc.
