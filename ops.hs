@@ -357,12 +357,12 @@ rawOps = [
 		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1, [impossibleAuto, 2^128]),
 	-- Desc: tails
 	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
-	extendOp "^~" genericReason ("ts", [14,0], [list], "tails"~>VList, [autoTodo]),
+	extendOp "=~" genericReason ("ts", [14,0], [list], "tails"~>VList, []),
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- todo empty list will error, maybe it should use maybe or default??
-	op("=", [14], [int, list], "\\i a->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a2, [autoTodo]),
+	op("=", [14], [int, list], "\\i a->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a2, [impossibleAuto]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+$@ -> [2,4,6]
