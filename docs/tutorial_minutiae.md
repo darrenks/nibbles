@@ -200,6 +200,20 @@ Because it automapped on pairs of lines. Note that if there had been an odd numb
 $HiddenOutput "12 888\n34\n56\n78"
 	"12 888\n34\n56\n78"
 
+## Data
+
+Because string and ints are optimized for typical values, they aren't good at storing data. Ints use 1/4 of their bits to terminate or not, strings 1/8. And this is reasonable because most ints are small, and most strings don't need chars >= 128. However sometimes we just need to store data efficiently!
+
+To do that use `~` after your program and proceed it with a number. This number will consume the rest of your program, but it is stored optimally in the binary format (each nibble now makes up part of a base 16 number). To use this number the first DeBruijn index (`$`) now has the data value instead of the first line of input. You can easily convert it to lists of the desired radix with `to base` (`tb`).
+
+"fizzbuzzhelloworld" is 18 characters and takes 37 nibbles to be stored as a string, but we can use data to construct it with only 32 (2 bytes better than PHP woo!):
+
+	+'a'tb26$~6061555238104639959213973
+$HiddenOutput
+	fizzbuzzhelloworld
+
+Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
+
 ## Infinity
 
 There is no concept of infinity yet, but it would be nice if there was. TODO create it.
@@ -209,6 +223,8 @@ There is no concept of infinity yet, but it would be nice if there was. TODO cre
 For most use of integers nibbles doesn't specify if it is an Integer or Int (the former means infinite precision in Haskell), and so it is left up to Haskell to decide. This was done in attempt to make it much more efficient, but in practice Haskell cannot do a very good job deciding with the little information Nibbles gives it (and there could very well be some bugs where one is an Int and another Integer - which would cause it not to compile). It probably would have been better to build a type safe interpreter than trying to create Haskell code (this was also done for efficiency, but is bad because the string manipulation lacks type safety information). The short term plan is to just switch everything to Integer. The long term plan would be to switch it to being an interpeter and doing bounded integer analysis to determine when things can be safely operated on as Ints. That's a lot of work potentially but could have some other cool uses for additional overloading.
 
 ## Beyond the $QuickRef
+
+TODO I've delete mapaccum for now, so this needs to be updated, but the principles apply.
 
 I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).
 

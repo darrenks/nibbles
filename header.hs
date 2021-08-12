@@ -58,12 +58,14 @@ asIntsH (c:rest)
 	where
 		(num,after) = span isDigit rest
 
-fromBase b a = foldl (\x y->x*b+y) 0 a
+fromBase :: (Integral a, Integral b) => b -> [a] -> Integer
+fromBase b a = foldl (\x y->x*(toInteger b)+(toInteger y)) (0::Integer) a
 -- toBase _ 0 = [0]
-toBase b n = reverse $ map (flip mod b) $ takeWhile (>0) $ iterate (flip div b) n
+toBase :: (Integral a, Integral b) => b -> Integer -> [a]
+toBase b n = reverse $ map (fromIntegral.flip mod b) $ takeWhile (>0) $ iterate (flip div b) (fromIntegral n)
 
 hlist :: Integral i => [i] -> Integer
-hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) a
+hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) (map fromIntegral a)
 
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult

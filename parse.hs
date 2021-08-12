@@ -6,6 +6,7 @@ module Parse(
 	parseIntExpr,
 	parseStrExpr,
 	parseChrExpr,
+	parseDataExpr,
 	parseCountTuple,
 	cp,
 	match,
@@ -20,7 +21,7 @@ module Parse(
 import Expr
 import Types
 import Hs
-import Header (at)
+import Header (at,fromBase,toBase)
 
 import Data.Char
 import Numeric (showOct)
@@ -52,7 +53,7 @@ parseInt (Lit f ('0':s) cp) = (0, sLit f s (cp+1))
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	_ -> error $ "unparsable int: " ++ s
-	
+
 parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
@@ -83,13 +84,12 @@ parseChr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.Char char), rest)] -> (char, sLit f rest (cp+length used))
 	_ -> error $ "unparsable char: " ++ s
 
--- count the number of leading "auto" symbols.
--- parseCountTuple :: Code -> (Int, Code)
--- parseCountTuple (Nib (0:rest) cp) = (1+afterCount, afterCode)
--- 	where (afterCount, afterCode) = parseCountTuple $ Nib rest (cp+1)
--- parseCountTuple (Lit ('~':rest) cp) = (1+afterCount, afterCode)
--- 	where (afterCount, afterCode) = parseCountTuple $ sLit rest (cp+1)
--- parseCountTuple x = (0, x)
+-- Consume rest of program as an integer (efficient binary packing)
+parseData :: Code -> Integer
+parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data" where
+	(n,rest)=parseInt l
+	
+parseData (Nib b _) = fromBase 16 (map fromIntegral b)
 
 parseCountTuple :: ParseState Int
 parseCountTuple = do
@@ -175,6 +175,12 @@ parseChrExpr = do
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
 	return $ noArgsUsed { implType=VChr, implCode=hsParen $ hsAtom $ "ord " ++ show s }
+
+parseDataExpr :: ParseState Integer
+parseDataExpr = do
+	dat <- gets $ parseData . pdCode
+	appendRep (map fromIntegral (toBase 16 dat),show dat)
+	return dat
 
 intToNib :: Integer -> [Int]
 intToNib n = init digits ++ [last digits + 8]

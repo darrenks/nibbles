@@ -33,7 +33,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
 	doCompile = do
 		impl1 <- get1Value
-		body <- if separator == "" then mainCombiner impl1
+		(dat,body) <- if separator == "" then mainCombiner impl1
 			else testCombiner $ finishIt impl1
 		context <- gets pdContext
 		impl <- popArg 0 body
@@ -41,9 +41,9 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		lit <- gets getLit
 
 		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
-			tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
+			getInputsUsedness context
 
-		let autoMap = if allInputUsed || allInputUsedAsInts then ""
+		let autoMap = if allInputUsed || allInputUsedAsInts && not (isJust dat) then ""
 			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
 			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
 			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
@@ -52,18 +52,28 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 			else ""
 		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\
-			\intList=concat intMatrix;\
+			\intList="++(fromMaybe "concat intMatrix" (dat>>=(\d->Just$"["++show d++"]"))) ++ ";\
 			\in "++autoMap) impl
 		return (finalImpl, nib, lit)
 	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
 	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
 
-	mainCombiner :: Impl -> ParseState Impl
+	mainCombiner :: Impl -> ParseState (Maybe Integer, Impl)
 	mainCombiner prev = do
 		let finishedPrev = finishIt prev
 		ParseData code _ _ _ <- get
-		if empty code then return finishedPrev
+		if empty code then return (Nothing, finishedPrev)
 		else do
+		 context <- gets pdContext
+		 let inputsUsed = getInputsUsedness context
+		 case match code ("~",[0]) of -- don't make this mean data unless they use it!
+			Just nextCode | head inputsUsed -> do
+				appendRep ([0],"~")
+				modify $ \s -> s { pdCode=nextCode }
+				dat <- parseDataExpr
+-- 				error $ show dat
+				return (Just dat,finishedPrev)
+			otherwise -> do
 			result <- case implType prev of
 				VInt -> do
 					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
@@ -95,10 +105,12 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	
 	testCombiner prev = do
 		ParseData code _ _ _ <- get
-		if empty code then return prev
+		if empty code then return (Nothing, prev)
 		else do
 			impl1 <- get1Value
 			testCombiner (join2 prev (finishIt impl1))
+	
+	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
 applyImpl :: Impl -> Impl -> Impl
 applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (max d1 d2) undefined undefined
