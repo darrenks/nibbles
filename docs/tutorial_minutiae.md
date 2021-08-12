@@ -214,6 +214,8 @@ $HiddenOutput
 
 Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
 
+FYI this will only be shorter than normal numbers for numbers >= 32768.
+
 ## Infinity
 
 There is no concept of infinity yet, but it would be nice if there was. TODO create it.

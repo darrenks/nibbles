@@ -81,7 +81,7 @@ main=do
 		styleCode html = H.div (toHtml html) ! class_ "code"
 		renameIntLit " " = "0-9"
 		renameIntLit l = l
-		isOpSimple a@((lit, _, op), _, _) = (not (isExtension a)||lit=="ct") && lit /= ";" && lit /= "tbd" && lit /= "z"
+		isOpSimple a@((lit, _, op), _, _) = (not (isExtension a)||lit=="ct"||lit==":~") && lit /= ";" && lit /= "tbd" && lit /= "z"
 
 toQuickRef isSimple (Op types impl autos) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do

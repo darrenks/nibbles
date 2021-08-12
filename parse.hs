@@ -86,7 +86,7 @@ parseChr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 
 -- Consume rest of program as an integer (efficient binary packing)
 parseData :: Code -> Integer
-parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data" where
+parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data. See https://nibbles.golf/tutorial_minutiae.html#data " where
 	(n,rest)=parseInt l
 	
 parseData (Nib b _) = fromBase 16 (map fromIntegral b)
