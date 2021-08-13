@@ -108,7 +108,8 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		if empty code then return (Nothing, prev)
 		else do
 			impl1 <- get1Value
-			testCombiner (join2 prev (finishIt impl1))
+			case impl1 of -- stupid work around because laziness causes infinite loop on error if
+				(Impl _ _ _ _ _) -> testCombiner (join2 prev (finishIt impl1))
 	
 	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
@@ -131,15 +132,16 @@ convertAuto impl _ = impl
 convertAutos :: [Impl] -> [Integer] -> [Impl]
 convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
 
-simplifyArgSpecs :: Bool -> [ArgSpec] -> [[Maybe VT] -> Maybe ArgMatchResult]
+--                                                    nib rep
+simplifyArgSpecs :: Bool -> [ArgSpec] -> [[(Maybe VT, [Int])] -> Maybe ArgMatchResult]
 simplifyArgSpecs isBin = map simplifyArgSpec where
 	simplifyArgSpec (BinAuto) vts
-		| isBin = if isNothing $ last vts then Just ArgAutoMatchesBin else Nothing
+		| isBin = if isNothing $ fst (last vts) then Just ArgAutoMatchesBin else Nothing
 		| otherwise = Just ArgAutoMatchesLit
-	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ isNothing $ last vts
-	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (fromMaybe VAuto $ last vts)
+	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ isNothing $ fst (last vts)
+	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (fromMaybe VAuto $ fst (last vts))
 	simplifyArgSpec (Fn f) _ = Just $ ArgFn (Fn f)
-	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f $ map (fromMaybe VAuto) vts -- last
+	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f $ map (\(t,n)->(fromMaybe VAuto t,n)) vts
 	maybeMatch b = if b then Just ArgMatches else Nothing
 
 -- add the current rep to the partialFinalState
@@ -277,7 +279,10 @@ convertOp isBin valList (Op ats impl autos) = do
 		-- skip parsing the whole expression to determine the type (which can't be auto).
 		-- Parsing this could cause a false parse error.
 		-- This assumes first value being auto is handled by the ~ in the op name and so hard codes false for it.
-		lazyAutoEqValTypes = zipWith (\(impl,_) isTilda -> if isTilda then Nothing else Just $ implType impl) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
+		lazyAutoEqValTypes = zipWith (\(impl,parseData) isTilda ->
+			let t = if isTilda then Nothing else Just $ implType impl
+			in (t, dToList $ pdNib parseData)
+			) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
 
 convertOp _ _ (Atom impl) = Just $ do
 	impl >>= applyFirstClassFn

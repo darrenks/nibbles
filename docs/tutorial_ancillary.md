@@ -87,8 +87,8 @@ If the default behavior isn't what you want, you can fairly easily increase or d
 
 You can return multiple things, e.g.
 
-	+1 2
-	+3 4
+	+2 1
+	+4 3
 $Output
 	37
 
@@ -98,7 +98,7 @@ They will just be printed without any separators. But beware, you may accidental
 
 `~` Can be used to save space by specifying the most common integer for operations in a single nibble. They don't allow you to do anything new, but they make it shorter. For example the most common number used in addition is 1 (that's why it often has special forms like `++` in C and `succ` in Ruby/etc.). So for addition `~` is `1` (which would have required two nibbles).
 
-To make this concrete: `+~4` -> `5`
+To make this concrete: `+4~` -> `5`
 
 You can probably guess the auto values for each operation, but they are also listed in a column in the full $QuickRef.
 
@@ -161,6 +161,10 @@ You've seen an example of extensions already, `/~` (divmod). Extensions are just
 In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
 
 Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (for now at least). This is reasonable in that a 3 nibble op has an implied probability of use as 1/2<sup>12</sup> which would mean that very few programs would use it and I don't wish to convolute the language with things that are of little use.
+
+### Commutative Extensions
+
+Alright these things are going to be annoying, but their efficiency cannot be passed up. There's no reason to make `+1 2` do the same thing as `+2 1` so we can remap one of the orders so long as there is a way to statically say which way the args are ordered. We say that the order is for `+` when the left operand is larger or equal to the right operand (and `]` which means `max` otherwise). But by larger we don't mean the value, but the length of the nibbles binary code (or lexicographically as a tie breaker). So in general if you want to use `+` put the longer code first. This should always be possible but it might not always be easy to put the small operand first since if both sides use the values of let statements, the lets will always need to be in the first operand. I think it is possible to factor that code out and will try to do this in the future.
 
 If you find possible two nibble extensions, please let me know!
 

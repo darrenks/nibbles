@@ -3,7 +3,7 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
-n=12000
+n=2000 #12000 was 1.8 seconds before commutative op change todo fix it
 pass = true
 `ghc -O nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
@@ -13,7 +13,7 @@ time echo #{'+'*n+'1 '*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
 `time nibbles -norun a.nbb` ; pass &&= $?.exitstatus==0
 
 `echo flat expressions 1>&2
-time echo #{'+1'*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
+time echo #{'-1'*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
 `time nibbles -norun  a.nbb` ; pass &&= $?.exitstatus==0
 
 # This could be a sort if operand is a list, if this isn't memoized this could become exponentially slow (only the binary version will fail since literate uses st)

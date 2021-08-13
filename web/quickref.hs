@@ -39,6 +39,7 @@ main=do
 				preEscapedToHtml " &#8594; "
 				toHtml exO]
 	
+	let ops = map convertNullNib $ concatMap selectNonWarningOps rawOps -- the others are for invalid literate warnings
 	let opsInfo = zip3 ops descs examples
 	let opsInfo2 = if isSimple then filter isOpSimple opsInfo else opsInfo
 	hPutStrLn stderr $ show (length opsInfo2) ++ " " ++ show args ++ " ops"
@@ -142,3 +143,6 @@ getDescs = do
 getExamples = do
 	ops <- readFile "ops.hs"
 	return $ catMaybes $ map getExample (lines ops)
+
+selectNonWarningOps ops = if length ops > 1 then filter hasBin ops else ops
+	where hasBin (_,nib,_) = not (null nib)

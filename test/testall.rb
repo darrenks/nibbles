@@ -20,7 +20,8 @@ pass &&= $?.exitstatus==0
 # test generate quickref (not in distributed code)
 if Dir.exist?('web')
 	puts 'testing quickref compile'
-	`ghc -Wno-tabs web/quickref.hs`
+	`ghc -Wno-tabs web/quickref.hs 2> /dev/null`
+	puts "ERROR: Quickref failed to compile!" if $?.exitstatus!=0
 	pass &&= $?.exitstatus==0
 end
 

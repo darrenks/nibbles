@@ -100,7 +100,7 @@
 --- Test implicit args
 -- Test: ;7.,5+$ -> 7,[8,9,10,11,12]
 -- Test: /,5+ -> 15
--- Test: /,5++$@ -> 25
+-- Test: /,5++@$ -> 25
 
 --- Test special ints if stdin empty
 -- Test "": $ -> 100

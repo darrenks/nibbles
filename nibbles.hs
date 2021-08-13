@@ -85,7 +85,7 @@ main=do
  						hGetContents hout >>= putStr
  					ExitFailure _ -> do
  						hGetContents hsErr >>= hPutStr stderr
-	 					error "failed to compile hs (likely an internal nibbles bug!)"
+	 					error "failed to compile hs (likely an internal nibbles bug, please report it!)"
  			else do return ()
 		["-c"] -> do
 			let bytes = toBytes b

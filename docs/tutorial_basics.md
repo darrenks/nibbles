@@ -18,7 +18,7 @@ Let's see this in action.
 ### Create a simple program
 Here's a simple Nibbles program in literate form:
 
-	+1 2
+	+2 1
 
 Save that to `intro.nbl` (nbl is the file extension for literate Nibbles programs).
 
@@ -43,12 +43,15 @@ A file appears named `intro.nbb` (nbb is the file extension for binary Nibbles p
 ## Syntax
 Programs are written in Polish (prefix notation). Instead of writing `1+2` we write `+1 2`. The advantage of this is that you do not ever need parenthesis. `(1+2)*3` would be written as `*+1 2 3`. `1+(2*3)` would be written as `+1*2 3`. This may seem strange for math operators but it is actually quite familiar for other functions. For example C uses prefix notation for function calls. e.g. `add(1, 2)`. But unlike C we don't need commas or parentheses since all functions have a fixed arity.
 
+### Apology
+Around now you will probably accidentally encounter commutative extensions, which will make no sense. Have no fear though that they don't prevent you from doing what you want to do and do allow reuse of binary codes. In the future I'll create a simple mode that disables them for learning purposes, but for now you'll have to deal with it.
+
 ### Exercise
 Write a program that computes `(1+2)*(3-4)`
 
 $Solution
 
-	*+1 2-3 4
+	*-3 4+2 1
 $HiddenOutput
 	-3
 
@@ -130,7 +133,7 @@ Which is more obviously related to the Nibbles code.
 
 And for foldr1:
 
-`/,3+$@` -> `6`
+`/,3+@$` -> `6`
 
 This corresponds to the Haskell code:
 
@@ -147,7 +150,7 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 
 $Solution
 
-	/&,49%+1$2*$@
+	/&,49%+1$2*@$
 	
 Or more verbosely:
 
@@ -155,7 +158,7 @@ Or more verbosely:
 	  &       #   (flip filter
 	    ,49   #     [1..49] 
 	    %+1$2 #     (\a -> (mod) ((+) 1 a) 2 > 0)
-	  *$@     #   ) (\a b-> (*) a b)
+	  *@$     #   ) (\a b-> (*) a b)
 $HiddenOutput
 	10409396852733332453861621760000
 

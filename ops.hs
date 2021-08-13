@@ -1,6 +1,6 @@
 {-# LANGUAGE FlexibleInstances #-} -- for String instances
 
-module Ops (Operation(..), ops, allOps, impossibleAuto, autoTodo, foldr1Fn, mapFn) where
+module Ops (Operation(..), rawOps, allOps, convertNullNib, impossibleAuto, autoTodo, foldr1Fn, mapFn) where
 
 import Types
 import Polylib
@@ -16,11 +16,9 @@ data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Integer] | Atom (ParseStat
 op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
 atom(lit, nib, impl) = [(lit, nib, Atom impl)]
 
-convertAuto VAuto = VInt
-convertAuto t = t
-
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
+commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
 litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions"
 
@@ -28,15 +26,24 @@ extendAtom invalidLit reason (lit, nib, impl) =
 	atom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
 
 extendOp invalidLit reason (lit, nib, t, impl, autos) =
-	op (invalidLit, [], t, litExtError invalidLit lit reason :: (VT,String), []) ++ op (lit, nib, t, impl, autos)
+	op (invalidLit, [], t, litExtError invalidLit lit reason::(VT,String), []) ++ op (lit, nib, t, impl, autos)
+
+-- Use first lit/impl if arg1 > arg2 (static codewise), otherwise use second.
+-- Provide errors if accidentally used wrong order.
+commutativeExtendedOp lit1 lit2 nib [t1,t2] impl1 impl2 autos fstAutoBelongsToFirst =
+	op (lit1, nib, [t1, commutativeSmaller fstAutoBelongsToFirst t2], impl1, autos)
+-- 		++ op (lit1, [], [t1, t2], litExtError lit1 lit2 commutativeReason::(VT,String), [])
+-- 		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError lit2 lit1 commutativeReason::(VT,String), [])
+		++ op (lit2, nib, [t1, t2], impl2, autos)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
+undefinedImpl = (VInt,"asdf")
 
 rawOps :: [[(String, [Int], Operation)]]
 rawOps = [
 	-- Desc: auto int
-	-- Example (size 4): +~4 -> 5
+	-- Example (size 4): +4~ -> 5
 	op("~", [0], [], (error"undefined auto"::String)~>VAuto, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -76,12 +83,12 @@ rawOps = [
 	atom("_", [5], argn 3),
 	-- Desc: let fn
 	-- todo this ambiguous ;;; (that's okish for now since there are workarounds)
-	-- Example: ;;2+$1 $4 -> 3,5
-	-- Test (multiple args): ;;~1 2 +$@ $4 5 -> 3,9
+	-- Example: ;;2+1$ $4 -> 3,5
+	-- Test (multiple args): ;;~1 2 +@$ $4 5 -> 3,9
 	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
-	-- Test (mult args and rets): ;;~1 2 ~+~$+~@ $ @3 4 $ -> 2,3,4,5
+	-- Test (mult args and rets): ;;~1 2 ~+$~+@~ $ @3 4 $ -> 2,3,4,5
 	-- Test (coerce arg): ;;2+$1 $"4" -> 3,5
-	-- Test (coerce pair): ;;~1 2 +$@  $"5"2 -> 3,7
+	-- Test (coerce pair): ;;~1 2 +@$  $"5"2 -> 3,7
 	op(";;", [6,6], [fn noArgs, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
@@ -90,9 +97,9 @@ rawOps = [
 			ret a2 ++ [VFn (ret a1) (ret a2)]
 			), []),
 	-- Desc: let rec
-	-- Example (fact): ;~ 5 $ 1 *$@-$~ $3 -> 120,6
-	-- Test (multiple args): ;~ ~3 4 $ 0 +@_ -$1 @   $ 5 6 -> 12,30
-	-- Test (multiple rets): ;~ 1 $ ~3 7 +$@0$ $  @2$ -> 4,7,5,7
+	-- Example (fact): ;~ 5 $ 1 *@-$~$ $3 -> 120,6
+	-- Test (multiple args): ;~ ~3 4 $ 0 +_@ -$1 @   $ 5 6 -> 12,30
+	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	op(";~", [6,0], [fn noArgs, Fn (\[a1]->(0, ret a1++[undefined]))],
@@ -106,13 +113,13 @@ rawOps = [
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
 	-- Test: ++; 3 ; 2 @ -> 8
-	-- Test: ++; 5 /,1 $ $ -> 11
-	-- Test: ++; 5 /,2 _ $ -> 15
-	-- Test: ++; 5 /,1 ;7 $ -> 13
-	-- Test: ++; 5 /,1 ;+0$ $ -> 11
-	-- Test: +;1 + ;2 @ -> 4
+	-- Test: ++; +5 0 /,1 $ $ -> 11
+	-- Test: ++; +5 0 /,2 _ $ -> 15
+	-- Test: ++; + +5 0 0 /,1 ;7 $ -> 13
+	-- Test: ++; +++5 0 0 0 /,1 ;+0$ $ -> 11
+	-- Test: ++;2 ;1 @ -> 5
 	-- Test: .,3 ;%$3 -> [1,2,0]
-	-- Test: +;1 ;+2$ -> 4
+	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1, [impossibleAuto]),
 	-- Desc: iterate
 	-- Example: <3 it 3 +1$ -> [3,4,5]
@@ -148,8 +155,7 @@ rawOps = [
 			"\\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"~>coercedType
 		, []),
 	-- Desc: add
-	-- Example: +1 2 -> 3
-	-- Test: +2 'a' -> 'c'
+	-- Example: +2 1 -> 3
 	-- Test: +'a' 2 -> 'c'
 	-- Test: +' ' ' ' -> 64
 	-- Test vectorized: +1,3 -> [2,3,4]
@@ -157,7 +163,10 @@ rawOps = [
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
 	-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
-	op("+", [8], [num, vec], vectorize "+" xorChr, [1,2 {- this one will go away to make way for max 0 when we have that extension-}]),
+	-- Desc: max
+	-- Example: ]4 5 -> 5
+	-- Test: ]~ *~4 -> 0
+	commutativeExtendedOp "+" "]" [8] [num, vec] (vectorize "+" xorChr) ("max"~>orChr) [0,1] False,
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c"" " -> ["a","b","c"]
 	-- Test empties: %" a  b "" " -> ["a","b"]
@@ -169,7 +178,7 @@ rawOps = [
 	op("%", [8], [str, auto], "\\a _->map sToA $ words (aToS a)" ~> vList1 .a1, [impossibleAuto,impossibleAuto]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [8], [str, num], "asdf" ~> VInt, [impossibleAuto]),
+	op("tbd", [8], [str, num], undefinedImpl, [impossibleAuto]),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
@@ -232,9 +241,13 @@ rawOps = [
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
-	op("*", [10], [int, vec], vectorize "*" (const VInt), [-1, 2]),
+	-- Test: *~ 5 -> -5
+	-- Test: *5 ~ -> 10
+	-- Desc: min
+	-- Example: [4 5 -> 4
+	commutativeExtendedOp "*" "[" [10] [int, vec] (vectorize "*" (const VInt)) ("min"~>orChr) [-1,2] True,
 	-- Desc: scanl
-	-- Example: sc,3 ~ 0 +$@ -> [0,1,3,6]
+	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
 	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
@@ -242,13 +255,13 @@ rawOps = [
 	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
 	extendOp ",\\" genericReason ("sc", [13,11], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1, []),
 	-- Desc: foldr
-	-- Example: /,3 ~ 1 +$@ -> 7
-	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++$@_ -> 13
-	-- Test(accum has tuple): / ,3 ~ ~0 "" +$@ :$_ $ -> 6,"123"
+	-- Example: /,3 ~ 1 +@$ -> 7
+	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
+	-- Test(accum has tuple): / ,3 ~ ~0 "" +@$ :$_ $ -> 6,"123"
 	-- Test coerce: / ,3 ~ 0 "5" -> 5
 	op("/", [10], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) x) y) (i()) a" ~> ret a2), [impossibleAuto, impossibleAuto]),
 	-- Desc: foldr1
-	-- Example: /,3+$@ -> 6
+	-- Example: /,3+@$ -> 6
 	-- Test coerce: /,3"5" -> 5
 	-- todo make/test empty
 	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1, []),
@@ -257,7 +270,7 @@ rawOps = [
 	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	extendOp "\\\"" genericReason ("tbd", [11,2], [], "asdf" ~> VInt, []),
+	extendOp "\\\"" genericReason ("tbd", [11,2], [], undefinedImpl, []),
 	-- Desc: transpose
 	-- Example: tr :"hi"~"yo" -> ["hy","io"]
 	-- Test mismatch dims: tr :"hi"~"y" -> ["hy","i"]
@@ -284,7 +297,7 @@ rawOps = [
 	op("/~", [11,0], [num, num], "divMod" ~> [VInt, VInt], [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("/~", [11,0], [num, list], "asdf" ~> VInt, []),
+	op("/~", [11,0], [num, list], undefinedImpl, []),
 	-- Desc: divide
 	-- todo protect div 0?
 	-- Example: /7 2 -> 3
@@ -316,7 +329,7 @@ rawOps = [
 	op("%~", [12,0], [num, num], "(swap.).divMod" ~> [VInt,VInt], [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("%~", [12,0], [num, list], "asdf" ~> VInt, []),
+	op("%~", [12,0], [num, list], undefinedImpl, []),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- Test: % *~2 7 -> 5
@@ -368,8 +381,8 @@ rawOps = [
 	op("=", [14], [int, list], "\\i a->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a2, [impossibleAuto]),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
-	-- Test: .z,3,3+$@ -> [2,4,6]
-	-- Test 3 tuple: .z z,3,3,3++$@_ -> [3,6,9]
+	-- Test: .z,3,3+@$ -> [2,4,6]
+	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
 	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
 	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT), []),
 	-- Desc: hash (md5) mod
@@ -380,7 +393,7 @@ rawOps = [
 	op("hm", [15,0], [anyT, num], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> a2, [autoTodo,2^128]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("?~", [15,0], [anyT, list], "asdf" ~> VInt, []),
+	op("?~", [15,0], [anyT, list], undefinedImpl, []),
 	-- Desc: to base
 	-- Example: tb 2 10 -> [1,0,1,0]
 	-- Test: tb 2 0 -> []
@@ -392,7 +405,7 @@ rawOps = [
 	op("fb", [15,1], [num, list {-todo 1d-}], "fromBase"~>a1, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [15,1], [list], "asdf" ~> VInt, [autoTodo]),
+	op("tbd", [15,1], [list], undefinedImpl, [autoTodo]),
 	-- Desc: if nonnull (lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
@@ -403,7 +416,7 @@ rawOps = [
 		, []),
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
-	-- Test coerce: ? +0 1 1 "F" -> "1"
+	-- Test coerce: ? +1 0 1 "F" -> "1"
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
 	-- todo add ability to see c with $, but should it be for true value or both?
 	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
@@ -479,6 +492,10 @@ xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr
 xorChr _ = VInt
 
+orChr [_, VChr] = VChr
+orChr [VChr, _] = VChr
+orChr _ = VInt
+
 class OpImpl impl where
 	toImpl :: impl -> [VT] -> ([VT], String)
 instance OpImpl ([VT] -> VT, [VT] -> String) where
@@ -504,7 +521,7 @@ instance OpImpl ([VT] -> ([VT], String)) where
 	toImpl f context = f context
 
 
-int = Cond "int" $ \vts -> last vts==VInt || last vts==VAuto
+int = Cond "int" $ \vts -> fst (last vts)==VInt || fst (last vts)==VAuto
 char = Exact VChr
 str =  Exact vstr
 auto = Exact VAuto
@@ -514,19 +531,22 @@ noArgs = const []
 fn e = (Fn $ \prev -> (1, e prev))
 fn2 e = (Fn $ \prev -> (2, e prev))
 
-
-num = Cond "num" $ isNum . last
+num = Cond "num" $ isNum . fst . last
 vec = Cond "vec" $ const True
-clist = Cond "clist" $ \vts -> let t = last vts in isList t || VChr == t
-list = Cond "list" $ isList . last
+clist = Cond "clist" $ \vts -> let t = fst (last vts) in isList t || VChr == t
+list = Cond "list" $ isList . fst . last
 anyT = Cond "any" $ const True
-listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case last vts of
-	t@(VList _) -> c [head $ elemT t]
+listOf (Cond desc c) = Cond ("["++desc++"]") $ \vts -> case fst (last vts) of
+	t@(VList _) -> c [(head $ elemT t, error"unused nib")]
 	_ -> False
 
+commutativeSmaller fstAutoBelongsToFirst (Cond s f) = Cond (">"++s) (\ts@[(t1,op1b),(t2,op2b)] ->
+	fstAutoBelongsToFirst && t1 == VAuto
+		|| ((length op1b > length op2b || op1b >= op2b) || isList t1/=isList t2) && f ts)
+
 -- todo consider arg matching in opcode 15
-elemOfA1 = Cond "a" (\[a1,a2]->isList a1 && head (elemT a1) == a2)
-sameAsA1 = Cond "[a]" (\[a1,a2]->(a1==a2))
+elemOfA1 = Cond "a" (\[(a1,_),(a2,_)]->isList a1 && head (elemT a1) == a2)
+sameAsA1 = Cond "[a]" (\[(a1,_),(a2,_)]->(a1==a2))
 
 testCoerce2 :: [VT] -> String
 testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
@@ -539,7 +559,6 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 testCoerceTo :: [VT] -> [VT] -> ([VT], String)
 testCoerceTo to a1 =  (to, coerceTo to a1)
 
-ops = map (convertNullNib.last) rawOps -- the others are for invalid literate warning
 allOps = concat [atom(
 		replicate unary ';' ++ snd symb,
 		replicate unary 6 ++ [2+fst symb],

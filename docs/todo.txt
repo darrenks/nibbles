@@ -3,15 +3,23 @@ fold on prefixes (primo)
 	1 op folds, 1 char shorter using non matching string/int constants
 put rep in arg list instead of using istildastart
 
+error location in extension error
+
+simple mode (and simplify quickref)
+better checking for commutative, taking into account what the code would be if swapping order with lets
+
 consider that extensions may make other extensions codes not useless
 
 : really should be revamped to allow easier tuple construction but its complicated
 	should accept fn as first arg
 	singleton needs auto value from second arg, but this is hard because first arg fn breaks arg matching after (need to revamp convertop)
+(this could also allow for 2nd arg to if/else to be Default value (coerced 0 tuple)
 	abs needs to be something else
 		-after can revert hacky stuff from https://github.com/darrenks/nibbles/commit/9eccacbd5c4d0e3a4f256a7e33e29630f457543a
 	delete cons, instead have special way to create list of strings
 	if : with first value as a tuple then number of rets for second arg should match unless it is a list of a tuple
+
+check padding in the binary sanity check
 
 For alpha release:
 -more extensions
@@ -27,10 +35,6 @@ minor things:
 -use of char (and instances to convert for vec)
 -write a how page / document code
 -" " instead of "\n" in auto map inner separator
--support for other character types in input, i.e. http://golf.shinh.org/p.rb?Major+Scales
-
-special cases for chr to/from base (base64, dec/oct/bin, base36/16, base256)
-store data efficiently, if ~ in top level, it means treat rest of program as base 16 encoded number that is referenced with $ (first int)
 
 ------------------------------------------
 should also have dependency bounds for dlist/etc.

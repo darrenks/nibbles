@@ -74,7 +74,7 @@ $Output
 
 But if the first value is a non-string list then it will attempt to do a foldr1 over the list.
 
-	,5 +$@
+	,5 +@$
 $Output
 	15
 
@@ -94,7 +94,7 @@ $Output
 	4
 	6
 
-Note that this didn't default to a fold (via `,3+$@`) because these args are set to optional use.
+Note that this didn't default to a fold (via `,3+@$`) because these args are set to optional use.
 
 And if you don't even use the element identifier (`$`) then it will assume you wanted to use string concatenation.
 
@@ -119,7 +119,7 @@ $Output
 	4
 	6
 
-And for a fold `5+$@` which can be done shorter by:
+And for a fold `5+@$` which can be done shorter by:
 
 	5+@
 $Output

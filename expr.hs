@@ -33,6 +33,7 @@ data ParseData = ParseData { pdCode :: Code
                            , pdNib :: DList.DList Int
                            , pdLit :: DList.DList Char }
 type ParseState = State ParseData
+dToList = DList.toList
 
 appendRepH :: (DList.DList Int,DList.DList Char) -> ParseState ()
 appendRepH (nib2,lit2) = do
