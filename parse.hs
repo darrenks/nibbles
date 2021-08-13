@@ -34,7 +34,8 @@ import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String), Lexeme(Char))
 import Data.List
 
 toByte :: [Int] -> Char
-toByte [a,b]=chr $ 16 * a + b
+toByte (a:b:_)=chr $ 16 * a + b
+
 
 fromByte b=[ord b `div` 16, ord b `mod` 16]
 
@@ -89,7 +90,7 @@ parseData :: Code -> Integer
 parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data. See https://nibbles.golf/tutorial_minutiae.html#data " where
 	(n,rest)=parseInt l
 	
-parseData (Nib b _) = fromBase 16 (map fromIntegral b)
+parseData (Nib b _) = fromBase 16 (map fromIntegral $ padSafeDat b)
 
 parseCountTuple :: ParseState Int
 parseCountTuple = do
@@ -179,8 +180,16 @@ parseChrExpr = do
 parseDataExpr :: ParseState Integer
 parseDataExpr = do
 	dat <- gets $ parseData . pdCode
-	appendRep (map fromIntegral (toBase 16 dat),show dat)
+	let datNibs = map fromIntegral (toBase 16 dat)
+	progNibs <- gets pdNib
+	appendRep (padSafeDat datNibs,show dat)
 	return dat
+
+-- reverse (so leading digit is last) and swap useless op with 0 so that when it is padded to even nibbles the value isn't changed
+padSafeDat = reverse . map (\e ->
+	if e == uselessOp then 0
+	else if e == 0 then uselessOp
+	else e)
 
 intToNib :: Integer -> [Int]
 intToNib n = init digits ++ [last digits + 8]

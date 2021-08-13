@@ -51,17 +51,18 @@ main=do
 				where (base, ext) = splitExtension f
 		e -> error $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
-	let (impl, b, lit)  = compile finish "" $ case parseMode of
+	let (impl, bRaw, lit)  = compile finish "" $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
+	let bPadded = padToEvenNibbles bRaw
 
 	case filter isOpt args of
 		ops | ops == [] || ops == ["-norun"] -> do
 			if parseMode == FromLit
 	 			then do
-	 				hPutStrLn stderr $ "size = " ++ (show $ length b) ++ " nibbles"
-	 				let (_,_,binLit) = compile finish "" (Nib b 0)
-	 				if any (==16) b then do
+	 				hPutStrLn stderr $ "size = " ++ (show $ length bRaw) ++ " nibbles"
+	 				let (_,_,binLit) = compile finish "" (Nib bPadded 0)
+	 				if any (==16) bRaw then do
 	 					hPutStrLn stderr "Warning: you are using literal only ops"
 	 				-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
 	 				else if binLit /= lit then do
@@ -88,7 +89,7 @@ main=do
 	 					error "failed to compile hs (likely an internal nibbles bug, please report it!)"
  			else do return ()
 		["-c"] -> do
-			let bytes = toBytes b
+			let bytes = toBytes bRaw
 			let outname = (basename ++ ".nbb")
 			hPutStrLn stderr $ "wrote " ++ (show $ length bytes) ++ " bytes to " ++ outname
 			writeFile outname bytes
@@ -97,4 +98,4 @@ main=do
 		e -> error $ "invalid option " ++ (show e) ++ "\n" ++ usage
 	where
 		isOpt = isPrefixOf "-"
-		toBytes s = map toByte $ init $ reshape 2 (s ++ [uselessOp, undefined])
+		toBytes = map toByte . reshape 2

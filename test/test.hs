@@ -49,7 +49,7 @@ toTest(origLit, stdin, expect, size, isRaw) =
 		cc = if isRaw then compile finish "" else compile inspect ","
 		(implFromLit, nib, outLit) =  cc $ Lit origLit origLit 0
 		testHs = flatHs (implCode implFromLit)
-		(implFromNib, _, _) = cc $ Nib nib 0
+		(implFromNib, _, _) = cc $ Nib (padToEvenNibbles nib) 0
 
 removeSpaces = filter (not.isSpace)
 

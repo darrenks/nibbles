@@ -214,7 +214,7 @@ $HiddenOutput
 
 Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
 
-FYI this will only be shorter than normal numbers for numbers >= 32768.
+FYI this will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 
 ## Infinity
 

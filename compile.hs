@@ -1,4 +1,4 @@
-module Compile(compile) where
+module Compile(compile,padToEvenNibbles) where
 
 import Data.List(inits,intercalate)
 import Control.Monad (msum)
@@ -12,6 +12,9 @@ import Expr
 import Args
 import Parse
 import Hs
+
+padToEvenNibbles :: [Int] -> [Int]
+padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
 compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
