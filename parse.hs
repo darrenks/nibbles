@@ -130,7 +130,7 @@ match1Lit (Lit f s cp) needle
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
-parseError :: String -> ParseState Impl
+parseError :: String -> ParseState a
 parseError msg = do
 	s <- gets pdCode
 	return $ errorWithoutStackTrace $ msg ++ "\n" ++ case s of

@@ -11,7 +11,7 @@ import Args
 import State
 import Data.List(concat)
 
-data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Integer] | Atom (ParseState Impl)
+data Operation = Op [ArgSpec] ([VT]->ParseState ([VT], String)) [Integer] | Atom (ParseState Impl)
 
 op(lit, nib, t, impl, autos) = cOp([lit], nib, t, impl, autos)
 atom(lit, nib, impl) = cAtom([lit], nib, impl)
@@ -22,21 +22,21 @@ genericReason = "This usually means there is an alternative (likely shorter) way
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions" where
+litExtError invalidLit lit reason = parseError $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions" where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 extendAtom invalidLit reason (lit, nib, impl) =
-	cAtom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
+	cAtom (invalidLit, [], litExtError invalidLit lit reason::ParseState Impl) ++ atom (lit, nib, impl)
 
 extendOp invalidLit reason (lit, nib, t, impl, autos) =
-	cOp (invalidLit, [], t, litExtError invalidLit lit reason::(VT,String), []) ++ op (lit, nib, t, impl, autos)
+	cOp (invalidLit, [], t, litExtError invalidLit lit reason::ParseState([VT],String), []) ++ op (lit, nib, t, impl, autos)
 
 -- Use first lit/impl if arg1 > arg2 (static codewise), otherwise use second.
 -- Provide errors if accidentally used wrong order.
 commutativeExtendedOp lit1 lit2 nib [t1,t2] impl1 impl2 autos fstAutoBelongsToFirst =
 	op (lit1, nib, [t1, commutativeSmaller fstAutoBelongsToFirst t2], impl1, autos)
-		++ op (lit1, [], [t1, t2], litExtError [lit1] lit2 commutativeReason::(VT,String), [])
-		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError [lit2] lit1 commutativeReason::(VT,String), [])
+		++ op (lit1, [], [t1, t2], litExtError [lit1] lit2 commutativeReason::ParseState([VT],String), [])
+		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError [lit2] lit1 commutativeReason::ParseState([VT],String), [])
 		++ op (lit2, nib, [t1, t2], impl2, autos)
 
 autoTodo = -88
@@ -502,28 +502,31 @@ orChr [VChr, _] = VChr
 orChr _ = VInt
 
 class OpImpl impl where
-	toImpl :: impl -> [VT] -> ([VT], String)
+	toImpl :: impl -> [VT] -> ParseState ([VT], String)
 instance OpImpl ([VT] -> VT, [VT] -> String) where
-	toImpl (f1,f2) context = ([f1 context], f2 context)
+	toImpl (f1,f2) context = return ([f1 context], f2 context)
 instance OpImpl ([VT] -> VT, String) where
-	toImpl (f1,s) context = ([f1 context], s)
+	toImpl (f1,s) context = return ([f1 context], s)
 instance OpImpl (VT, [VT] -> String) where
-	toImpl (t,f2) context = ([t], f2 context)
+	toImpl (t,f2) context = return ([t], f2 context)
 instance OpImpl (VT, String) where
-	toImpl (t,s) context = ([t], s)
+	toImpl (t,s) context = return ([t], s)
 instance OpImpl ([VT] -> (VT, String)) where
-	toImpl f context = ([t],s) where (t, s) = f context
+	toImpl f context = return ([t],s) where (t, s) = f context
 
 instance OpImpl ([VT] -> [VT], [VT] -> String) where
-	toImpl (f1,f2) context = (f1 context, f2 context)
+	toImpl (f1,f2) context = return (f1 context, f2 context)
 instance OpImpl ([VT] -> [VT], String) where
-	toImpl (f1,s) context = (f1 context, s)
+	toImpl (f1,s) context = return (f1 context, s)
 instance OpImpl ([VT], [VT] -> String) where
-	toImpl (t,f2) context = (t, f2 context)
+	toImpl (t,f2) context = return (t, f2 context)
 instance OpImpl ([VT], String) where
-	toImpl (t,s) context = (t, s)
+	toImpl (t,s) context = return (t, s)
 instance OpImpl ([VT] -> ([VT], String)) where
-	toImpl f context = f context
+	toImpl f context = return $ f context
+
+instance OpImpl (ParseState ([VT],String)) where
+	toImpl i f = i
 
 
 int = Cond "int" $ \vts -> fst (last vts)==VInt || fst (last vts)==VAuto

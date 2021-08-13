@@ -31,7 +31,7 @@ inspect VInt = "(sToA.show)"
 inspect VChr = "(sToA.show.chr.fromIntegral)"
 inspect (VList [VChr]) = "(sToA.show.aToS)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspectElem et++" v)) ++ (sToA \"]\"))"
-inspect a = error $ show a
+inspect a = error $ "unhandled type in inspect: " ++ show a
 inspectElem [et] = inspect et
 inspectElem ts = tupleLambda (length ts) $ \varNames -> "sToA \"(\"++"++
 	(intercalate "++sToA \",\"++" $ zipWith (\t v->inspect t ++ v) ts varNames)

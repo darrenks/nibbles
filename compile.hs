@@ -255,8 +255,10 @@ getValue offsetExprs = do
 		isBin = case code of
 			(Nib _ _) -> True
 			otherwise -> False
-		in convertOp isBin valList op >>= \f -> Just $
-			appendRep (nib,concat lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
+		in convertOp isBin valList op code >>= \f -> Just $ do
+			appendRep (nib,concat lit)
+			modify $ \s -> s { pdCode=afterOpCode }
+			f
 	if empty code then
 		argImplicit 
 	else
@@ -267,12 +269,18 @@ isTildaStart = do
 	code <- gets pdCode
 	return $ not (empty code) && (isJust $ match code (["~"], [0]))
 
-convertOp :: Bool -> [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
-convertOp isBin valList (Op ats impl autos) = do
+convertOp :: Bool -> [(Impl, ParseData)] -> Operation -> Code -> Maybe (ParseState Impl)
+convertOp isBin valList (Op ats impl autos) preOpCode = do
 	if all isJust typeMatch then Just $ do
 		let isFns = map fromJust typeMatch
 		argList <- convertLambdas [] $ zip isFns valList
-		let (rt, hs) = impl $ map (convertAutoType . implType) argList
+		
+		-- Temporarily put the code pointer back for useful op error messages
+		afterArgsCode <- gets pdCode
+		modify $ \s -> s { pdCode=preOpCode }
+		(rt, hs) <- impl $ map (convertAutoType . implType) argList
+		modify $ \s -> s { pdCode=afterArgsCode }
+		
 		let initImpl = noArgsUsed { implCode=hsParen $ hsAtom hs }
 		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
 		convertPairToLet fullImpl rt
@@ -287,7 +295,7 @@ convertOp isBin valList (Op ats impl autos) = do
 			in (t, dToList $ pdNib parseData)
 			) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
 
-convertOp _ _ (Atom impl) = Just $ do
+convertOp _ _ (Atom impl) _ = Just $ do
 	impl >>= applyFirstClassFn
 
 -- todo memoize the parse
