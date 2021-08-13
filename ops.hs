@@ -34,10 +34,14 @@ extendOp invalidLit reason (lit, nib, t, impl, autos) =
 -- Use first lit/impl if arg1 > arg2 (static codewise), otherwise use second.
 -- Provide errors if accidentally used wrong order.
 commutativeExtendedOp lit1 lit2 nib [t1,t2] impl1 impl2 autos fstAutoBelongsToFirst =
-	op (lit1, nib, [t1, commutativeSmaller fstAutoBelongsToFirst t2], impl1, autos)
+	op (lit1, nib, [t1, commutativeSmaller fstAutoBelongsToFirst t2], impl1, autos1)
 		++ op (lit1, [], [t1, t2], litExtError [lit1] lit2 commutativeReason::ParseState([VT],String), [])
 		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError [lit2] lit1 commutativeReason::ParseState([VT],String), [])
-		++ op (lit2, nib, [t1, t2], impl2, autos)
+		++ op (lit2, nib, [t1, t2], impl2, autos2)
+	where (autos1,autos2)=if fstAutoBelongsToFirst
+		then (autos,[])
+		else ([impossibleAuto,autos!!1],take 1 autos)
+		-- todo hide autos taht cant be used
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
@@ -178,13 +182,16 @@ rawOps = [
 	-- Test empties: %" a  b "" " -> ["a","b"]
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
-	op("%", [8], [str, str], "flip$(filter (/=[]).).splitOn" ~> vList1 .a1, []),
+	-- Test chr split: %"a b" ' ' -> ["a","b"]
+	op("%", [8], [str, cstr], (\[a1,a2]->
+		let (ap2, apf) = promoteList a2
+		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 .a1, []),
 	-- Desc: words
 	-- Example: %"a\nb c.d"~ -> ["a","b","c.d"]
 	op("%", [8], [str, auto], "\\a _->map sToA $ words (aToS a)" ~> vList1 .a1, [impossibleAuto,impossibleAuto]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [8], [str, num], undefinedImpl, [impossibleAuto]),
+	op("tbd", [8], [str, int], undefinedImpl, [impossibleAuto, impossibleAuto {-words uses it-}]),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
@@ -427,8 +434,14 @@ rawOps = [
 	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a()) (b())" ~> coercedType
 		, []),
+	-- Desc: add w/ cast
+	-- todo return Maybe
+	-- todo this blocks index by on string which is probably ok, but not ideal
+	-- Example: +"10" 2 -> 12
+	-- Test: +"10"~ -> 10
+	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
 	-- Desc: index by
-	-- Example: ?"...a.."~ a$ -> 4
+	-- Example: ?,100~ -*$$80 -> 9
 	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,_,a2]->"\\l _ f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt, [impossibleAuto, impossibleAuto]),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
@@ -440,10 +453,6 @@ rawOps = [
 	-- Test non existant elements: -"abc""de" -> "abc"
 	-- Test doesn't drop all: -"aa""a" -> "a"
 	op("-", [15], [list, sameAsA1], "\\\\" ~> a1, []),
-	-- Desc: add w/ cast
-	-- todo return Maybe
-	-- Example: +"10" 2 -> 12
-	op("+", [15], [str, int], "(+).read.aToS" ~> VInt, [impossibleAuto, 0]),
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
@@ -541,6 +550,7 @@ fn2 e = (Fn $ \prev -> (2, e prev))
 
 num = Cond "num" $ isNum . fst . last
 vec = Cond "vec" $ const True
+cstr = Cond "cstr" $ \vts -> let t = fst (last vts) in vstr ==t || VChr == t
 clist = Cond "clist" $ \vts -> let t = fst (last vts) in isList t || VChr == t
 list = Cond "list" $ isList . fst . last
 anyT = Cond "any" $ const True

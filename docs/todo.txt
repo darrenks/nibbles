@@ -3,12 +3,14 @@ fold on prefixes (primo)
 	1 op folds, 1 char shorter using non matching string/int constants
 put rep in arg list instead of using istildastart
 
-error location in extension error
-
 simple mode (and simplify quickref)
 better checking for commutative, taking into account what the code would be if swapping order with lets
 
 consider that extensions may make other extensions codes not useless
+	?rs 1"...a.."~ a/$$
+	is an example of this
+also using an auto variable when it isn't available needs a check
+ideally could detect these automatically and check for possible collisions (maybe foreach on most common types)
 
 : really should be revamped to allow easier tuple construction but its complicated
 	should accept fn as first arg
