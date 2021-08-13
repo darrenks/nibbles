@@ -89,7 +89,7 @@ main=do
 	 					error "failed to compile hs (likely an internal nibbles bug, please report it!)"
  			else do return ()
 		["-c"] -> do
-			let bytes = toBytes bRaw
+			let bytes = toBytes bPadded
 			let outname = (basename ++ ".nbb")
 			hPutStrLn stderr $ "wrote " ++ (show $ length bytes) ++ " bytes to " ++ outname
 			writeFile outname bytes

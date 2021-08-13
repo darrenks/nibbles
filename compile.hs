@@ -69,7 +69,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		else do
 		 context <- gets pdContext
 		 let inputsUsed = getInputsUsedness context
-		 case match code ("~",[0]) of -- don't make this mean data unless they use it!
+		 case match code (["~"],[0]) of -- don't make this mean data unless they use it!
 			Just nextCode | head inputsUsed -> do
 				appendRep ([0],"~")
 				modify $ \s -> s { pdCode=nextCode }
@@ -256,7 +256,7 @@ getValue offsetExprs = do
 			(Nib _ _) -> True
 			otherwise -> False
 		in convertOp isBin valList op >>= \f -> Just $
-			appendRep (nib,lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
+			appendRep (nib,concat lit) >> (modify $ \s -> s { pdCode=afterOpCode }) >> f
 	if empty code then
 		argImplicit 
 	else
@@ -265,7 +265,7 @@ getValue offsetExprs = do
 isTildaStart :: ParseState Bool
 isTildaStart = do
 	code <- gets pdCode
-	return $ not (empty code) && (isJust $ match code ("~", [0]))
+	return $ not (empty code) && (isJust $ match code (["~"], [0]))
 
 convertOp :: Bool -> [(Impl, ParseData)] -> Operation -> Maybe (ParseState Impl)
 convertOp isBin valList (Op ats impl autos) = do

@@ -13,34 +13,40 @@ import Data.List(concat)
 
 data Operation = Op [ArgSpec] ([VT]->([VT], String)) [Integer] | Atom (ParseState Impl)
 
-op(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
-atom(lit, nib, impl) = [(lit, nib, Atom impl)]
+op(lit, nib, t, impl, autos) = cOp([lit], nib, t, impl, autos)
+atom(lit, nib, impl) = cAtom([lit], nib, impl)
+cOp(lit, nib, t, impl, autos) = [(lit, nib, Op t (toImpl impl) autos)]
+cAtom(lit, nib, impl) = [(lit, nib, Atom impl)]
 
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions"
+litExtError invalidLit lit reason = error $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions" where
+	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 extendAtom invalidLit reason (lit, nib, impl) =
-	atom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
+	cAtom (invalidLit, [], litExtError invalidLit lit reason) ++ atom (lit, nib, impl)
 
 extendOp invalidLit reason (lit, nib, t, impl, autos) =
-	op (invalidLit, [], t, litExtError invalidLit lit reason::(VT,String), []) ++ op (lit, nib, t, impl, autos)
+	cOp (invalidLit, [], t, litExtError invalidLit lit reason::(VT,String), []) ++ op (lit, nib, t, impl, autos)
 
 -- Use first lit/impl if arg1 > arg2 (static codewise), otherwise use second.
 -- Provide errors if accidentally used wrong order.
 commutativeExtendedOp lit1 lit2 nib [t1,t2] impl1 impl2 autos fstAutoBelongsToFirst =
 	op (lit1, nib, [t1, commutativeSmaller fstAutoBelongsToFirst t2], impl1, autos)
--- 		++ op (lit1, [], [t1, t2], litExtError lit1 lit2 commutativeReason::(VT,String), [])
--- 		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError lit2 lit1 commutativeReason::(VT,String), [])
+		++ op (lit1, [], [t1, t2], litExtError [lit1] lit2 commutativeReason::(VT,String), [])
+		++ op (lit2, [], [t1, commutativeSmaller fstAutoBelongsToFirst t2], litExtError [lit2] lit1 commutativeReason::(VT,String), [])
 		++ op (lit2, nib, [t1, t2], impl2, autos)
 
 autoTodo = -88
 impossibleAuto = -77 -- suppress displaying in quickref
 undefinedImpl = (VInt,"asdf")
 
-rawOps :: [[(String, [Int], Operation)]]
+-- A convenient hack that makes parser prepend spaces to numbers while also having something to represent digit in matching.
+litDigit = " "
+
+rawOps :: [[([String], [Int], Operation)]]
 rawOps = [
 	-- Desc: auto int
 	-- Example (size 4): +4~ -> 5
@@ -56,7 +62,7 @@ rawOps = [
 	-- Test (size 3): 8 -> 8
 	-- Test (size 3): 20 -> 20
 	-- Test leading zero is separate: :05 -> [0,5]
-	atom(" ", [1], parseIntExpr), 
+	atom(litDigit, [1], parseIntExpr), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
 	-- Test space (size 2): " " -> " "
@@ -69,7 +75,7 @@ rawOps = [
 	-- Test (size 3): 'a' -> 'a'
 	-- Test (size 3): ' ' -> ' '
 	-- Test (size 5): '\200' -> '\200'
-	extendAtom ",\"" genericReason ("'", [13,2], parseChrExpr),
+	extendAtom [",","\""] genericReason ("'", [13,2], parseChrExpr),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
 	-- Test: ;1;2;3;4 ;$ -> 1,2,3,4,1
@@ -89,7 +95,7 @@ rawOps = [
 	-- Test (mult args and rets): ;;~1 2 ~+$~+@~ $ @3 4 $ -> 2,3,4,5
 	-- Test (coerce arg): ;;2+$1 $"4" -> 3,5
 	-- Test (coerce pair): ;;~1 2 +@$  $"5"2 -> 3,7
-	op(";;", [6,6], [fn noArgs, fn $ ret.a1],
+	cOp([";",";"], [6,6], [fn noArgs, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
@@ -102,7 +108,7 @@ rawOps = [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op(";~", [6,0], [fn noArgs, Fn (\[a1]->(0, ret a1++[undefined]))],
+	cOp([";","~"], [6,0], [fn noArgs, Fn (\[a1]->(0, ret a1++[undefined]))],
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
@@ -125,12 +131,12 @@ rawOps = [
 	-- Example: <3 it 3 +1$ -> [3,4,5]
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
 	-- Test tuple: <2 it ~1'a' +$1 +@1 -> [(1,'a'),(2,'b')]
-	extendOp "::" associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
+	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
 		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1), []),
 	-- Desc: singleton
 	-- Example: :~3 -> [3]
 	-- Test tuple: :~~1 2 -> [(1,2)]
-	op(":~", [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1, []),
+	cOp([":","~"], [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1, []),
 	-- Desc: abs
 	-- Example: ab *~5 -> 5
 	op("ab", [7], [num, BinAuto], "abs" ~> a1, [autoTodo, impossibleAuto]),
@@ -190,7 +196,7 @@ rawOps = [
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
 	-- Test tuple: pd z,4 "abcd" $ -> 24,"abcd"
-	extendOp "+\\" genericReason ("pd", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	extendOp ["+","\\"] genericReason ("pd", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		, []),
 	-- Desc: sum
@@ -217,7 +223,7 @@ rawOps = [
 	-- Desc: square
 	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
 	-- Test: sqr ,11 -> [[1,2,3,4],[5,6,7,8],[9,10,11]]
-	extendOp "%0" genericReason ("sqr", [9,1,8], [list], "\\a->reshape (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1, []),
+	extendOp ["%","0"] genericReason ("sqr", [9,1,8], [list], "\\a->reshape (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1, []),
 	-- Desc: step
 	-- Example: %2,5 -> [1,3,5]
 	-- Test: % *~2,5 -> [5,3,1]
@@ -248,12 +254,12 @@ rawOps = [
 	commutativeExtendedOp "*" "[" [10] [int, vec] (vectorize "*" (const VInt)) ("min"~>orChr) [-1,2] True,
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
-	extendOp ",\\" genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,_,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,_,a2,a3]->"\\a _ i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2)), [impossibleAuto, impossibleAuto]),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- todo make/test empty
 	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
-	extendOp ",\\" genericReason ("sc", [13,11], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1, []),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1, []),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +@$ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
@@ -267,37 +273,37 @@ rawOps = [
 	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1, []),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
-	extendOp "\\\\" genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
+	extendOp ["\\","\\"] genericReason ("st", [11, 11], [list], "sort" ~> a1, []),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	extendOp "\\\"" genericReason ("tbd", [11,2], [], undefinedImpl, []),
+	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl, []),
 	-- Desc: transpose
 	-- Example: tr :"hi"~"yo" -> ["hy","io"]
 	-- Test mismatch dims: tr :"hi"~"y" -> ["hy","i"]
 	-- Test mismatch dims: tr :"h"~"yo" -> ["hy","o"]
 	-- Test 1 dim: tr "abc" -> ["a","b","c"]
-	extendOp "\\." genericReason ("tr", [11,12], [list], \[a1] ->
+	extendOp ["\\","."] genericReason ("tr", [11,12], [list], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> a1 -- todo could do fancy unzipping if tuple
 			otherwise -> "transpose.(:[])" ~> VList [a1]
 		, []),
 	-- Desc: chunk
 	-- Example: ck "abbc" ~ -> ["a","bb","c"]
-	extendOp "\\&" genericReason ("ck", [11,9], [list, auto], "\\a _->chunkSameAdjacents a" ~> vList1.a1, [impossibleAuto, impossibleAuto]),
+	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, auto], "\\a _->chunkSameAdjacents a" ~> vList1.a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: chunkWhile
 	-- todo could have also made this chunk while values same, or other behaviors
 	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
-	extendOp "\\&" genericReason ("ck", [11,9], [list, fn (elemT.a1)],
+	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, fn (elemT.a1)],
 		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (ret a2) ++".("++uncurryN (length (elemT a1))++"f)) a" ~> vList1 a1, []),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1, []),
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
-	op("/~", [11,0], [num, num], "divMod" ~> [VInt, VInt], [2]),
+	cOp(["/","~"], [11,0], [num, num], "divMod" ~> [VInt, VInt], [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("/~", [11,0], [num, list], undefinedImpl, []),
+	cOp(["/","~"], [11,0], [num, list], undefinedImpl, []),
 	-- Desc: divide
 	-- todo protect div 0?
 	-- Example: /7 2 -> 3
@@ -307,7 +313,7 @@ rawOps = [
 	op("/", [11], [num, num], "div" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: init
 	-- Example: <~,5 -> [1,2,3,4]
-	op("<~", [11,0], [list], "init" ~> a1, []),
+	cOp(["<","~"], [11,0], [list], "init" ~> a1, []),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
@@ -315,7 +321,7 @@ rawOps = [
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
 	-- Test tuple: sb z ,3 "bca" @ -> [(3,'a'),(1,'b'),(2,'c')]
-	extendOp ",." genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1, []),
+	extendOp [",","."] genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1, []),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2, []),
@@ -326,10 +332,10 @@ rawOps = [
 	op(">", [12], [num, list], "drop.fromIntegral" ~> a2, [1]),
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
-	op("%~", [12,0], [num, num], "(swap.).divMod" ~> [VInt,VInt], [2]),
+	cOp(["%","~"], [12,0], [num, num], "(swap.).divMod" ~> [VInt,VInt], [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("%~", [12,0], [num, list], undefinedImpl, []),
+	cOp(["%","~"], [12,0], [num, list], undefinedImpl, []),
 	-- Desc: modulus
 	-- Example:  %7 2 -> 1
 	-- Test: % *~2 7 -> 5
@@ -338,21 +344,21 @@ rawOps = [
 	op("%", [12], [num, num], "mod" ~> VInt, [impossibleAuto, 2]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
-	extendOp ",," genericReason ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
+	extendOp [",",","] genericReason ("ch", [13,13], [num], "id" ~> xorChr.(VChr:), [autoTodo]),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
-	extendOp ",%" genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
+	extendOp [",","%"] genericReason ("rs", [13,9], [num, list], "reshape" ~> vList1 .a2, [2]),
 	-- Desc: nChunks
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
-	extendOp ",^" genericReason ("nc", [13,14], [int, list], "\\a b->reshape (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt, [2]),
+	extendOp [",","^"] genericReason ("nc", [13,14], [int, list], "\\a b->reshape (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt, [2]),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt, []),
 	-- Desc: range from 0 ...
 	-- Example: ,~3 -> [0,1,2]
-	op(",~", [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [2^128]),
+	cOp([",","~"], [13, 0], [num], "\\x->[0..x-1]" ~> vList1 . a1, [2^128]),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
@@ -373,7 +379,7 @@ rawOps = [
 		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1, [impossibleAuto, 2^128]),
 	-- Desc: tails
 	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
-	extendOp "=~" genericReason ("ts", [14,0], [list], "tails"~>VList, []),
+	extendOp ["=","~"] genericReason ("ts", [14,0], [list], "tails"~>VList, []),
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
@@ -390,28 +396,27 @@ rawOps = [
 	-- Test: hm 5 10 -> 9
 	-- Test: hm "" 256 -> 126
 	-- Test: hm :1 2 ~ -> 16914085776040879869467699104040987770
-	op("hm", [15,0], [anyT, num], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> a2, [autoTodo,2^128]),
+	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, num], (\[a1,a2]->"mod.fromIntegral.hlist."++flatten a1) ~> a2, [autoTodo,2^128]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("?~", [15,0], [anyT, list], undefinedImpl, []),
+	cOp(["?","~"], [15,0], [anyT, list], undefinedImpl, []),
 	-- Desc: to base
 	-- Example: tb 2 10 -> [1,0,1,0]
 	-- Test: tb 2 0 -> []
-	-- todo extendop warning
-	op("tb", [15,1], [num, num], "toBase"~>vList1 .a1, [2, autoTodo]),
+	extendOp ["?",litDigit] genericReason ("tb", [15,1], [num, num], "toBase"~>vList1 .a1, [2, autoTodo]),
 	-- Desc: from base
 	-- Example: fb 2 :1 :0 :1 0 -> 10
 	-- Test: fb 2 <0,3 -> 0
-	op("fb", [15,1], [num, list {-todo 1d-}], "fromBase"~>a1, [2]),
+	extendOp ["?",litDigit] genericReason ("fb", [15,1], [num, list {-todo 1d-}], "fromBase"~>a1, [2]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [15,1], [list], undefinedImpl, [autoTodo]),
+	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl, [autoTodo]),
 	-- Desc: if nonnull (lazy)
 	-- Example: ?,"hi" 1 0 -> 1
 	-- Test: ?,"" 1 0 -> 0
 	-- Test: ?,"hi" $ 0 -> "hi"
 	-- todo, the arg passed in should be marked optional used
-	op("?,", [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+	cOp(["?",","], [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		, []),
 	-- Desc: if/else
@@ -474,7 +479,7 @@ a~>b = (b,a)
 
 -- 16 makes it so that parsing bin will never try it
 convertNullNib (lit, nib, op) = (lit, if null nib
-		then [16, error $ "attempt to convert "++lit++" to bin (it is only for literate mode)"]
+		then [16, error $ "attempt to convert "++(concat lit)++" to bin (it is only for literate mode)"]
 		else nib
 	, op)
 

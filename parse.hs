@@ -116,10 +116,13 @@ empty _ = False
 nextOffset (Nib (c:s) cp) = Nib s (cp+1)
 nextOffset (Lit f (c:s) cp) = Lit f s (cp+1)
 
+match :: Code -> ([String], [Int]) -> Maybe Code
 match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
-match (Lit f s cp) (needle, _)
+match lit@(Lit _ _ _) ([], _) = Just lit
+match lit@(Lit _ _ _) (needle:s, _) = match1Lit lit needle >>= flip match (s, undefined)
+match1Lit (Lit f s cp) needle
 	| null s = error "Error! Expected: another expression, found: EOF"
 	| needle == " " && isDigit (head s) = Just $ Lit f s cp
 	| needle == "\"" && '"' == head s = Just $ Lit f s cp

@@ -39,7 +39,7 @@ main=do
 				preEscapedToHtml " &#8594; "
 				toHtml exO]
 	
-	let ops = map convertNullNib $ concatMap selectNonWarningOps rawOps -- the others are for invalid literate warnings
+	let ops = map concatLit $ map convertNullNib $ concatMap selectNonWarningOps $ rawOps -- the others are for invalid literate warnings
 	let opsInfo = zip3 ops descs examples
 	let opsInfo2 = if isSimple then filter isOpSimple opsInfo else opsInfo
 	hPutStrLn stderr $ show (length opsInfo2) ++ " " ++ show args ++ " ops"
@@ -146,3 +146,6 @@ getExamples = do
 
 selectNonWarningOps ops = if length ops > 1 then filter hasBin ops else ops
 	where hasBin (_,nib,_) = not (null nib)
+
+concatLit :: ([String], [Int], Operation) -> (String, [Int], Operation)
+concatLit (lit, i, o) = (concat lit, i, o)

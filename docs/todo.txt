@@ -19,8 +19,6 @@ consider that extensions may make other extensions codes not useless
 	delete cons, instead have special way to create list of strings
 	if : with first value as a tuple then number of rets for second arg should match unless it is a list of a tuple
 
-check padding in the binary sanity check
-
 For alpha release:
 -more extensions
 
@@ -61,9 +59,6 @@ handle div 0 errors/etc
 infinity, iden init val
 
 index/prev in loop
-
-more extensions
-	communitive extensions
 
 quickref to show return types
 
