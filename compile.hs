@@ -135,12 +135,9 @@ convertAuto impl _ = impl
 convertAutos :: [Impl] -> [Integer] -> [Impl]
 convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
 
---                                                    nib rep
-simplifyArgSpecs :: Bool -> [ArgSpec] -> [[(Maybe VT, [Int])] -> Maybe ArgMatchResult]
-simplifyArgSpecs isBin = map simplifyArgSpec where
-	simplifyArgSpec (BinAuto) vts
-		| isBin = if isNothing $ fst (last vts) then Just ArgAutoMatchesBin else Nothing
-		| otherwise = Just ArgAutoMatchesLit
+--                                           nib rep
+simplifyArgSpecs :: [ArgSpec] -> [[(Maybe VT, [Int])] -> Maybe ArgMatchResult]
+simplifyArgSpecs = map simplifyArgSpec where
 	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ isNothing $ fst (last vts)
 	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (fromMaybe VAuto $ fst (last vts))
 	simplifyArgSpec (Fn f) _ = Just $ ArgFn (Fn f)
@@ -156,28 +153,19 @@ putAddRep (ParseData code context nib lit) = do
 convertLambdas :: [VT] -> [(ArgMatchResult, (Impl, ParseData))] -> ParseState [Impl]
 convertLambdas _ [] = return []
 convertLambdas soFar (estArg:rest) = do
-	implz <- convertLambda soFar estArg
-	let impl = maybeToList implz
-	restConverted <- convertLambdas (soFar ++ (map implType impl)) rest
-	return $ impl ++ restConverted
+	impl <- convertLambda soFar estArg
+	restConverted <- convertLambdas (soFar ++ [implType impl]) rest
+	return $ impl : restConverted
 
-convertLambda :: [VT] -> (ArgMatchResult, (Impl, ParseData)) -> ParseState (Maybe Impl)
--- Add [0] (~) to the bin code that would be generated from bin only auto match
-convertLambda _ (ArgAutoMatchesLit, (memoImpl, memoState)) = do
-	appendRep ([0],"")
-	return Nothing	
--- Remove ~ from the lit code that would be generated from bin only auto match
-convertLambda _ (ArgAutoMatchesBin, (memoImpl, memoState)) = do
-	modify (\s -> s { pdCode = nextOffset $ pdCode s})
-	return Nothing	
+convertLambda :: [VT] -> (ArgMatchResult, (Impl, ParseData)) -> ParseState Impl
 -- -- todo mark rec snd pair as used since, it's already served a purpose
 convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
 	putAddRep memoState
-	return $ Just memoImpl
+	return memoImpl
 convertLambda argTypes (ArgFn (Fn fnFn), _) = do
 	let (numRets, argType) = fnFn argTypes
 	(lambdaFn, _) <- getLambdaValue numRets argType UnusedArg
-	return $Just lambdaFn	
+	return lambdaFn	
 
 getLambdaValue numRets argType argUsedness= do
 	(newArg,body) <- pushLambdaArg argType argUsedness $ \newArg -> do
@@ -252,10 +240,7 @@ getValue offsetExprs = do
 	code <- gets pdCode
 	let tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
 		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
-		isBin = case code of
-			(Nib _ _) -> True
-			otherwise -> False
-		in convertOp isBin valList op code >>= \f -> Just $ do
+		in convertOp valList op code >>= \f -> Just $ do
 			appendRep (nib,concat lit)
 			modify $ \s -> s { pdCode=afterOpCode }
 			f
@@ -269,8 +254,8 @@ isTildaStart = do
 	code <- gets pdCode
 	return $ not (empty code) && (isJust $ match code (["~"], [0]))
 
-convertOp :: Bool -> [(Impl, ParseData)] -> Operation -> Code -> Maybe (ParseState Impl)
-convertOp isBin valList (Op ats impl autos) preOpCode = do
+convertOp :: [(Impl, ParseData)] -> Operation -> Code -> Maybe (ParseState Impl)
+convertOp valList (Op ats impl autos) preOpCode = do
 	if all isJust typeMatch then Just $ do
 		let isFns = map fromJust typeMatch
 		argList <- convertLambdas [] $ zip isFns valList
@@ -285,7 +270,7 @@ convertOp isBin valList (Op ats impl autos) preOpCode = do
 		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
 		convertPairToLet fullImpl rt
 	else Nothing where
-		typeMatch = zipWith id (simplifyArgSpecs isBin ats) (tail $ inits lazyAutoEqValTypes)
+		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits lazyAutoEqValTypes)
 		-- Manually detect if an arg is an auto value, this allows lazy evaluation to
 		-- skip parsing the whole expression to determine the type (which can't be auto).
 		-- Parsing this could cause a false parse error.
@@ -295,7 +280,7 @@ convertOp isBin valList (Op ats impl autos) preOpCode = do
 			in (t, dToList $ pdNib parseData)
 			) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
 
-convertOp _ _ (Atom impl) _ = Just $ do
+convertOp _ (Atom impl) _ = Just $ do
 	impl >>= applyFirstClassFn
 
 -- todo memoize the parse

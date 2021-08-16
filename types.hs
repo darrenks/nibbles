@@ -6,9 +6,9 @@ data VT = VInt | VChr | VList [VT] | VAuto | VFn [VT] [VT] -- | VMaybe VT | Noth
 vstr = VList [VChr]
 
 --                       prev args -> num ret,fn arg
-data ArgSpec = Exact VT | Fn ([VT] -> (Int,[VT])) | Cond String ([(VT, [Int])] -> Bool) | BinAuto {- which means only the binary form needs the "~", allows for more clear lit names -}
+data ArgSpec = Exact VT | Fn ([VT] -> (Int,[VT])) | Cond String ([(VT, [Int])] -> Bool)
 
-data ArgMatchResult = ArgMatches | ArgAutoMatchesLit | ArgAutoMatchesBin | ArgFn ArgSpec
+data ArgMatchResult = ArgMatches | ArgFn ArgSpec
 
 isNum VInt = True
 isNum VChr = True

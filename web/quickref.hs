@@ -31,7 +31,7 @@ main=do
 	examples <- getExamples
 	let convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ renameIntLit lit]
-			++ifNotSimpleL[td $ styleCode $ toHex nib ++ binOnlyAuto impl]
+			++ifNotSimpleL[td $ styleCode $ toHex nib]
 			++[td $ toHtml desc] ++
 			toQuickRef isSimple impl ++
 			[td $ styleCode $ do
@@ -74,7 +74,6 @@ main=do
 		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 		isExtOpt (Op types _ _) = any (\t -> case t of
 			(Exact VAuto) -> True
-			BinAuto -> True
 			otherwise -> False) types
 		isExtOpt _ = False
 		toHex (16:_) = ""
@@ -114,11 +113,7 @@ typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
 typeToStr (Exact VInt) _ = "int"
 typeToStr (Exact VChr) _ = "chr"
 typeToStr (Exact VAuto) _ = "~"
-typeToStr BinAuto _ = ""
 typeToStr (Fn _) _ = "fn"
-
-binOnlyAuto (Op types impl autos) = if any (\t->case t of BinAuto -> True; otherwise -> False) types then " 0" else ""
-binOnlyAuto _ = ""
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'
 
