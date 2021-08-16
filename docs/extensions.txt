@@ -6,28 +6,52 @@ available extensions (besides the tbd in quickref)
 constant + constant (*) too
 constant in loop
 ~ auto valued int (2 in *) (could mean infinity)
-length of drop/take? not if they weren't as long as the int, although could be as short with 1 op min (todo)
 value at of a range (although depending on OOB behavior...)
-commutative/associative
 opcode 15, mismatched 2d+ lists
 debruijn index 7+ (tbd input)
 many uses of num in extensions are actually int (many chr available)
 
 unterminated int/str at end of program (or even partial string byte)
 
-~ in toplevel (space or newline? or something in context)
-	could have it mean: set separator to custom value (used for both input and output)
+~first thing
+
+list available
+------------
+filter filter
+map map
+length take n a = min n (length a)
+take x drop y = drop y take x
+reverse replicate = replicate reverse
+
+diff a reverse b = diff a b
+reverse .+ (etc) = .+ reverse
+length .+ etc = length
+map replicate = replicate map
+map step = step map
+map take = take map
+map drop = drop map
+subscript map = ; subscript
+length replicate = * length
+index replicate = index
+replicate .* = .* replicate (but its 3 arg, need to work for other types too then it can be remapped to 2 arg, there's more like this)
+rep rep = rep *
+diff diff = diff :
+
+num
+====
++- = -+
+// = */
+** = * ... *
+same for ++/min/etc
+
+todo there's more
+
 
 desired features
 ----------------
-min/max - commutative +/* (todo)
-not - don't need
-and - * (if both pos) ^b ,a ... for lists: implicit >>= 
-or - + (if both pos), :,a,b ... for lists: :
-more vectorized ops (- / %) - don't need (for now)
-more special folds - don't need (for now)
-something to convert to truthiness (don't need?)
-empty str, empty list of various types (don't need for now)
+more vectorized (and both args list possible)
+more special folds
+
 
 bit ops (todo consider):
 	2^
@@ -87,36 +111,34 @@ todo consider monads/seq/etc.
 sqrt
 list of strs/ints shorthand (use 32+128 value of str?) (for ints leading 0 could meaning to take another int after)
 permutations/combinations
-prefixes/suffixes = foldr [] : (but not so eloquently)
 iterate until fixed point / seen = last of map isUniq prefixes
 
 ------
 to add
 ------
-any any
-
 int
-	bitwise xor / or / and | num -> num ->
-	to base / from base | num -> num -> \ num -> [num] ->
+	bitwise xor / or / and | num -> num ->\
 	could vectorize more ops if space | num -> any ->
 	2** (auto 8) (if space) | int/num ->
 
 list
 	takeWhile / dropWhile / span | [any] -> fn ->
 	splitAt | num -> [any] ->
+	partition instead of filter?
 	split, keep empties | [a] -> [a] ->
 	intersperse | a -> [a] -> (intercalate could be useful too)
 	group by
 	indices [by]
 	setwise uniq / xor / or / and (operate on first of tuples for [by]), keep multiples, that way can use uniq if don't want
-	nChunks = reshape (length/x) | num -> [any] ->
 	mapaccum
+	==
 
 str
 	str= more useful than list=
 	l/rjust (rjust more common in gs2)
 	down/upcase (if space)
 	tbd
+	strip
 
 chr
 	tbd

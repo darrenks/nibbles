@@ -296,7 +296,7 @@ rawOps = [
 		, []),
 	-- Desc: chunk
 	-- Example: ck "abbc" ~ -> ["a","bb","c"]
-	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, auto], "\\a _->chunkSameAdjacents a" ~> vList1.a1, [impossibleAuto, impossibleAuto]),
+	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, auto], "\\a _->group a" ~> vList1.a1, [impossibleAuto, impossibleAuto]),
 	-- Desc: chunkWhile
 	-- todo could have also made this chunk while values same, or other behaviors
 	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
