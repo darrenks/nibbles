@@ -277,10 +277,10 @@ rawOps = [
 	op("\\", [11], [list], "reverse" ~> a1),
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
-	op(["/","~"], [11,0], [num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
+	op(["/","~"], [11,0], [autoTodo num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	op(["/","~"], [11,0], [num, list], undefinedImpl),
+	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
 	-- Desc: divide
 	-- todo protect div 0?
 	-- Example: /7 2 -> 3

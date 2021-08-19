@@ -35,5 +35,5 @@ time echo '#{'1'*n}' | nibbles -c`; pass &&= $?.exitstatus==0
 `time nibbles -norun  a.nbb`; pass &&= $?.exitstatus==0
 
 raise 'errors in runs' if !pass
-raise 'fail, parse too slow' if Time.now - t > 2
+raise 'fail, parse too slow' if Time.now - t > 2.2
 puts 'pass parse speed test (in %f)' % (Time.now - t)
