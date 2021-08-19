@@ -11,6 +11,7 @@ import qualified Data.ByteString.Lazy.Char8 as Char8
 import Data.List (intercalate)
 
 import Ops
+import OpsHelper(convertNullNib)
 import Expr
 import Types
 import Data.List.Split -- needs cabal install -lib split
@@ -72,10 +73,9 @@ main=do
 -- 				toHtml " = coerce"
 	where
 		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
-		isExtOpt (Op types _ _) = any (\t -> case t of
-			(Exact VAuto) -> True
+		isExtOpt (types,_) = any (\t -> case t of
+			Auto -> True
 			otherwise -> False) types
-		isExtOpt _ = False
 		toHex (16:_) = ""
 		toHex s = map intToDigit s
 		styleCode html = H.div (toHtml html) ! class_ "code"
@@ -83,39 +83,34 @@ main=do
 		renameIntLit l = l
 		isOpSimple a@((lit, _, op), _, _) = (not (isExtension a)||lit=="ct"||lit==":~") && lit /= ";" && lit /= "tbd" && lit /= "z"
 
-toQuickRef isSimple (Op types impl autos) = [
+toQuickRef isSimple ((types,_)) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
-		toHtml $ unwords $ map (replaceComplexType isSimple) $ zipWith typeToStr types ['a'..]]++
+		toHtml $ unwords $ map (replaceComplexType isSimple) $ map typeToStr types ]++
 		if not isSimple then [
-	td $ H.div ! class_ (if length usableAutos < 2 then "center" else "stretch") $ toHtml (unwords $ map showAuto usableAutos)] else []
-	where 
+	td $ H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toHtml (unwords autos)] else []
+	where
+		autos = getAutos types
 		replaceComplexType True "vec" = "num"
 		replaceComplexType True "fn1" = "fn"
 		replaceComplexType _ s@_ = s
-		usableAutos = filter (/= impossibleAuto) autos
-		showAuto i | i == autoTodo = "tbd"
-		           | i >= 2^128 = "inf"
-		           | otherwise = show i
 		sort_type = if null types then "" else rootType $ Data.List.head types
-toQuickRef False _ = [td "",td ""]
-toQuickRef True _ = [td ""]
 
-typeToStr (Cond "[list]" _) n = "[[" ++ [n] ++ "]]"
-typeToStr (Cond "list" _) n = "[" ++ [n] ++ "]"
-typeToStr (Cond "clist" _) n = "[" ++ [n] ++ "]|chr"
-typeToStr (Cond "cstr" _) n = "str|chr"
-typeToStr (Cond desc _) _ = desc
--- typeToStr (Coerce t) n = "~"++typeToStr t n
--- typeToStr (Vec t) n = "*"++typeToStr t n
--- typeToStr (PromoteList t) n = "^"++typeToStr t n
-typeToStr (Exact (VList [VChr])) _ = "str"
-typeToStr (Exact (VList [t])) n = "["++typeToStr (Exact t) n++"]"
-typeToStr (Exact VInt) _ = "int"
-typeToStr (Exact VChr) _ = "chr"
-typeToStr (Exact VAuto) _ = "~"
-typeToStr (Fn _) _ = "fn"
+typeToStr (Cond desc _) = desc
+typeToStr (Auto) = "~"
+typeToStr (Fn _) = "fn"
+typeToStr (AutoDefault t _) = typeToStr t
+typeToStr (ParseArg _) = ""
 
-rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'
+getAutos args = catMaybes $ flip map args $ \arg -> case arg of
+	AutoDefault _ v -> Just $ showAuto v
+	otherwise -> Nothing
+
+showAuto i
+		| i == autoTodoValue = "tbd"
+		| i >= 2^128 = "inf"
+		| otherwise = show i
+
+rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t
 
 getExample (c:s) | isSpace c = getExample s
 getExample s | isPrefixOf "-- Example" s = Just (

@@ -17,7 +17,6 @@ module Parse(
 	fromByte,
 	toByte) where
 
-
 import Expr
 import Types
 import Hs
@@ -73,7 +72,7 @@ parseStr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.String str), rest)] -> (str, sLit f rest (cp+length used))
 	_ -> error $ "unparsable string: " ++ s
 
-specialChars = " \n,.-0a"
+specialChars = " \n,.-0a" -- todo more (A)
 parseChr :: Code -> (Char, Code)
 parseChr(Nib [] cp) = error "unterminated char"
 parseChr(Nib (c:rest) cp)

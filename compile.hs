@@ -154,14 +154,14 @@ tryArg (ParseArg parser) _ _ _ = do
 	(t, code) <- parser
 	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
 	
-tryArg (Text lit nib) _ _ memoArgs = do
+tryArg Auto _ _ memoArgs = do
 	code <- gets pdCode
-	case match code (lit,nib) of
+	case match code (["~"],[0]) of
 		Just nextCode -> do
 			-- todo build this into match
 			modify $ \s -> s { pdCode = nextCode }
-			appendRep (nib,concat lit)
-			return $ Just (tail memoArgs, []) -- todo this is an error if text != "~", need to truncate propery, maybe it should be in parsestate....
+			appendRep ([0],"~")
+			return $ Just (tail memoArgs, [])
 		Nothing -> return Nothing
 
 tryArg (Fn f) prevTs _ _ = do

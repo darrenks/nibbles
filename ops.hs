@@ -134,7 +134,7 @@ rawOps = [
 	-- Desc: max
 	-- Example: ]4 5 -> 5
 	-- Test: ]~ *~4 -> 0
-	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, Cond "todo" $ andC (byType isNum) sndArgLarger], "max"~>orChr),
+	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, andC num sndArgLarger], "max"~>orChr),
 	-- Desc: add
 	-- Example: +2 1 -> 3
 	-- Test: +'a' 2 -> 'c'
@@ -153,7 +153,7 @@ rawOps = [
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	-- Test chr split: %"a b" ' ' -> ["a","b"]
-	op("%", [8], [str, cstr], (\[a1,a2]->
+	op("%", [8], [str, orC str char], (\[a1,a2]->
 		let (ap2, apf) = promoteList a2
 		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 .a1),
 	-- Desc: words
@@ -173,14 +173,14 @@ rawOps = [
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
 	-- Test tuple: pd z,4 "abcd" $ -> 24,"abcd"
-	extendOp ["+","\\"] genericReason ("pd", [8,11], [listOf (==VInt)], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	extendOp ["+","\\"] genericReason ("pd", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
 	-- Test tuple: +z ,3 "abc" $ -> 6,"abc"
-	op("+", [8], [listOf (==VInt)], \[a1]->
+	op("+", [8], [listOf int], \[a1]->
 		let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "sum" ++ "." ++ uzF ~> VInt : tail uzT
 		),
@@ -189,7 +189,7 @@ rawOps = [
 	-- Test tuple: +.,2 z ,2 "ab" -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
 	-- Test tuple2: +z .,2,2 "ab" $ -> [1,2,1,2],"ab"
 	-- \a -> (concat (map fst a), map snd a)
-	op("+", [8], [listOf isList], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		),
 	-- Desc: subtract
@@ -223,7 +223,7 @@ rawOps = [
 	op("a", [10], [char], "bToI.isAlpha.safeChr" ~> VInt),
 	-- Desc: min
 	-- Example: [4 5 -> 4
-	extendOp ["*"] commutativeReason ("[", [10], [int, Cond "todo" $ andC (byType isNum) sndArgLarger], "min"~>orChr),
+	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
 	-- Test: *2 "dd" -> [200,200]
@@ -352,7 +352,7 @@ rawOps = [
 	-- Example: ^"ab"3 -> "ababab"
 	-- Test: ^"ab" *~3 -> ""
 	-- Test: ^'a' 3 -> "aaa"
-	op("^", [14], [clist, AutoDefault int (2^128)], \[a1,_] ->
+	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
 		let (ap1, apf) = promoteList a1 in
 		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1),
 	-- Desc: tails
@@ -418,12 +418,12 @@ rawOps = [
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
 	-- Test tuple: ? z ,3 "abc" 2 -> 2
-	op("?", [15], [list, elemOfA1], \[a1,a2]->"\\a e->1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
+	op("?", [15], [listToBeReferenced, elemOfA1], \[a1,a2]->"\\a e->1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
 	-- Desc: diff
 	-- Example: -"abcd""bd" -> "ac"
 	-- Test non existant elements: -"abc""de" -> "abc"
 	-- Test doesn't drop all: -"aa""a" -> "a"
-	op("-", [15], [list, sameAsA1], "\\\\" ~> a1),
+	op("-", [15], [listToBeReferenced, sameAsA1], "\\\\" ~> a1),
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
