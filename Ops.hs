@@ -109,9 +109,8 @@ rawOps = [
 	-- Test tuple: :~~1 2 -> [(1,2)]
 	op([":","~"], [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1),
 	-- Desc: abs
-	-- todo make it called ab or again
-	-- Example: : *~5 ~ -> 5
-	op(":", [7], [autoTodo num, auto], "abs" ~> a1),
+	-- Example: ab *~5 -> 5
+	op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
 	-- Desc: cons
 	-- Example: :"ab"~"cd" -> ["ab","cd"]
 	-- Test coerce: :,2~ "34" -> ["12","34"]

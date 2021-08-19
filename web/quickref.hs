@@ -32,7 +32,7 @@ main=do
 	examples <- getExamples
 	let convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ renameIntLit lit]
-			++ifNotSimpleL[td $ styleCode $ toHex nib]
+			++ifNotSimpleL[td $ styleCode $ toHex nib ++ binOnlyAuto impl]
 			++[td $ toHtml desc] ++
 			toQuickRef isSimple impl ++
 			[td $ styleCode $ do
@@ -74,7 +74,7 @@ main=do
 	where
 		isExtension ((lit, nib, op), _, _) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 		isExtOpt (types,_) = any (\t -> case t of
-			Auto -> True
+			Auto _ -> True
 			otherwise -> False) types
 		toHex (16:_) = ""
 		toHex s = map intToDigit s
@@ -96,7 +96,7 @@ toQuickRef isSimple ((types,_)) = [
 		sort_type = if null types then "" else rootType $ Data.List.head types
 
 typeToStr (Cond desc _) = desc
-typeToStr (Auto) = "~"
+typeToStr (Auto binOnly) = if binOnly then "" else "~"
 typeToStr (Fn _) = "fn"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (ParseArg _) = ""
@@ -109,6 +109,8 @@ showAuto i
 		| i == autoTodoValue = "tbd"
 		| i >= 2^128 = "inf"
 		| otherwise = show i
+
+binOnlyAuto (args,_) = if any (\t->case t of Auto True -> True; otherwise -> False) args then " 0" else ""
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t
 

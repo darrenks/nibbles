@@ -154,14 +154,15 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 tryArg (ParseArg parser) _ _ _ = do
 	(t, code) <- parser
 	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
-	
-tryArg Auto _ _ memoArgs = do
+
+tryArg (Auto binOnly) _ _ memoArgs = do
 	code <- gets pdCode
-	case match code (["~"],[0]) of
+	let lit = if binOnly then [] else ["~"]
+	case match code (lit,[0]) of
 		Just nextCode -> do
 			-- todo build this into match
 			modify $ \s -> s { pdCode = nextCode }
-			appendRep ([0],"~")
+			appendRep ([0],concat lit)
 			return $ Just (tail memoArgs, [])
 		Nothing -> return Nothing
 

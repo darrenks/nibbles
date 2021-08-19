@@ -114,7 +114,8 @@ vec = Cond "vec" $ byType $ const True
 list = Cond "[*]" $ byType isList
 listToBeReferenced = Cond "[a]" $ byType isList
 anyT = Cond "any" $ byType $ const True
-auto = Auto
+auto = Auto False
+binOnlyAuto = Auto True
 
 listOf (Cond desc t) = Cond ("["++desc++"]") $ \mtd -> let lastArg = last $ mtdTypes mtd in
 	isList lastArg && t (mtd { mtdTypes=reverse $ elemT $ lastArg })

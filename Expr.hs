@@ -44,7 +44,7 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
 data ArgSpec
 	= Cond String (MatchTestData -> Bool)
 	| ParseArg (ParseState (VT, String))
-	| Auto
+	| Auto Bool
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn ([VT] -> (Int, [VT]))
 
