@@ -31,8 +31,8 @@ isErrorResult (_, _, output, _, _) = isPrefixOf "error" output
 
 getTestsFromAnnotations = do
 	ops1 <- readFile "ops.hs"
-	ops2 <- readFile "test/additional_tests.hs"
-	ops3 <- readFile "test/tutorialTests.hs"
+	ops2 <- readFile "test/AdditionalTests.hs"
+	ops3 <- readFile "test/TutorialTests.hs"
 	return $ catMaybes $ map getExample (lines ops1 ++ lines ops2 ++ lines ops3)
 
 runHs prog = do
@@ -71,7 +71,7 @@ main=do
 	let tests = map toTest $ take 1000 $ filter (not.isErrorResult) testCases
 	let (_,(_,_,x,_,_,_,_)) = last tests
 	putStrLn $ x
-	header <- readFile "header.hs"
+	header <- readFile "Header.hs"
 	let prog = header ++ "\nmain=do" ++ concatMap fst tests
 	result <- runHs prog
 	-- todo check result size matches

@@ -6,7 +6,7 @@ Navbar='<div id="navbar"><ul>
 </ul></div>'
 
 def addTest(raw, prog, input, output)
-	File.open('test/tutorialTests.hs','a'){|f|f.puts "-- #{raw}Test %s : %s -> %s" % [input, prog, output]}
+	File.open('test/TutorialTests.hs','a'){|f|f.puts "-- #{raw}Test %s : %s -> %s" % [input, prog, output]}
 end
 
 def getProg(pre)

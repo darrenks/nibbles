@@ -37,7 +37,7 @@ data ParseMode = FromLit | FromBytes deriving Eq
 
 -- Set this as a constant rather than read it to create a stand-alone binary.
 headerRaw :: String
-headerRaw = [litFile|header.hs|]
+headerRaw = [litFile|Header.hs|]
 
 main=do
 	setLocaleEncoding char8
