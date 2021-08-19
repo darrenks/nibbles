@@ -3,7 +3,7 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
-n=2000 #12000 was 1.8 seconds before commutative op change todo fix it
+n=12000
 pass = true
 `ghc -O nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 

@@ -12,6 +12,7 @@ import Expr
 import Args
 import Parse
 import Hs
+import SmartList
 
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
@@ -134,7 +135,7 @@ putAddRep (ParseData code context nib lit) = do
 
 tryArg :: ArgSpec ->
 		[VT] -- prev types
-		-> [[Int]] -- nib reps of args (for commutative order check)
+		-> [SmartList Int] -- nib reps of args (for commutative order check)
 		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
 		-> ParseState (Maybe ([(Impl, ParseData)], -- the memoized args after parsing arg
                     	      [Impl])) -- the arg implementation (or empty)
@@ -182,7 +183,7 @@ tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 -- get the args (possibly fail), ok to modify parse state and fail
 getArgs :: [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
 getArgs = getArgsH [] []
-getArgsH :: [Impl] -> [[Int]] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgsH :: [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
 getArgsH prevArgs _ [] _ = return $ Just prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 	arg <- tryArg spec prevArgTypes nibs memoArgs
@@ -190,7 +191,7 @@ getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 		Nothing -> return Nothing
 		Just (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
-		nibs = (prevNibs++[dToList $ pdNib $ snd $ head memoArgs])
+		nibs = (prevNibs++[pdNib $ snd $ head memoArgs])
 		prevArgTypes = map implType prevArgs
 
 getLambdaValue numRets argType argUsedness = do
@@ -211,9 +212,7 @@ getLambdaValue numRets argType argUsedness = do
 			let recImpl = (last $ argImpls newArg) { implType=recType }
 			let recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
 			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
-			
-			rets <- getValuesMemo (length toType)
-			let c = zipWith coerceImpl rets toType
+			c <- getNArgs toType
 			return $ a++[makePairs argType b]++[makePairs argType c]
 		else do
 			bonus <- parseCountTuple
@@ -317,7 +316,6 @@ applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> 
 	convertPairToLet (foldl applyImpl initImpl impls) to
 applyFirstClassFn x = return x
 
--- todo duplicate defined in ops
 getNArgs :: [VT] -> ParseState [Impl]
 getNArgs argTypes = do
 	args <- getValuesMemo (length argTypes)

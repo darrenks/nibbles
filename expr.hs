@@ -5,6 +5,7 @@ import qualified Data.DList as DList -- needs cabal install --lib dlist
 
 import Types
 import Hs
+import SmartList
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
 
@@ -30,13 +31,13 @@ app1Hs s impl = impl { implCode=hsApp (hsAtom s) (implCode impl) }
 
 data ParseData = ParseData { pdCode :: Code
                            , pdContext :: [Arg]
-                           , pdNib :: DList.DList Int
+                           , pdNib :: SmartList Int
                            , pdLit :: DList.DList Char }
 type ParseState = State ParseData
 
 -- all relevant information for determining arg match in a more abridge form than arg spec
 data MatchTestData = MatchTestData { mtdTypes :: [VT]
-                                   , mtdNibs :: [[Int]]
+                                   , mtdNibs :: [SmartList Int]
                                    , mtdState :: ParseData }
 
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
@@ -51,22 +52,22 @@ type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 
 dToList = DList.toList
 
-appendRepH :: (DList.DList Int,DList.DList Char) -> ParseState ()
+appendRepH :: (SmartList Int,DList.DList Char) -> ParseState ()
 appendRepH (nib2,lit2) = do
 	nib <- gets pdNib
 	lit <- gets pdLit
-	modify $ \s -> s { pdNib = DList.append nib nib2
+	modify $ \s -> s { pdNib = smartAppend nib nib2
 	                 , pdLit = DList.append lit lit2 }
 	                 
 appendRep :: ([Int],String) -> ParseState ()
-appendRep (nib2,lit2) = appendRepH (DList.fromList nib2, DList.fromList lit2)
+appendRep (nib2,lit2) = appendRepH (newSmartList nib2, DList.fromList lit2)
 
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =
-	ParseData code context (DList.fromList []) (DList.fromList "")
+	ParseData code context (newSmartList []) (DList.fromList "")
 
 getNib :: ParseData -> [Int]
-getNib = DList.toList . pdNib
+getNib = smartToList . pdNib
 
 getLit :: ParseData -> String
 getLit = DList.toList . pdLit
