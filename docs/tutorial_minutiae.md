@@ -140,7 +140,7 @@ Suppose the input to your program is
 
 Then outputs for these programs will be:
 
-	p +$1
+	p +1$
 $Output "12 888\n34\n56\n78"
 	13
 	889

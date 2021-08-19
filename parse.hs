@@ -3,9 +3,9 @@
 -- todo use monad for parseInt, etc
 -- convention is parse consumes up until next non ignorable code
 module Parse(
-	parseIntExpr,
-	parseStrExpr,
-	parseChrExpr,
+	intParser,
+	strParser,
+	chrParser,
 	parseDataExpr,
 	parseCountTuple,
 	cp,
@@ -123,7 +123,7 @@ match (Nib s cp) (_, needle) = if isPrefixOf needle s
 match lit@(Lit _ _ _) ([], _) = Just lit
 match lit@(Lit _ _ _) (needle:s, _) = match1Lit lit needle >>= flip match (s, undefined)
 match1Lit (Lit f s cp) needle
-	| null s = error "Error! Expected: another expression, found: EOF"
+	| null s = Nothing
 	| needle == " " && isDigit (head s) = Just $ Lit f s cp
 	| needle == "\"" && '"' == head s = Just $ Lit f s cp
 	| needle == "\'" && '\'' == head s = Just $ Lit f s cp
@@ -159,26 +159,26 @@ consumeWhitespace (Lit f (c:s) cp)
 	| otherwise = Lit f (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-parseIntExpr :: ParseState Impl
-parseIntExpr = do
+intParser :: ParseState (VT, String)
+intParser = do
 	(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (intToNib n,show n)
-	return $ noArgsUsed { implType=VInt, implCode=i n }
+	return $ (VInt, flatHs $ i n)
 
-parseStrExpr :: ParseState Impl
-parseStrExpr = do
+strParser :: ParseState (VT, String)
+strParser = do
 	(s, rest) <- gets $ parseStr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (strToNib s,tail $ show s)
-	return $ noArgsUsed { implType=vstr, implCode=hsParen $ hsAtom $ "sToA " ++ show s }
+	return (vstr, "sToA " ++ show s)
 
-parseChrExpr :: ParseState Impl
-parseChrExpr = do
+chrParser :: ParseState (VT, String)
+chrParser = do
 	(s, rest) <- gets $ parseChr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
-	return $ noArgsUsed { implType=VChr, implCode=hsParen $ hsAtom $ "ord " ++ show s }
+	return (VChr, "ord " ++ show s)
 
 parseDataExpr :: ParseState Integer
 parseDataExpr = do

@@ -33,6 +33,22 @@ data ParseData = ParseData { pdCode :: Code
                            , pdNib :: DList.DList Int
                            , pdLit :: DList.DList Char }
 type ParseState = State ParseData
+
+-- all relevant information for determining arg match in a more abridge form than arg spec
+data MatchTestData = MatchTestData { mtdTypes :: [VT]
+                                   , mtdNibs :: [[Int]]
+                                   , mtdState :: ParseData }
+
+-- https://stackoverflow.com/questions/7787317/list-of-different-types
+data ArgSpec
+	= Cond String (MatchTestData -> Bool)
+	| ParseArg (ParseState (VT, String))
+	| Text [String] [Int] -- todo str doesn't need to be list anymore
+	| AutoDefault ArgSpec Integer -- todo make any type
+	| Fn ([VT] -> (Int, [VT]))
+
+type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
+
 dToList = DList.toList
 
 appendRepH :: (DList.DList Int,DList.DList Char) -> ParseState ()

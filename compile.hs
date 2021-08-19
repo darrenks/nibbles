@@ -118,31 +118,13 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 
 applyImpl :: Impl -> Impl -> Impl
 applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (max d1 d2) undefined undefined
-	
+
 makePairs :: [VT] -> [Impl] -> Impl
 makePairs fromTypes args = foldl applyImpl initImpl args where
 	toTypes = map implType args
 	initImpl = noArgsUsed { implType=VFn fromTypes toTypes, implCode=hsAtom pairMakerHs }
 	-- todo instead of fold apply, build the (expr1, expr2), etc, cleaner hs
 	pairMakerHs = if length args == 1 then "" else "("++replicate (length $ tail args) ','++")"
-	
-convertAutoType VAuto = VInt
-convertAutoType t = t
-
-convertAuto (Impl VAuto _ _ _ _) auto = noArgsUsed { implType=VInt, implCode=i $ fromIntegral auto }
-convertAuto impl _ = impl
-
-convertAutos :: [Impl] -> [Integer] -> [Impl]
-convertAutos l autos = zipWith (\e a -> (convertAuto e a)) l (autos ++ repeat undefined)
-
---                                           nib rep
-simplifyArgSpecs :: [ArgSpec] -> [[(Maybe VT, [Int])] -> Maybe ArgMatchResult]
-simplifyArgSpecs = map simplifyArgSpec where
-	simplifyArgSpec (Exact VAuto) vts = maybeMatch $ isNothing $ fst (last vts)
-	simplifyArgSpec (Exact spec) vts = maybeMatch $ spec == convertAutoType (fromMaybe VAuto $ fst (last vts))
-	simplifyArgSpec (Fn f) _ = Just $ ArgFn (Fn f)
-	simplifyArgSpec (Cond _ f) vts = maybeMatch $ f $ map (\(t,n)->(fromMaybe VAuto t,n)) vts
-	maybeMatch b = if b then Just ArgMatches else Nothing
 
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
@@ -150,24 +132,68 @@ putAddRep (ParseData code context nib lit) = do
 	appendRepH (nib,lit)
 	modify $ \s -> s { pdCode=code, pdContext=context }
 
-convertLambdas :: [VT] -> [(ArgMatchResult, (Impl, ParseData))] -> ParseState [Impl]
-convertLambdas _ [] = return []
-convertLambdas soFar (estArg:rest) = do
-	impl <- convertLambda soFar estArg
-	restConverted <- convertLambdas (soFar ++ [implType impl]) rest
-	return $ impl : restConverted
+tryArg :: ArgSpec ->
+		[VT] -- prev types
+		-> [[Int]] -- nib reps of args (for commutative order check)
+		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
+		-> ParseState (Maybe ([(Impl, ParseData)], -- the memoized args after parsing arg
+                    	      [Impl])) -- the arg implementation (or empty)
+tryArg (Cond desc c) prevTypes nibs memoArgs = do
+	let (impl,nextState) = head memoArgs
+	state <- get
+	code <- gets pdCode
+	
+	if (isNothing $ match code (["~"],[0])) -- check this to avoid passing autos with undefined type
+		&& c (MatchTestData (prevTypes++[implType impl]) nibs state)
+	then do
+		putAddRep nextState
+		return $ Just (tail memoArgs, [impl])
+	else return Nothing
 
-convertLambda :: [VT] -> (ArgMatchResult, (Impl, ParseData)) -> ParseState Impl
--- -- todo mark rec snd pair as used since, it's already served a purpose
-convertLambda _ (ArgMatches, (memoImpl, memoState)) = do
-	putAddRep memoState
-	return memoImpl
-convertLambda argTypes (ArgFn (Fn fnFn), _) = do
-	let (numRets, argType) = fnFn argTypes
-	(lambdaFn, _) <- getLambdaValue numRets argType UnusedArg
-	return lambdaFn	
+tryArg (ParseArg parser) _ _ _ = do
+	(t, code) <- parser
+	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
+	
+tryArg (Text lit nib) _ _ memoArgs = do
+	code <- gets pdCode
+	case match code (lit,nib) of
+		Just nextCode -> do
+			-- todo build this into match
+			modify $ \s -> s { pdCode = nextCode }
+			appendRep (nib,concat lit)
+			return $ Just (tail memoArgs, []) -- todo this is an error if text != "~", need to truncate propery, maybe it should be in parsestate....
+		Nothing -> return Nothing
 
-getLambdaValue numRets argType argUsedness= do
+tryArg (Fn f) prevTs _ _ = do
+	let (nRets, argT) = f prevTs
+	(impl,_) <- getLambdaValue nRets argT UnusedArg
+	return $ Just (error"memoized args cannot be used after fn", [impl])
+
+tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
+	code <- gets pdCode
+	case match code (["~"],[0]) of
+		Just nextCode -> do
+			-- todo build this into match
+			modify $ \s -> s { pdCode = nextCode }
+			appendRep ([0],"~")
+			return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i $ fromIntegral v }])
+		Nothing -> tryArg tspec prevTypes nibs memoArgs
+
+-- get the args (possibly fail), ok to modify parse state and fail
+getArgs :: [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgs = getArgsH [] []
+getArgsH :: [Impl] -> [[Int]] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgsH prevArgs _ [] _ = return $ Just prevArgs
+getArgsH prevArgs prevNibs (spec:s) memoArgs = do
+	arg <- tryArg spec prevArgTypes nibs memoArgs
+	case arg of
+		Nothing -> return Nothing
+		Just (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
+	where
+		nibs = (prevNibs++[dToList $ pdNib $ snd $ head memoArgs])
+		prevArgTypes = map implType prevArgs
+
+getLambdaValue numRets argType argUsedness = do
 	(newArg,body) <- pushLambdaArg argType argUsedness $ \newArg -> do
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
 		-- with its real Fn type which can only be known after 2nd arg type is determined.
@@ -185,7 +211,9 @@ getLambdaValue numRets argType argUsedness= do
 			let recImpl = (last $ argImpls newArg) { implType=recType }
 			let recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
 			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
-			c <- getNArgs toType
+			
+			rets <- getValuesMemo (length toType)
+			let c = zipWith coerceImpl rets toType
 			return $ a++[makePairs argType b]++[makePairs argType c]
 		else do
 			bonus <- parseCountTuple
@@ -236,52 +264,49 @@ exprsByOffset (Thunk code context) =
 		rest = exprsByOffset (Thunk (nextOffset code) context)
 
 getValue :: [[(Impl, ParseData)]] -> ParseState Impl
-getValue offsetExprs = do
+getValue memoArgOffsets = do
 	code <- gets pdCode
-	let tryOp (lit, nib, op) = match code (lit, nib) >>= \afterOpCode -> let
-		valList = head (drop (cp afterOpCode - cp code - 1) offsetExprs)
-		in convertOp valList op code >>= \f -> Just $ do
+	if empty code
+	then argImplicit
+	else getValueH allOps memoArgOffsets
+getValueH [] _ = parseError "Parse Error: no matching op"
+getValueH ((lit,nib,op):otherOps) memoArgOffsets = do
+	code <- gets pdCode
+	let tryRest = getValueH otherOps memoArgOffsets
+	case match code (lit, nib) of
+		Nothing -> tryRest
+		Just afterOpCode -> do
+			origState <- get
+			modify $ \s -> s {pdCode=afterOpCode}
+			let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
 			appendRep (nib,concat lit)
-			modify $ \s -> s { pdCode=afterOpCode }
-			f
-	if empty code then
-		argImplicit 
-	else
-		fromMaybe (parseError "Parse Error: no matching op") $ msum $ map tryOp allOps
+			attempt <- convertOp valList op code
+			case attempt of
+				Just impl -> return impl
+				Nothing -> do
+					put origState
+					tryRest
 
-isTildaStart :: ParseState Bool
-isTildaStart = do
-	code <- gets pdCode
-	return $ not (empty code) && (isJust $ match code (["~"], [0]))
-
-convertOp :: [(Impl, ParseData)] -> Operation -> Code -> Maybe (ParseState Impl)
-convertOp valList (Op ats impl autos) preOpCode = do
-	if all isJust typeMatch then Just $ do
-		let isFns = map fromJust typeMatch
-		argList <- convertLambdas [] $ zip isFns valList
+convertOp :: [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
+convertOp memoizedArgList (ats,impl) preOpCode = do
+	maybeArgs <- getArgs ats memoizedArgList
+	case maybeArgs of
+		Nothing -> return Nothing
+		Just args -> do
+			afterArgsCode <- gets pdCode
 		
-		-- Temporarily put the code pointer back for useful op error messages
-		afterArgsCode <- gets pdCode
-		modify $ \s -> s { pdCode=preOpCode }
-		(rt, hs) <- impl $ map (convertAutoType . implType) argList
-		modify $ \s -> s { pdCode=afterArgsCode }
+			-- Temporarily put the code pointer back for useful op error messages
+			modify $ \s -> s { pdCode=preOpCode }
+			(rt, initImpl) <- impl $ map implType args
+			afterImplCode <- gets pdCode
+			if (cp preOpCode) /= (cp afterImplCode)
+			then error "modifying code in op impl is not supported (but it could be)"
+			else modify $ \s -> s { pdCode=afterArgsCode }
 		
-		let initImpl = noArgsUsed { implCode=hsParen $ hsAtom hs }
-		let fullImpl = foldl applyImpl initImpl (convertAutos argList autos)
-		convertPairToLet fullImpl rt
-	else Nothing where
-		typeMatch = zipWith id (simplifyArgSpecs ats) (tail $ inits lazyAutoEqValTypes)
-		-- Manually detect if an arg is an auto value, this allows lazy evaluation to
-		-- skip parsing the whole expression to determine the type (which can't be auto).
-		-- Parsing this could cause a false parse error.
-		-- This assumes first value being auto is handled by the ~ in the op name and so hard codes false for it.
-		lazyAutoEqValTypes = zipWith (\(impl,parseData) isTilda ->
-			let t = if isTilda then Nothing else Just $ implType impl
-			in (t, dToList $ pdNib parseData)
-			) valList (False : map (\(_,pd)->evalState isTildaStart pd) valList)
-
-convertOp _ (Atom impl) _ = Just $ do
-	impl >>= applyFirstClassFn
+			let fullImpl = foldl applyImpl initImpl args
+			unpairedFirst <- convertPairToLet fullImpl rt
+			result <- applyFirstClassFn unpairedFirst
+			return $ Just result
 
 -- todo memoize the parse
 -- todo could put in getValue if wanted to support real first class functions
@@ -292,6 +317,7 @@ applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> 
 	convertPairToLet (foldl applyImpl initImpl impls) to
 applyFirstClassFn x = return x
 
+-- todo duplicate defined in ops
 getNArgs :: [VT] -> ParseState [Impl]
 getNArgs argTypes = do
 	args <- getValuesMemo (length argTypes)
@@ -307,4 +333,3 @@ convertPairToLet impl implTypes = do
 	let letArg = newLetArg context impl implTypes
 	modify $ \s -> s { pdContext=letArg:context }
 	return $ head $ argImpls letArg
-		

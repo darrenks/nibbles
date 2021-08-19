@@ -118,7 +118,7 @@ typeToStr (Fn _) _ = "fn"
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t 'a'
 
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- untested example: " s = Just (
+getExample s | isPrefixOf "-- Example" s = Just (
 	case elemIndex ':' s of
 		Just i -> splitOn " -> " (drop (i + 2) s)
 	)

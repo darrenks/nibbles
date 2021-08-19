@@ -1,18 +1,12 @@
 module Types where
 
-data VT = VInt | VChr | VList [VT] | VAuto | VFn [VT] [VT] -- | VMaybe VT | Nothing
+data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType -- | VMaybe VT | Nothing
 	deriving (Show, Eq)
 
 vstr = VList [VChr]
 
---                       prev args -> num ret,fn arg
-data ArgSpec = Exact VT | Fn ([VT] -> (Int,[VT])) | Cond String ([(VT, [Int])] -> Bool)
-
-data ArgMatchResult = ArgMatches | ArgFn ArgSpec
-
 isNum VInt = True
 isNum VChr = True
-isNum VAuto = True
 isNum _ = False
 	
 isList (VList _) = True

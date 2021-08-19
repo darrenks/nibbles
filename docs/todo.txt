@@ -20,6 +20,9 @@ ideally could detect these automatically and check for possible collisions (mayb
 		-after can revert hacky stuff from https://github.com/darrenks/nibbles/commit/9eccacbd5c4d0e3a4f256a7e33e29630f457543a
 	delete cons, instead have special way to create list of strings
 	if : with first value as a tuple then number of rets for second arg should match unless it is a list of a tuple
+	
+-- -- todo mark rec snd pair as used since, it's already served a purpose
+
 
 For alpha release:
 -more extensions
