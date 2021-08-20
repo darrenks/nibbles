@@ -95,7 +95,12 @@ typeToStr (Cond desc _) = desc
 typeToStr (Auto binOnly) = if binOnly then "" else "~"
 typeToStr (Fn _) = "fn"
 typeToStr (AutoDefault t _) = typeToStr t
-typeToStr (ParseArg _) = ""
+typeToStr (ParseArg (t,_)) = "{"++prettyType t++"}"
+typeToStr BaseMode = "mode"
+
+prettyType VInt = "int"
+prettyType (VList [VChr]) = "str"
+prettyType VChr = "chr"
 
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v

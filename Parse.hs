@@ -8,6 +8,8 @@ module Parse(
 	chrParser,
 	parseDataExpr,
 	parseCountTuple,
+	parse1Nibble,
+	parserToImpl,
 	cp,
 	match,
 	parseError,
@@ -159,26 +161,41 @@ consumeWhitespace (Lit f (c:s) cp)
 	| otherwise = Lit f (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-intParser :: ParseState (VT, String)
-intParser = do
+intParser :: (VT, ParseState String)
+intParser = (VInt, do
 	(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (intToNib n,show n)
-	return $ (VInt, flatHs $ i n)
+	return $ flatHs $ i n)
 
-strParser :: ParseState (VT, String)
-strParser = do
+strParser :: (VT, ParseState String)
+strParser = (vstr, do
 	(s, rest) <- gets $ parseStr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (strToNib s,tail $ show s)
-	return (vstr, "sToA " ++ show s)
+	return $ "sToA " ++ show s)
 
-chrParser :: ParseState (VT, String)
-chrParser = do
+chrParser :: (VT, ParseState String)
+chrParser = (VChr, do
 	(s, rest) <- gets $ parseChr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
-	return (VChr, "ord " ++ show s)
+	return $ "fromIntegral$ord " ++ show s)
+
+parserToImpl (t,parser) = do
+	hs <- parser
+	return $ noArgsUsed { implType=t, implCode=hsParen $ hsAtom hs }
+
+parse1Nibble :: String -> [(Int, (Char, ParseState Impl))] -> State ParseData Impl
+parse1Nibble name [] = parseError $ "symbol not found in " ++ name
+parse1Nibble name ((nib,(lit,impl)):rest) = do
+	code <- gets pdCode
+	case match code ([[lit]], [nib]) of
+		Just nextCode -> do
+			modify $ \s -> s { pdCode = nextCode }
+			appendRep ([nib],[lit])
+			impl
+		Nothing -> parse1Nibble name rest
 
 parseDataExpr :: ParseState Integer
 parseDataExpr = do

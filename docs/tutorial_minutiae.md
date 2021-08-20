@@ -208,13 +208,14 @@ Because string and ints are optimized for typical values, they aren't good at st
 
 To do that use `~` after your program and proceed it with a number. This number will consume the rest of your program, but it is stored optimally in the binary format (each nibble now makes up part of a base 16 number). To use this number the first DeBruijn index (`$`) now has the data value instead of the first line of input. You can easily convert it to lists of the desired radix with `to base` (`tb`).
 
-"fizzbuzzhelloworld" is 18 characters and takes 37 nibbles to be stored as a string, but we can use data to construct it with only 32 (2 bytes better than PHP woo!):
 
-	+'a'tb26$~6061555238104639959213973
+"helloworld" is 10 characters and takes 21 nibbles to be stored as a string, but we can use data to construct it with only 17:
+
+	tb$a~38933758647189
 $HiddenOutput
-	fizzbuzzhelloworld
+	helloworld
 
-Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
+Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique! And of course we would have to use a larger radix to create non alpha symbols, but it can still be shorter for long enough strings.
 
 FYI this will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 

@@ -33,7 +33,7 @@ def convertTests(md)
 end
 
 allFiles = `cd docs; echo *.md`.split
-`echo > test/tutorialTests.hs`
+`echo > test/TutorialTests.hs`
 
 def convertMd(filename)
 	basefile = filename.sub(/\.md$/,'')

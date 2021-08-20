@@ -2,7 +2,7 @@ module Header where
 
 import Data.List
 import Data.Char (chr,ord,isAlpha,isDigit,isSpace)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe,catMaybes)
 import Data.Tuple (swap)
 import Data.List.Split (splitOn,splitWhen) -- needs cabal install --lib split
 import Text.Read (readMaybe)
@@ -15,7 +15,7 @@ import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
 import qualified Data.ByteString.Char8 as C8
 
 safeChr = chr.(`mod`256)
-sToA = map ord
+sToA = map $ fromIntegral.ord
 aToS :: Integral i => [i] -> String
 aToS = map$safeChr.fromIntegral
 bToI b = if b then 1 else 0

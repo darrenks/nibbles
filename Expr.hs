@@ -43,7 +43,8 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
 data ArgSpec
 	= Cond String (MatchTestData -> Bool)
-	| ParseArg (ParseState (VT, String))
+	| ParseArg (VT, ParseState String)
+	| BaseMode
 	| Auto Bool
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn ([VT] -> (Int, [VT]))
