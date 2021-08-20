@@ -195,6 +195,8 @@ rawOps = [
 	-- Example: -5 3 -> 2
 	-- Test: -'b''a' -> 1
 	-- Test: -'d'1 -> 'c'
+	-- Test: -~2 -> -1
+	-- Test: -2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 	-- Desc: square
 	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
@@ -203,6 +205,7 @@ rawOps = [
 	-- Desc: step
 	-- Example: %2,5 -> [1,3,5]
 	-- Test: % *~2,5 -> [5,3,1]
+	-- Test: %~,5 -> [1,3,5]
 	-- Test: % 1 ,0 -> []
 	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
 	op("%", [9], [AutoDefault num 2, list], "step" ~> a2),
@@ -250,7 +253,7 @@ rawOps = [
 	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
-	extendOp ["\\","\\"] genericReason ("st", [11, 11], [list], "sort" ~> a1),
+	lowPriorityExtendOp ["\\","\\"] genericReason ("st", [11, 11], [list], "sort" ~> a1),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl),
@@ -277,6 +280,7 @@ rawOps = [
 	op("\\", [11], [list], "reverse" ~> a1),
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
+	-- Test: /7 ~ -> 3
 	op(["/","~"], [11,0], [autoTodo num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -287,6 +291,7 @@ rawOps = [
 	-- Test: / *~2 7 -> -1
 	-- Test: / *~2 *~7 -> 0
 	-- Test: / 2 *~7 -> -1
+	-- Test: / 7 ~ -> 3
 	op("/", [11], [num, AutoDefault num 2], "div" ~> VInt),
 	-- Desc: init
 	-- Example: <~,5 -> [1,2,3,4]
@@ -305,10 +310,12 @@ rawOps = [
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
+	-- Test: >~,3 -> [2,3]
 	-- todo test/make negative
 	op(">", [12], [AutoDefault num 1, list], "drop.fromIntegral" ~> a2),
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
+	-- Test: %~7 ~ -> 1
 	op(["%","~"], [12,0], [autoTodo num, AutoDefault num 2], "(swap.).divMod" ~> [VInt,VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -318,6 +325,7 @@ rawOps = [
 	-- Test: % *~2 7 -> 5
 	-- Test: % *~2 *~7 -> -2
 	-- Test: % 2 *~7 -> -5
+	-- Test: % 7 ~ -> 1
 	op("%", [12], [num, AutoDefault num 2], "mod" ~> VInt),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
@@ -326,16 +334,19 @@ rawOps = [
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
+	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
 	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "reshape" ~> vList1 .a2),
 	-- Desc: nChunks
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
+	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
 	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->reshape (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt),
 	-- Desc: range from 0 ...
 	-- Example: ,~3 -> [0,1,2]
+	-- Example: <3,~~ -> [0,1,2]
 	op([",","~"], [13, 0], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]
@@ -344,6 +355,8 @@ rawOps = [
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
+	-- Test: ^~ 1 -> 10
+	-- Test: ^8 ~ -> 64
 	-- Test: ^2 *~3 -> 0
 	-- Test: ^0 0 -> 1
 	-- todo handle 0**-3 (maybe should be infinity?)
@@ -352,9 +365,10 @@ rawOps = [
 	-- Example: ^"ab"3 -> "ababab"
 	-- Test: ^"ab" *~3 -> ""
 	-- Test: ^'a' 3 -> "aaa"
+	-- Test: <3^"ab" ~ -> "aba"
 	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
 		let (ap1, apf) = promoteList a1 in
-		"(flip$(concat.).(replicate.fromIntegral))."++apf ~> ap1),
+		"(flip$(concat.).(genericReplicate))."++apf ~> ap1),
 	-- Desc: tails
 	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
 	extendOp ["=","~"] genericReason ("ts", [14,0], [list], "tails"~>VList),
@@ -381,10 +395,12 @@ rawOps = [
 	-- Desc: to base
 	-- Example: tb 2 10 -> [1,0,1,0]
 	-- Test: tb 2 0 -> []
+	-- Test: tb ~ 10 -> [1,0,1,0]
 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [AutoDefault num 2, autoTodo num], "toBase"~>vList1 .a1),
 	-- Desc: from base
 	-- Example: fb 2 :1 :0 :1 0 -> 10
 	-- Test: fb 2 <0,3 -> 0
+	-- Test: fb ~ :1 :0 :1 0 -> 10
 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [AutoDefault num 2, list {-todo 1d-}], "fromBase"~>a1),
 	-- Desc: tbd
 	-- Example: 0 -> 0

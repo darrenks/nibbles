@@ -8,9 +8,13 @@ import Polylib
 import Parse
 import Hs
 
+makeOp :: (OpImpl impl, ToLitSpec lit) => Bool -> (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+makeOp priority (lit, nib, t, impl) = [(priority, toLitSpec lit, nib, (t, toImpl impl))]
+
 op :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-op(lit, nib, t, impl) =             [(True, toLitSpec lit, nib, (t, toImpl impl))]
-lowPriorityOp(lit, nib, t, impl) = [(False, toLitSpec lit, nib, (t, toImpl impl))]
+op = makeOp True
+lowPriorityOp :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+lowPriorityOp = makeOp False
 
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
@@ -19,8 +23,13 @@ commutativeReason = "Use the other operator order for this commutative op to acc
 litExtError invalidLit lit reason = parseError $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions" where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
-extendOp invalidLit reason (lit, nib, t, impl) =
-	op (invalidLit, [], t, litExtError invalidLit lit reason::ParseState Impl) ++ op (lit, nib, t, impl)
+makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+makeExtendOp priority invalidLit reason (lit, nib, t, impl) =
+	makeOp priority (invalidLit, [], t, litExtError invalidLit lit reason::ParseState Impl) ++ op (lit, nib, t, impl)
+extendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+extendOp = makeExtendOp True
+lowPriorityExtendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+lowPriorityExtendOp = makeExtendOp False
 
 undefinedImpl = (VInt,"asdf")
 

@@ -276,26 +276,22 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 
 	-- Low priority extensions don't match if their snd nibble is in an extensions (and thus would be renamed).
 	let reconstructedLit = dToList $ pdLit $ snd $ head $ head memoArgOffsets
-	case code of
-		(Nib _ _)
+	case (match code (lit, nib), code) of
+		(Nothing,_) -> tryRest
+		(_,Nib _ _)
 			| not isPriority
 			&& concat lit !! 1 /= head reconstructedLit -> tryRest
--- 			check that second memo lit == snd lit
-				 
-		_ -> do
-			case match code (lit, nib) of
-				Nothing -> tryRest
-				Just afterOpCode -> do
-					origState <- get
-					modify $ \s -> s {pdCode=afterOpCode}
-					let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
-					appendRep (nib,concat lit)
-					attempt <- convertOp valList op code
-					case attempt of
-						Just impl -> return impl
-						Nothing -> do
-							put origState
-							tryRest
+		(Just afterOpCode,_) -> do
+			origState <- get
+			modify $ \s -> s {pdCode=afterOpCode}
+			let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
+			appendRep (nib,concat lit)
+			attempt <- convertOp valList op code
+			case attempt of
+				Just impl -> return impl
+				Nothing -> do
+					put origState
+					tryRest
 
 convertOp :: [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
 convertOp memoizedArgList (ats,impl) preOpCode = do
