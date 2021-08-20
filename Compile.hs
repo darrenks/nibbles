@@ -270,22 +270,32 @@ getValue memoArgOffsets = do
 	then argImplicit
 	else getValueH allOps memoArgOffsets
 getValueH [] _ = parseError "Parse Error: no matching op"
-getValueH ((lit,nib,op):otherOps) memoArgOffsets = do
+getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 	code <- gets pdCode
 	let tryRest = getValueH otherOps memoArgOffsets
-	case match code (lit, nib) of
-		Nothing -> tryRest
-		Just afterOpCode -> do
-			origState <- get
-			modify $ \s -> s {pdCode=afterOpCode}
-			let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
-			appendRep (nib,concat lit)
-			attempt <- convertOp valList op code
-			case attempt of
-				Just impl -> return impl
-				Nothing -> do
-					put origState
-					tryRest
+
+	-- Low priority extensions don't match if their snd nibble is in an extensions (and thus would be renamed).
+	let reconstructedLit = dToList $ pdLit $ snd $ head $ head memoArgOffsets
+	case code of
+		(Nib _ _)
+			| not isPriority
+			&& concat lit !! 1 /= head reconstructedLit -> tryRest
+-- 			check that second memo lit == snd lit
+				 
+		_ -> do
+			case match code (lit, nib) of
+				Nothing -> tryRest
+				Just afterOpCode -> do
+					origState <- get
+					modify $ \s -> s {pdCode=afterOpCode}
+					let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
+					appendRep (nib,concat lit)
+					attempt <- convertOp valList op code
+					case attempt of
+						Just impl -> return impl
+						Nothing -> do
+							put origState
+							tryRest
 
 convertOp :: [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
 convertOp memoizedArgList (ats,impl) preOpCode = do

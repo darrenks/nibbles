@@ -8,8 +8,9 @@ import Polylib
 import Parse
 import Hs
 
-op :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [([String], [Int], Operation)]
-op(lit, nib, t, impl) = [(toLitSpec lit, nib, (t, toImpl impl))]
+op :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+op(lit, nib, t, impl) =             [(True, toLitSpec lit, nib, (t, toImpl impl))]
+lowPriorityOp(lit, nib, t, impl) = [(False, toLitSpec lit, nib, (t, toImpl impl))]
 
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
@@ -75,7 +76,7 @@ infixr 1 ~>
 a~>b = (b,a)
 
 -- 16 makes it so that parsing bin will never try it
-convertNullNib (lit, nib, op) = (lit, if null nib
+convertNullNib (isPriority, lit, nib, op) = (isPriority, lit, if null nib
 		then [16, error $ "attempt to convert "++(concat lit)++" to bin (it is only for literate mode)"]
 		else nib
 	, op)

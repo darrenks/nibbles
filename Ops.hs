@@ -15,7 +15,7 @@ import Data.Maybe
 autoTodoValue = -88
 autoTodo t = AutoDefault t autoTodoValue
 
-rawOps :: [[([String], [Int], Operation)]]
+rawOps :: [[(Bool, [String], [Int], Operation)]]
 rawOps = [
 	-- Desc: auto value
 	-- Example (size 4): +4~ -> 5
@@ -324,6 +324,7 @@ rawOps = [
 	extendOp [",",","] genericReason ("ch", [13,13], [autoTodo num], "id" ~> xorChr.(VChr:)),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
+	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "reshape" ~> vList1 .a2),
 	-- Desc: nChunks
@@ -389,11 +390,11 @@ rawOps = [
 	-- Example: 0 -> 0
 	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
 	-- Desc: if nonnull (lazy)
-	-- Example: ?,"hi" 1 0 -> 1
-	-- Test: ?,"" 1 0 -> 0
-	-- Test: ?,"hi" $ 0 -> "hi"
+	-- Example: ?,:5 5 1 0 -> 1
+	-- Test: ?,:"" "" 1 0 -> 0
+	-- Test: ?,:5 5 $ 0 -> [5,5]
 	-- todo, the arg passed in should be marked optional used
-	op(["?",","], [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+	lowPriorityOp(["?",","], [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		),
 	-- Desc: if/else
