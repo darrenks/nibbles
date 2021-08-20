@@ -1,3 +1,5 @@
+{-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
+
 module Args(argn, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit) where
 
 import Expr
@@ -48,10 +50,13 @@ setUsed impl = do
 			argImpl { implUsed=UsedArg }
 		else argImpl)
 
-argImplicit :: ParseState Impl
+argImplicit :: (?isSimple::Bool) => ParseState Impl
 argImplicit = do
-	context <- gets pdContext
-	argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
+	if ?isSimple
+	then parseError "Expecting more expressions at EOF"
+	else do
+		context <- gets pdContext
+		argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
 
 flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls

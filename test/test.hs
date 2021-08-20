@@ -1,3 +1,5 @@
+{-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
+
 import Compile
 import Expr
 import Types
@@ -67,6 +69,7 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 		else putStrLn $ "Test failed: " ++ origLit ++ "\nReason: " ++ reason ++ "\nExpected: " ++ expected ++ "\nActual  : " ++ actual
 
 main=do
+	let ?isSimple = False
 	testCases <- getTestsFromAnnotations
 	let tests = map toTest $ take 1000 $ filter (not.isErrorResult) testCases
 	let (_,(_,_,x,_,_,_,_)) = last tests

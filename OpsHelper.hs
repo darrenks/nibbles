@@ -20,7 +20,7 @@ genericReason = "This usually means there is an alternative (likely shorter) way
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = parseError $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions" where
+litExtError invalidLit lit reason = parseError $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
@@ -152,3 +152,17 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 
 testCoerceTo :: [VT] -> [VT] -> ([VT], String)
 testCoerceTo to a1 =  (to, coerceTo to a1)
+
+isExtension (lit, nib, op) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
+isExtOpt (types,_) = any (\t -> case t of
+	Auto _ -> True
+	Cond desc _ -> elem '>' desc
+	otherwise -> False) types
+isOpSimple (isPriority, lits, nib, op) =
+	(not (isExtension (lit, nib, op))
+	||elem lit whitelist)
+	&& not (elem lit blacklist)
+	where
+		lit = concat lits
+		whitelist = ["ct",":~"]
+		blacklist = [";", "tbd", "z"]

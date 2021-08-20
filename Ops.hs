@@ -471,11 +471,14 @@ rawOps = [
 foldr1Fn = (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f x) y) a")
 mapFn = (\[a1,a2]->"(\\a f->map ("++uncurryN (length (elemT a1))++"f) a)")
 
-allOps = concat [op(
+addHigherValueDeBruijnOps ops = concat [op(
 		replicate unary ';' ++ snd symb,
 		replicate unary 6 ++ [2+fst symb],
 		[],
 		argn (unary*3+fst symb))
 	| unary <- [1..10]
 	, symb <- [(1,"$"),(2,"@"),(3,"_")]
-	] ++ map convertNullNib (concat rawOps)
+	] ++ map convertNullNib ops
+
+allOps = addHigherValueDeBruijnOps $ concat rawOps
+simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps

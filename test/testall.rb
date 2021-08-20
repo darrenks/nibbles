@@ -17,6 +17,10 @@ pass &&= $?.exitstatus==0
 puts `ruby test/input_integration_test.rb`
 pass &&= $?.exitstatus==0
 
+# simple integration test
+puts `ruby test/simple_integration_test.rb`
+pass &&= $?.exitstatus==0
+
 # test generate quickref (not in distributed code)
 if Dir.exist?('web')
 	puts 'testing quickref compile'

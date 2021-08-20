@@ -1,3 +1,5 @@
+{-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
+
 module Compile(compile,padToEvenNibbles) where
 
 import Data.List(inits,intercalate)
@@ -17,7 +19,7 @@ import SmartList
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
-compile :: (VT -> String) -> String -> Code -> (Impl, [Int], String)
+compile :: (?isSimple::Bool) => (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	args =
 		[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
@@ -47,7 +49,8 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
 			getInputsUsedness context
 
-		let autoMap = if allInputUsed || allInputUsedAsInts && not (isJust dat) then ""
+		let autoMap = if ?isSimple then "" else 
+			if allInputUsed || allInputUsedAsInts && not (isJust dat) then ""
 			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
 			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
 			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
@@ -79,7 +82,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 				return (Just dat,finishedPrev)
 			otherwise -> do
 			result <- case implType prev of
-				VInt -> do
+				VInt | not ?isSimple -> do
 					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
 					if last argsUsed then do
 						return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
@@ -88,7 +91,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 					else do
 						rhsImpl <- convertPairToLet (app1Hs "(\\f->f()())" impl1) (ret $ implType impl1)
 						return $ join2 finishedPrev (finishIt rhsImpl)
-				VList e | e /= [VChr] -> do
+				VList e | not ?isSimple && e /= [VChr] -> do
 					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
 					if or $ drop (length e) argsUsed then do
 						convertPairToLet (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
@@ -133,7 +136,7 @@ putAddRep (ParseData code context nib lit) = do
 	appendRepH (nib,lit)
 	modify $ \s -> s { pdCode=code, pdContext=context }
 
-tryArg :: ArgSpec ->
+tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
 		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
@@ -182,9 +185,9 @@ tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 		Nothing -> tryArg tspec prevTypes nibs memoArgs
 
 -- get the args (possibly fail), ok to modify parse state and fail
-getArgs :: [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
 getArgs = getArgsH [] []
-getArgsH :: [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
 getArgsH prevArgs _ [] _ = return $ Just prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 	arg <- tryArg spec prevArgTypes nibs memoArgs
@@ -231,13 +234,13 @@ pushLambdaArg argType argUsedness f = do
 	bodyWithLets <- popArg depth body
 	return (newArgFinal, bodyWithLets)
 
-get1Value :: ParseState Impl
+get1Value :: (?isSimple::Bool) => ParseState Impl
 get1Value = do
 	v <- getValuesMemo 1
 	return $ head v
 
 -- Gets the arg list
-getValuesMemo :: Int -> ParseState [Impl]
+getValuesMemo :: (?isSimple::Bool) => Int -> ParseState [Impl]
 getValuesMemo n = do
 	ParseData code context _ _ <- get
 	let exprs = take n $ head $ exprsByOffset $ Thunk code context
@@ -247,7 +250,7 @@ getValuesMemo n = do
 data Thunk = Thunk Code [Arg]
 
 -- Gets the arg list (given an arg from each possible offset after this one)
-getValues :: Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
+getValues :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
 getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
 	(impl, after@(ParseData afterCode afterContext _ _))=
 		runState (getValue offsetExprs) $ blankRep code context
@@ -258,17 +261,18 @@ getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThun
 		else drop 1 $ exprsByOffset afterThunk
 
 -- Gets the arg lists from each possible offset (ParseData is what is after the Impl)
-exprsByOffset :: Thunk -> [[(Impl, ParseData)]]
+exprsByOffset :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]]
 exprsByOffset (Thunk code context) =
 	getValues (Thunk code context) rest : rest where
 		rest = exprsByOffset (Thunk (nextOffset code) context)
 
-getValue :: [[(Impl, ParseData)]] -> ParseState Impl
+getValue :: (?isSimple::Bool) => [[(Impl, ParseData)]] -> ParseState Impl
 getValue memoArgOffsets = do
+	let ops = if ?isSimple then simpleOps else allOps
 	code <- gets pdCode
 	if empty code
 	then argImplicit
-	else getValueH allOps memoArgOffsets
+	else getValueH ops memoArgOffsets
 getValueH [] _ = parseError "Parse Error: no matching op"
 getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 	code <- gets pdCode
@@ -293,7 +297,7 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 					put origState
 					tryRest
 
-convertOp :: [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
+convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
 convertOp memoizedArgList (ats,impl) preOpCode = do
 	maybeArgs <- getArgs ats memoizedArgList
 	case maybeArgs of
@@ -317,13 +321,13 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 -- todo memoize the parse
 -- todo could put in getValue if wanted to support real first class functions
 -- todo could unify function calling with convertOp code
-applyFirstClassFn :: Impl -> ParseState Impl
+applyFirstClassFn :: (?isSimple::Bool) => Impl -> ParseState Impl
 applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> do
 	let initImpl = Impl undefined hs dep undefined undefined
 	convertPairToLet (foldl applyImpl initImpl impls) to
 applyFirstClassFn x = return x
 
-getNArgs :: [VT] -> ParseState [Impl]
+getNArgs :: (?isSimple::Bool) => [VT] -> ParseState [Impl]
 getNArgs argTypes = do
 	args <- getValuesMemo (length argTypes)
 	return $ zipWith coerceImpl args argTypes

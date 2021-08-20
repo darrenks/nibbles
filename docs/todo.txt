@@ -3,7 +3,6 @@ fold on prefixes (primo)
 	1 op folds, 1 char shorter using non matching string/int constants
 put rep in arg list instead of using istildastart
 
-simple mode (and simplify quickref)
 better checking for commutative, taking into account what the code would be if swapping order with lets
 
 consider that extensions may make other extensions codes not useless

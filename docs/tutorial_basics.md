@@ -43,8 +43,8 @@ A file appears named `intro.nbb` (nbb is the file extension for binary Nibbles p
 ## Syntax
 Programs are written in Polish (prefix notation). Instead of writing `1+2` we write `+1 2`. The advantage of this is that you do not ever need parenthesis. `(1+2)*3` would be written as `*+1 2 3`. `1+(2*3)` would be written as `+1*2 3`. This may seem strange for math operators but it is actually quite familiar for other functions. For example C uses prefix notation for function calls. e.g. `add(1, 2)`. But unlike C we don't need commas or parentheses since all functions have a fixed arity.
 
-### Apology
-Around now you will probably accidentally encounter commutative extensions, which will make no sense. Have no fear though that they don't prevent you from doing what you want to do and do allow reuse of binary codes. In the future I'll create a simple mode that disables them for learning purposes, but for now you'll have to deal with it.
+## Simple Mode
+If you play around with those examples, you'll find that `+1 2` doesn't actually work! This obviously makes no sense yet, but the reason is that Nibbles tries to only have one way to do things in the binary form, other ways are remapped to something else, and these are called extensions. But the whole purpose of the literate form is to make it easy and not error prone to write code, so we error rather than do what you didn't mean. In this case `]1 2` would generate the same binary code that `+1 2` would have and it means `max`. You should be protected from accidentally doing the wrong thing, but this could be quite annoying so I suggest using nibbles with `nibbles -simple` to disable all extensions and implicit operations until you have mastered the basics.
 
 ### Exercise
 Write a program that computes `(1+2)*(3-4)`
