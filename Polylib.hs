@@ -23,7 +23,7 @@ import Types
 import Data.List
 
 truthy [VInt] = "(>0)"
-truthy [VChr] = "(not.isSpace.chr)" -- todo should \0 be false too?
+truthy [VChr] = "(\\c->c>0 && not (isSpace$chr c))"
 truthy [VList _] = "(not.null)"
 truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
 

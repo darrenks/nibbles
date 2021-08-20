@@ -22,15 +22,13 @@ rawOps = [
 	-- This is only here so that auto handling can use memoized args after.
 	-- and so that if ops check type it won't match
 	op("~", [0], [], (error"undefined auto impl"::String)~>InvalidType), 
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [1,0], [], undefinedImpl), -- note things rely on this being an integer for extensions
 	-- Desc: integer
 	-- Example (size 2): 3 -> 3
 	-- Test (size 2): 0 -> 0
 	-- Test (size 2): 1 -> 1
 	-- Test (size 2): 7 -> 7
 	-- Test (size 3): 8 -> 8
+	-- Test (size 2): 10 -> 10
 	-- Test (size 3): 20 -> 20
 	-- Test leading zero is separate: :05 -> [0,5]
 	op(litDigit, [1], [ParseArg intParser], ()), 
@@ -346,7 +344,7 @@ rawOps = [
 	op(",", [13], [list], "length" ~> VInt),
 	-- Desc: range from 0 ...
 	-- Example: ,~3 -> [0,1,2]
-	-- Example: <3,~~ -> [0,1,2]
+	-- Test: <3,~~ -> [0,1,2]
 	op([",","~"], [13, 0], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]

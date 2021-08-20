@@ -146,7 +146,7 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 
 **Hint1**: the range operator (`,`) is 1 indexed, which may seem bad, but, as it turns out in code golf, is much more commonly used than lists starting from 0. So `range` and all other list operators in Nibbles are 1 indexed.
 
-**Hint2**: the filter operator (`&`) uses the truthiness of the function result. Integers are considered truthy if they are > 0 (and false if 0 or negative, this is **nonstandard** but useful). Lists are truthy if non empty. Chars are truthy if they are non whitespace.
+**Hint2**: the filter operator (`&`) uses the truthiness of the function result. Integers are considered truthy if they are > 0 (and false if 0 or negative, this is **nonstandard** but useful). Lists are truthy if non empty. Chars are truthy if they are non whitespace (and >0).
 
 $Solution
 

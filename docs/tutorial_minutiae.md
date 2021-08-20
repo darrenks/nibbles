@@ -6,7 +6,9 @@ In this final tutorial you will learn obscure features and how to calculate bina
 
 All ops correspond to their literate size. `+` is 1 nibble (half a byte). `st` is 2 nibbles.
 
-**Integers** require 1 nibble plus their size in octal. So, `7` is 1 byte but `8` is 1.5 bytes. The reason for this is because in binary form only 1 hex value is reserved for starting a number. Then we need to use 1 bit per digit to say when to stop. Since integers are fairly common that is why `~` was added as another way to create integers cheaply.
+**Integers** require 1 nibble plus their size in octal. So, `7` is 1 byte but `8` is 1.5 bytes. `10` is a special case which still only requires 1 byte.
+
+The reason for this encoding is because in binary form only 1 hex value is reserved for starting a number. Then we need to use 1 bit per digit to say when to stop. Since integers are fairly common that is why `~` was added as another way to create integers cheaply.
 
 **Strings** require 1 nibble plus 2 nibbles per character. So "hi" is 2.5 bytes. 
 

@@ -136,7 +136,7 @@ list
 str
 	str= more useful than list=
 	l/rjust (rjust more common in gs2)
-	down/upcase (if space)
+	down/upcase (if room)
 	tbd
 	strip
 

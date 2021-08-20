@@ -138,7 +138,7 @@ getExamples = do
 	return $ catMaybes $ map getExample (lines ops)
 
 selectNonWarningOps ops = if length ops > 1 then filter hasBin ops else ops
-	where hasBin (_,nib,_) = not (null nib)
+	where hasBin (_,_,nib,_) = not (null nib)
 
-concatLit :: ([String], [Int], Operation) -> (String, [Int], Operation)
-concatLit (lit, i, o) = (concat lit, i, o)
+concatLit :: (Bool, [String], [Int], Operation) -> (String, [Int], Operation)
+concatLit (b, lit, i, o) = (concat lit, i, o)

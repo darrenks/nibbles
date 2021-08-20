@@ -41,6 +41,7 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 sLit :: String -> String -> Int -> Code
 sLit f s cp = consumeWhitespace $ Lit f s cp
 
+parseInt (Nib (0:rest) cp) = (10, Nib rest (cp+1))
 parseInt (Nib s cp) = (n, rest) where
 	(n,rest) = parseNibInt s 0 cp
 	parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
@@ -194,6 +195,7 @@ padSafeDat = reverse . map (\e ->
 	else e)
 
 intToNib :: Integer -> [Int]
+intToNib 10 = [0]
 intToNib n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
