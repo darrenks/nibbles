@@ -405,6 +405,7 @@ rawOps = [
 	-- Test: tb 10 ~+1 1 -> [1,0,1,0]
 	-- Test: tb 10 " #" -> "# # "
 	-- Test: tb '\255' a -> "jv"
+	-- Test: tb 0 1 -> []
 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [autoTodo num, BaseMode], \[a1,a2]->
 		if isList a2 then "\\a1 a2->map (a2!!) $ toBase (genericLength a2) a1"~>a2
 		else "flip toBase"~>vList1 a2),
@@ -426,6 +427,7 @@ rawOps = [
 	-- Test: fb "dd" 'e' -> 10200
 	-- Test: fb :1:0:1 0 ~+1 1 -> 10
 	-- Test: fb "# # " " #" -> 10
+	-- Test: fb "" b -> 0
 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [list, BaseMode], \[a1,a2]->
 		if isList a2 then "\\a1 a2->fromBase (genericLength a2) $ catMaybes $ map (flip elemIndex a2) a1"~>VInt
 		else "flip fromBase"~>VInt),

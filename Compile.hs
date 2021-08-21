@@ -139,7 +139,7 @@ putAddRep (ParseData code context nib lit) = do
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 
 baseModes :: (?isSimple::Bool) => [(Char, ParseState Impl)]
-baseModes = [('~',get1Value)
+baseModes = [('~',get1Value {- todo not memoized but who cares -})
             ,('b',createImplMonad vstr$hsParen$hsAtom"sToA \"01\"")
             ,('h',createImplMonad vstr$hsParen$hsAtom"sToA $ ['0'..'9']++['a'..'f']")
             ,('o',createImplMonad vstr$hsParen$hsAtom"sToA ['0'..'7']")
@@ -154,7 +154,7 @@ baseModes = [('~',get1Value)
             ,('0',parserToImpl intParser)
             ,('\"',parserToImpl strParser)
             ,('\'',parserToImpl chrParser)
-            ]
+            ] -- one more is possible
 
 tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
