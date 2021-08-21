@@ -23,6 +23,8 @@ data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show
 -- cp is the number of characters consumed so far
 data Code = Lit { fullLit::String, codeLit::String, litcp::Int }
           | Nib { codeNib::[Int], nibcp::Int } deriving Show
+isBinary (Nib _ _) = True
+isBinary _ = False
 
 uselessOp = 6 :: Int -- for padding odd nibbles into bytes
 
@@ -62,6 +64,9 @@ appendRepH (nib2,lit2) = do
 	                 
 appendRep :: ([Int],String) -> ParseState ()
 appendRep (nib2,lit2) = appendRepH (newSmartList nib2, DList.fromList lit2)
+
+appendRepA :: ([Int],[String]) -> ParseState ()
+appendRepA (nib,lit) = appendRep (nib,concat lit)
 
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =

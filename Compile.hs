@@ -71,16 +71,15 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		ParseData code _ _ _ <- get
 		if empty code then return (Nothing, finishedPrev)
 		else do
-		 context <- gets pdContext
-		 let inputsUsed = getInputsUsedness context
-		 case match code (["~"],[0]) of -- don't make this mean data unless they use it!
-			Just nextCode | head inputsUsed -> do
-				appendRep ([0],"~")
-				modify $ \s -> s { pdCode=nextCode }
+			context <- gets pdContext
+			let inputsUsed = getInputsUsedness context
+			doData <- if head inputsUsed  -- don't make this mean data unless they use it!
+				then match tildaOp
+				else return False
+			if doData then do
 				dat <- parseDataExpr
--- 				error $ show dat
 				return (Just dat,finishedPrev)
-			otherwise -> do
+			else do
 			result <- case implType prev of
 				VInt | not ?isSimple -> do
 					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
@@ -167,7 +166,7 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 	state <- get
 	code <- gets pdCode
 	
-	if (isNothing $ match code (["~"],[0])) -- check this to avoid passing autos with undefined type
+	if (isNothing $ onlyCheckMatch code tildaOp) -- check this to avoid passing autos with undefined type
 		&& c (MatchTestData (prevTypes++[implType impl]) nibs state)
 	then do
 		putAddRep nextState
@@ -184,15 +183,9 @@ tryArg BaseMode _ _ memoArgs = do
 	return $ Just (error"memoized args cannot be used after base mode", [impl])
 
 tryArg (Auto binOnly) _ _ memoArgs = do
-	code <- gets pdCode
-	let lit = if binOnly then [] else ["~"]
-	case match code (lit,[0]) of
-		Just nextCode -> do
-			-- todo build this into match
-			modify $ \s -> s { pdCode = nextCode }
-			appendRep ([0],concat lit)
-			return $ Just (tail memoArgs, [])
-		Nothing -> return Nothing
+	let lit = if binOnly then [] else snd tildaOp
+	matched <- match (fst tildaOp, lit)
+	return $ if matched then Just (tail memoArgs, []) else Nothing
 
 tryArg (Fn f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
@@ -200,14 +193,10 @@ tryArg (Fn f) prevTs _ _ = do
 	return $ Just (error"memoized args cannot be used after fn", [impl])
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
-	code <- gets pdCode
-	case match code (["~"],[0]) of
-		Just nextCode -> do
-			-- todo build this into match
-			modify $ \s -> s { pdCode = nextCode }
-			appendRep ([0],"~")
-			return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i $ fromIntegral v }])
-		Nothing -> tryArg tspec prevTypes nibs memoArgs
+	matched <- match tildaOp
+	if matched
+	then return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i $ fromIntegral v }])
+	else tryArg tspec prevTypes nibs memoArgs
 
 -- get the args (possibly fail), ok to modify parse state and fail
 getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
@@ -302,25 +291,24 @@ getValueH [] _ = parseError "Parse Error: no matching op"
 getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 	code <- gets pdCode
 	let tryRest = getValueH otherOps memoArgOffsets
-
 	-- Low priority extensions don't match if their snd nibble is in an extensions (and thus would be renamed).
 	let reconstructedLit = dToList $ pdLit $ snd $ head $ head memoArgOffsets
-	case (match code (lit, nib), code) of
-		(Nothing,_) -> tryRest
-		(_,Nib _ _)
-			| not isPriority
-			&& concat lit !! 1 /= head reconstructedLit -> tryRest
-		(Just afterOpCode,_) -> do
-			origState <- get
-			modify $ \s -> s {pdCode=afterOpCode}
-			let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
-			appendRep (nib,concat lit)
-			attempt <- convertOp valList op code
-			case attempt of
-				Just impl -> return impl
-				Nothing -> do
-					put origState
-					tryRest
+	origState <- get
+	match <- match (nib,lit)
+	if not match then tryRest
+	else if not isPriority && isBinary code && concat lit !! 1 /= head reconstructedLit
+	then do
+		put origState
+		tryRest
+	else do
+		afterOpCode <- gets pdCode
+		let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
+		attempt <- convertOp valList op code
+		case attempt of
+			Just impl -> return impl
+			Nothing -> do
+				put origState
+				tryRest
 
 convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
 convertOp memoizedArgList (ats,impl) preOpCode = do

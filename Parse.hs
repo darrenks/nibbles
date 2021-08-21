@@ -11,6 +11,8 @@ module Parse(
 	parse1Nibble,
 	parserToImpl,
 	cp,
+	tildaOp,
+	onlyCheckMatch,
 	match,
 	parseError,
 	nextOffset,
@@ -46,6 +48,8 @@ sLit f s cp = consumeWhitespace $ Lit f s cp
 
 -- use as needle in match to match int digit
 litDigit = ""
+
+tildaOp = ([0],["~"])
 
 parseInt (Nib (0:rest) cp) = (10, Nib rest (cp+1))
 parseInt (Nib s cp) = (n, rest) where
@@ -100,18 +104,8 @@ parseData (Nib b _) = fromBase 16 (map fromIntegral $ padSafeDat b)
 
 parseCountTuple :: ParseState Int
 parseCountTuple = do
-	code <- gets pdCode
-	case code of
-		(Nib (0:rest) cp) -> do
-			modify $ \st -> st { pdCode=Nib rest (cp+1) }
-			doAppendRep 
-			parseCountTuple >>= return.(+1)
-		(Lit f ('~':rest) cp) -> do
-			modify $ \st -> st { pdCode=sLit f rest (cp+1) }
-			doAppendRep 
-			parseCountTuple >>= return.(+1)
-		_ -> return 0
-	where doAppendRep = appendRep ([0],"~")
+	matched <- match tildaOp
+	if matched then fmap (+1) parseCountTuple else return 0
 
 cp (Lit _ _ cp) = cp
 cp (Nib _ cp) = cp
@@ -122,12 +116,12 @@ empty _ = False
 nextOffset (Nib (c:s) cp) = Nib s (cp+1)
 nextOffset (Lit f (c:s) cp) = Lit f s (cp+1)
 
-match :: Code -> ([String], [Int]) -> Maybe Code
-match (Nib s cp) (_, needle) = if isPrefixOf needle s
+onlyCheckMatch :: Code -> ([Int],[String]) -> Maybe Code
+onlyCheckMatch (Nib s cp) (needle, _) = if isPrefixOf needle s
 	then Just $ Nib (drop (length needle) s) (cp+length needle)
 	else Nothing
-match lit@(Lit _ _ _) ([], _) = Just lit
-match lit@(Lit _ _ _) (needle:s, _) = match1Lit lit needle >>= flip match (s, undefined)
+onlyCheckMatch lit@(Lit _ _ _) (_, []) = Just lit
+onlyCheckMatch lit@(Lit _ _ _) (_, needle:s) = match1Lit lit needle >>= flip onlyCheckMatch (undefined, s)
 match1Lit lit@(Lit f s cp) needle
 	| null s = Nothing
 	| needle == "" = if isDigit (head s) then Just lit else Nothing
@@ -135,6 +129,16 @@ match1Lit lit@(Lit f s cp) needle
 	| needle == "\'" && '\'' == head s = Just lit
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
+
+match :: ([Int],[String]) -> ParseState Bool
+match (nib,lit) = do
+	code <- gets pdCode
+	case onlyCheckMatch code (nib,lit) of
+		Just nextCode -> do
+			modify $ \s -> s { pdCode = nextCode }
+			appendRep (nib,concat lit)
+			return True
+		Nothing -> return False
 
 parseError :: String -> ParseState a
 parseError msg = do
@@ -194,13 +198,8 @@ parserToImpl (t,parser) = do
 parse1Nibble :: String -> [(Int, (Char, ParseState Impl))] -> State ParseData Impl
 parse1Nibble name [] = parseError $ "symbol not found in " ++ name
 parse1Nibble name ((nib,(lit,impl)):rest) = do
-	code <- gets pdCode
-	case match code ([[lit]], [nib]) of
-		Just nextCode -> do
-			modify $ \s -> s { pdCode = nextCode }
-			appendRep ([nib],[lit])
-			impl
-		Nothing -> parse1Nibble name rest
+	match <- match ([nib],[[lit]])
+	if match then impl else parse1Nibble name rest
 
 parseDataExpr :: ParseState Integer
 parseDataExpr = do
