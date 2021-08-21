@@ -22,11 +22,14 @@ There are a few exceptions:
 
 *	\n
 *	space
-*	,
-*	.
 *	-
-*	0
+*	.
+*	,
+*	\`
 *	a
+*	@
+*	A
+*	0
 
 Binary chars will require 5 nibbles.
 

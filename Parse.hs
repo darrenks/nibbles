@@ -65,6 +65,11 @@ parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	_ -> error $ "unparsable int: " ++ s
 
+intToNib :: Integer -> [Int]
+intToNib 10 = [0]
+intToNib n = init digits ++ [last digits + 8]
+	where digits = map digitToInt $ showOct n ""
+
 parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
@@ -83,17 +88,48 @@ parseStr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.String str), rest)] -> (str, sLit f rest (cp+length used))
 	_ -> error $ "unparsable string: " ++ s
 
-specialChars = " \n,.-0a" -- todo more (A)
+strToNib :: String -> [Int]
+strToNib "" = [2,0]
+strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
+	'\n' -> [last]
+	' ' -> [1+last]
+	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
+	_ -> [last+div oc 16, mod oc 16]
+	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
+
+specialChars = "\n -.,`a@A0"
+specialChars127n = '\127':tail specialChars
+swap127 '\n' = '\127'
+swap127 '\127' = '\n'
+swap127 c = c
+-- 10 special chars
+-- 10 first op nibbles to denote them, otherwise normal 2 nibble char
+-- if you encoded a normal char that is a special char, it denotes beginning of nonprintable char (of which there are 256-96)
 parseChr :: Code -> (Char, Code)
 parseChr(Nib [] cp) = error "unterminated char"
 parseChr(Nib (c:rest) cp)
-	| c == 8 = (toByte rest, Nib (drop 2 rest) (cp+3))
-	| c > 8 = (specialChars !! (c-9), Nib rest (cp+1))
+	| c < 2 = (specialChars !! c, Nib rest (cp+1))
+	| c > 7 = (specialChars !! (c-6), Nib rest (cp+1))
 parseChr(Nib [_] cp) = error "unterminated char"
-parseChr(Nib (a:b:rest) cp) = (toByte [a,b], Nib rest (cp+2))
+parseChr(Nib (a:b:rest) cp) = 
+	case elemIndex c specialChars127n of
+	Just i -> case uncons rest of
+		Nothing -> error "unterminated binary char"
+		Just (b2,rest2) -> (swap127 $ toByte [if i < 2 then i else i+6,b2], Nib rest2 (cp+3))
+	Nothing -> (c, Nib rest (cp+2))
+	where c = toByte [a,b]
 parseChr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
 	[((used, Lex.Char char), rest)] -> (char, sLit f rest (cp+length used))
 	_ -> error $ "unparsable char: " ++ s
+
+chrToNib :: Char -> [Int]
+chrToNib c =
+	case elemIndex c specialChars of
+	Just i -> [if i < 2 then i else i + 6]
+	Nothing -> if c >= chr 32 && c < chr 127
+		then fromByte c
+		else let [a,b] = fromByte (swap127 c)
+			in fromByte (specialChars127n!!(if a<2 then a else a-6))++[b]
 
 -- Consume rest of program as an integer (efficient binary packing)
 parseData :: Code -> Integer
@@ -214,24 +250,3 @@ padSafeDat = reverse . map (\e ->
 	if e == uselessOp then 0
 	else if e == 0 then uselessOp
 	else e)
-
-intToNib :: Integer -> [Int]
-intToNib 10 = [0]
-intToNib n = init digits ++ [last digits + 8]
-	where digits = map digitToInt $ showOct n ""
-
-strToNib :: String -> [Int]
-strToNib "" = [2,0]
-strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
-	'\n' -> [last]
-	' ' -> [1+last]
-	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
-	_ -> [last+div oc 16, mod oc 16]
-	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
-
-chrToNib :: Char -> [Int]
-chrToNib c
-	| c >= chr 128 = 8 : fromByte c
-	| otherwise = case elemIndex c specialChars of
-	Just i -> [9 + i]
-	Nothing -> fromByte c

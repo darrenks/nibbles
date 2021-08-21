@@ -42,8 +42,18 @@ rawOps = [
 	-- Desc: char
 	-- Example (size 4): 'b' -> 'b'
 	-- Test (size 3): 'a' -> 'a'
+	-- Test (size 3): '\n' -> '\n'
 	-- Test (size 3): ' ' -> ' '
-	-- Test (size 5): '\200' -> '\200'
+	-- Test (size 3): '-' -> '-'
+	-- Test (size 3): '0' -> '0'
+	-- Test (size 4): '!' -> '!'
+	-- Test chr 127 (size 5): '\DEL' -> '\DEL'
+	-- Test chr 0 (size 5): '\NUL' -> '\NUL'
+	-- Test chr 15 (size 5): '\SI' -> '\SI'
+	-- Test chr 16 (size 5): '\DLE' -> '\DLE'
+	-- Test chr 31 (size 5): '\US' -> '\US'
+	-- Test chr (size 5): '\128' -> '\128'
+	-- Test chr (size 5): '\255' -> '\255'
 	extendOp [",","\""] genericReason ("'", [13,2], [ParseArg chrParser], ()),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
@@ -327,7 +337,8 @@ rawOps = [
 	op("%", [12], [num, AutoDefault num 2], "mod" ~> VInt),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
-	extendOp [",",","] genericReason ("ch", [13,13], [autoTodo num], "id" ~> xorChr.(VChr:)),
+	-- Test: ch ~ -> '\NUL'
+	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 0], "id" ~> xorChr.(VChr:)),
 	-- Desc: reshape
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
