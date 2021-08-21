@@ -33,9 +33,6 @@ lowPriorityExtendOp = makeExtendOp False
 
 undefinedImpl = (VInt,"asdf")
 
--- A convenient hack that makes parser prepend spaces to numbers while also having something to represent digit in matching.
-litDigit = " "
-
 toUntypedImpl hs = noArgsUsed { implCode=hsParen $ hsAtom hs }
 toUntypedImpl2 (ts,hs) = (ts,toUntypedImpl hs)
 

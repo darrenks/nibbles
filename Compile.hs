@@ -179,6 +179,7 @@ tryArg (ParseArg (t,parser)) _ _ _ = do
 	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
 
 tryArg BaseMode _ _ memoArgs = do
+	appendRep ([]," ") -- because the 0 mode could be after a number
 	impl <- parse1Nibble "base mode" $ zip [0..] baseModes
 	return $ Just (error"memoized args cannot be used after base mode", [impl])
 

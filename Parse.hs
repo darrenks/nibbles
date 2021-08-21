@@ -15,6 +15,7 @@ module Parse(
 	parseError,
 	nextOffset,
 	consumeWhitespace,
+	litDigit,
 	empty,
 	fromByte,
 	toByte) where
@@ -42,6 +43,9 @@ fromByte b=[ord b `div` 16, ord b `mod` 16]
 
 sLit :: String -> String -> Int -> Code
 sLit f s cp = consumeWhitespace $ Lit f s cp
+
+-- use as needle in match to match int digit
+litDigit = ""
 
 parseInt (Nib (0:rest) cp) = (10, Nib rest (cp+1))
 parseInt (Nib s cp) = (n, rest) where
@@ -124,11 +128,11 @@ match (Nib s cp) (_, needle) = if isPrefixOf needle s
 	else Nothing
 match lit@(Lit _ _ _) ([], _) = Just lit
 match lit@(Lit _ _ _) (needle:s, _) = match1Lit lit needle >>= flip match (s, undefined)
-match1Lit (Lit f s cp) needle
+match1Lit lit@(Lit f s cp) needle
 	| null s = Nothing
-	| needle == " " && isDigit (head s) = Just $ Lit f s cp
-	| needle == "\"" && '"' == head s = Just $ Lit f s cp
-	| needle == "\'" && '\'' == head s = Just $ Lit f s cp
+	| needle == "" = if isDigit (head s) then Just lit else Nothing
+	| needle == "\"" && '"' == head s = Just lit
+	| needle == "\'" && '\'' == head s = Just lit
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
@@ -165,7 +169,8 @@ intParser :: (VT, ParseState String)
 intParser = (VInt, do
 	(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
-	appendRep (intToNib n,show n)
+	genLit <- gets pdLit
+	appendRep (intToNib n," "++show n) -- only need to prepend " " if last was digit, but that would be expensive to check with dlist data structure
 	return $ flatHs $ i n)
 
 strParser :: (VT, ParseState String)
