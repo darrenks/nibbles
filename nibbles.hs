@@ -60,18 +60,18 @@ main=do
 	let (impl, bRaw, lit)  = compileFn $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
+	let nibBytes = toBytes $ padToEvenNibbles bRaw
 
 	case filter isOpt args of
 		ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
 			if parseMode == FromLit then extraLitInfo compileFn lit bRaw else return ()
- 			fullHs <- toFullHs impl
+ 			fullHs <- toFullHs impl nibBytes
  			writeFile "out.hs" fullHs
  			if ops /= ["-hs"] then runHs "out.hs" else return ()
 		["-c"] -> do
-			let bytes = toBytes $ padToEvenNibbles bRaw
 			let outname = (basename ++ ".nbb")
-			hPutStrLn stderr $ "wrote " ++ (show $ length bytes) ++ " bytes to " ++ outname
-			writeFile outname bytes
+			hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
+			writeFile outname nibBytes
 		["-e"] -> putStrLn lit
 		["-v"] -> putStrLn "nibbles alpha (unstable)"
 		e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
@@ -94,9 +94,14 @@ extraLitInfo compileFn lit bRaw = do
 		hPutStrLn stderr lit
 	else return ()
 
-toFullHs impl = do
+toFullHs impl nibBytes = do
  	let header = unlines $ tail $ lines headerRaw -- remove "module Header"
- 	return $ header ++ "\nmain=interact ((\\input->finishLn$aToS$"++ flatHs (implCode impl) ++ ").sToA)"
+ 	return $ header ++ "\n\
+	\progSource = "++show nibBytes++"\n\
+ 	\main=interact ((\\input->let output=aToS$"++ flatHs (implCode impl) ++ "\n\
+ 	\ -- don't print a newline to a quine! \n\
+ 	\ in if output == progSource\n\
+ 	\    then output else finishLn output).sToA)"
 
 runHs filename = do
 	-- Compile with -O for full laziness rather than using runhaskell
