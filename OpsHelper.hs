@@ -161,5 +161,5 @@ isOpSimple (isPriority, lits, nib, op) =
 	&& not (elem lit blacklist)
 	where
 		lit = concat lits
-		whitelist = ["ct",":~"]
+		whitelist = ["ct"]
 		blacklist = [";", "tbd", "z"]

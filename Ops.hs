@@ -115,24 +115,25 @@ rawOps = [
 	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
 		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1)),
 	-- Desc: singleton
-	-- Example: :~3 -> [3]
-	-- Test tuple: :~~1 2 -> [(1,2)]
-	op([":","~"], [7,0], [fn noArgs], "\\v->v():[]" ~> VList .ret.a1),
+	-- Example: :3~ -> [3]
+	-- Test tuple: :~1 2~ -> [(1,2)]
+	op([":"], [7], [fn noArgs, auto], "\\v->v():[]" ~> VList .ret.a1),
 	-- Desc: abs
-	-- Example: ab *~5 -> 5
-	op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
+	--- Example: ab *~5 -> 5
+	-- op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
 	-- Desc: append
 	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
 	-- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
+	--- Test tuple cons: : ~
 	-- Test promoting to list: :1 2 -> [1,2]
-	op(":", [7], [anyT, anyT], \[a,b]->
+	op(":", [7], [fn noArgs, fn noArgs], \[a,b]->
 		let
-			(ap,apFn) = promoteList a
-			(coercedType, coerceFnA, coerceFnB) = coerce [ap] [b]
+			(ap,apFn) = promoteList (ret a)
+			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
 		in
-			"\\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"~>coercedType
+			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 		),
 	-- Desc: max
 	-- Example: ]4 5 -> 5
@@ -157,7 +158,7 @@ rawOps = [
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	-- Test chr split: %"a b" ' ' -> ["a","b"]
 	op("%", [8], [str, orC str char], (\[a1,a2]->
-		let (ap2, apf) = promoteList a2
+		let (ap2, apf) = promoteList [a2]
 		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 .a1),
 	-- Desc: words
 	-- Example: %"a\nb c.d"~ -> ["a","b","c.d"]
@@ -373,7 +374,7 @@ rawOps = [
 	-- Test: ^'a' 3 -> "aaa"
 	-- Test: <3^"ab" ~ -> "aba"
 	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
-		let (ap1, apf) = promoteList a1 in
+		let (ap1, apf) = promoteList [a1] in
 		"(flip$(concat.).(genericReplicate))."++apf ~> ap1),
 	-- Desc: tails
 	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
@@ -393,7 +394,7 @@ rawOps = [
 	-- Example: hm~ "5a" 100 -> 62
 	-- Test: tb hm "asdf" 0 h -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm "d" 256 -> 173
-	-- Test: hm :~100 256 -> 173
+	-- Test: hm :100~ 256 -> 173
 	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, ParseArg "int" intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
 	-- Desc: data salted hashmod
 	-- untested example: hm "5" 100 97 -> 62

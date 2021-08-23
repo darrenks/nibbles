@@ -181,9 +181,9 @@ coerceEither leftType rightType =
 
 
 -- promote all arg to a list if not a list
-promoteList :: VT -> (VT, String)
-promoteList (VList t) = (VList t, " id ")
-promoteList t = (VList [t], "(:[])")
+promoteList :: [VT] -> (VT, String)
+promoteList [VList t] = (VList t, " id ")
+promoteList t = (VList t, "(:[])")
 
 flatten :: VT -> String
 flatten (VList [a]) = "concat." ++ flatten a
