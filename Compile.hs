@@ -6,6 +6,7 @@ import Data.List(inits,intercalate)
 import Control.Monad (msum)
 import Data.Maybe
 import State
+import qualified Data.Set as Set
 
 import Polylib(coerceTo,fillAccums,join)
 import Ops
@@ -22,7 +23,7 @@ padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 compile :: (?isSimple::Bool) => (VT -> String) -> String -> Code -> (Impl, [Int], String)
 compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	args =
-		[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
+		[ Arg (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
 			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
 	mainLets =
 		[ ("firstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")

@@ -6,16 +6,17 @@ import qualified Data.DList as DList -- needs cabal install --lib dlist
 import Types
 import Hs
 import SmartList
+import qualified Data.Set as Set
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
 
 data Impl = Impl { implType::VT
                  , implCode::HsCode
-                 , minUsedDepth::Int
+                 , implDeps::Set.Set Int
                  , implName::Maybe String
                  , implUsed::ArgUsedness
                  } deriving (Eq, Show)
-noArgsUsed = Impl undefined undefined 0 Nothing UnusedArg
+noArgsUsed = Impl undefined undefined (Set.singleton 0) Nothing UnusedArg
 
 data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving (Show, Eq)
 data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show

@@ -126,7 +126,8 @@ rawOps = [
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
 	-- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
-	--- Test tuple cons: : ~
+	-- Test tuple ~ happy path: :~1'a' z,3"abc" -> [(1,'a'),(1,'a'),(2,'b'),(3,'c')]
+	--- todo make work Test: ~1'a' 2'b' -> [(1,'a'),(2,'b')]
 	-- Test promoting to list: :1 2 -> [1,2]
 	op(":", [7], [fn noArgs, fn noArgs], \[a,b]->
 		let

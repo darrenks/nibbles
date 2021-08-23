@@ -11,6 +11,7 @@ import Parse (parseError)
 import Data.List
 import Data.Maybe
 import State
+import qualified Data.Set as Set
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 
@@ -18,7 +19,13 @@ newLambdaArg :: [VT] -> ArgUsedness -> ParseState Arg
 newLambdaArg argT argUsedness = do
 	context <- gets pdContext
 	let depth = 1 + length context
-	let impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) depth Nothing argUsedness) argT [1..]
+	let impls = zipWith (\t tn -> Impl {
+		implType = t,
+		implCode = hsAtom $ argStr depth tn,
+		implDeps = Set.singleton depth,
+		implName = Nothing,
+		implUsed = argUsedness
+		} ) argT [1..]
 	let newArg = Arg impls LambdaArg
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
@@ -62,7 +69,12 @@ flattenArg (Arg impls (LambdaArg)) = impls
 flattenArg (Arg impls (LetArg _)) = tail impls
 
 addLambda :: Arg -> Impl -> Impl
-addLambda arg (Impl t body d _ _) = Impl t (hsFn (map implCode $ argImpls arg) body) d Nothing UsednessDoesntMatter
+addLambda arg (Impl t body d _ _) = Impl {
+	implType = t,
+	implCode = hsFn (map implCode $ argImpls arg) body,
+	implDeps = Set.difference d (getArgDeps arg),
+	implName = Nothing,
+	implUsed = UsednessDoesntMatter }
 
 -- Remove arg # and all its dependent let args (adding let statements for them).
 popArg :: Int -> Impl -> ParseState Impl
@@ -74,17 +86,16 @@ popArg depth impl = do
 	
 	maybePopIt :: Impl -> Arg -> (Impl, [Arg])
 	maybePopIt impl eachArg
-		| getArgDepDepth eachArg >= depth = (popIt eachArg impl, [])
+		| Set.member depth (getArgDeps eachArg) = (popIt eachArg impl, [])
 		| otherwise = (impl, [eachArg])
-	
-	getArgDepDepth (Arg (impl : _) _) = minUsedDepth impl -- They should all be the same
-	getArgDepDepth (Arg [] _) = minUsedDepth noArgsUsed
 
 	popIt :: Arg -> Impl -> Impl
 	popIt (Arg _ LambdaArg) impl = impl
 	popIt (Arg varImpls (LetArg refHs)) (Impl retT bodyHs dep _ _) =
 		Impl retT (hsLet (map implCode varImpls) refHs bodyHs) dep Nothing UsednessDoesntMatter
 
+getArgDeps (Arg (impl : _) _) = implDeps impl -- They should all be the same
+getArgDeps (Arg [] _) = implDeps noArgsUsed
 --------- for debugging // errors -----------
 
 debugContext :: [Arg] -> String
@@ -96,7 +107,7 @@ debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg 
 showArgType (Arg _ LambdaArg) = "LambdaArg"
 showArgType (Arg _ (LetArg _)) = "LetArg"
 
-showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " used: " ++ show (implUsed impl)
+showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " used: " ++ show (implUsed impl) -- ++ " depth: " ++ show (implDeps impl)
 
 indexToOp :: Int -> String
 indexToOp = fromMaybe "<truncated>" . (at indexOps) where

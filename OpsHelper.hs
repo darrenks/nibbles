@@ -162,4 +162,4 @@ isOpSimple (isPriority, lits, nib, op) =
 	where
 		lit = concat lits
 		whitelist = ["ct"]
-		blacklist = [";", "tbd", "z"]
+		blacklist = ["tbd", "z"]
