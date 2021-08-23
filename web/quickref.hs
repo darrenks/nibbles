@@ -95,6 +95,7 @@ typeToStr (Cond desc _) = desc
 typeToStr (Auto binOnly) = if binOnly then "" else "~"
 typeToStr (Fn _) = "fn"
 typeToStr (AutoDefault t _) = typeToStr t
+typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg (t,_)) = "{"++prettyType t++"}"
 typeToStr BaseMode = "mode"
 
@@ -104,6 +105,7 @@ prettyType VChr = "chr"
 
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v
+	AutoData _ -> Just "data"
 	otherwise -> Nothing
 
 showAuto i
@@ -116,7 +118,7 @@ isBinOnlyAuto (args,_) = if any (\t->case t of Auto True -> True; otherwise -> F
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t
 
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example" s = Just (
+getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- untested example: " s = Just (
 	case elemIndex ':' s of
 		Just i -> splitOn " -> " (drop (i + 2) s)
 	)

@@ -60,9 +60,9 @@ instance OpImpl ([VT], String) where
 instance OpImpl ([VT] -> ([VT], String)) where
 	toImpl f context = return $ toUntypedImpl2 $ f context
 
-instance OpImpl (ParseState (VT,String)) where
+instance OpImpl ([VT] -> ParseState (VT,String)) where
 	toImpl implMonad ts = do
-		(t,hs) <- implMonad
+		(t,hs) <- implMonad ts
 		return ([t], toUntypedImpl hs)
 
 instance OpImpl () where toImpl _ ts = return $ (ts, toUntypedImpl "id")

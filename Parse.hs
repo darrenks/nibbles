@@ -97,7 +97,7 @@ strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
 	_ -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
 
-specialChars = "\n -.,`a@A0"
+specialChars = "\n /.,`a@A0"
 specialChars127n = '\127':tail specialChars
 swap127 '\n' = '\127'
 swap127 '\127' = '\n'

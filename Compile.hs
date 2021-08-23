@@ -25,7 +25,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		[ Arg (Impl undefined (hsAtom"_") 0 Nothing UsedArg:letArgs)
 			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
 	mainLets =
-		[ ("firstInt", VInt, "fromMaybe 100 $ at intList 0")
+		[ ("firstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")
 		, ("firstLine", vstr, "fromMaybe [] $ at strLines 0")
 		, ("ints", VList [VInt], "intList")
 		, ("secondInt", VInt, "fromMaybe 1000 $ at intList 1")
@@ -37,6 +37,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=OptionalArg
 		}) mainLets
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
+
 	doCompile = do
 		impl1 <- get1Value
 		(dat,body) <- if separator == "" then mainCombiner impl1
@@ -45,37 +46,46 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		impl <- popArg 0 body
 		nib <- gets getNib
 		lit <- gets getLit
+		dataUsed <- gets pdDataUsed
 
 		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
 			getInputsUsedness context
+		
+		let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
 
 		let autoMap = if ?isSimple then "" else 
-			if allInputUsed || allInputUsedAsInts && not (isJust dat) then ""
+			if allInputUsed || allInputUsedAsInts then ""
 			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 strLines)) $ \\strLines -> "
 			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 strLines)) $ \\strLines -> "
 			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
 			else if sndIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 2 intList)) $ \\intList -> "
-			else if fstIntUsed then "intercalate [10] $ flip map (listOr [[]] (reshape 1 intList)) $ \\intList -> "
+			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "intercalate [10] $ flip map (listOr [[]] (reshape 1 intList)) $ \\intList -> "
 			else ""
 		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\
-			\intList="++(fromMaybe "concat intMatrix" (dat>>=(\d->Just$"["++show d++"]"))) ++ ";\
+			\intList=concat intMatrix;\
+			\datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
+			\dat="++show (fromMaybe 0 dat) ++ ";\
 			\in "++autoMap) impl
 		return (finalImpl, nib, lit)
+	
 	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
 	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
 
 	mainCombiner :: Impl -> ParseState (Maybe Integer, Impl)
 	mainCombiner prev = do
 		let finishedPrev = finishIt prev
-		ParseData code _ _ _ <- get
+		code <- gets pdCode
 		if empty code then return (Nothing, finishedPrev)
 		else do
 			context <- gets pdContext
-			let inputsUsed = getInputsUsedness context
-			doData <- if head inputsUsed  -- don't make this mean data unless they use it!
+			dataUsed <- gets pdDataUsed
+			doData <- if dataUsed then
+				return True
+			else if head (getInputsUsedness context)  -- don't make this mean data unless they use it!
 				then match tildaOp
-				else return False
+			else return False
+			
 			if doData then do
 				dat <- parseDataExpr
 				return (Just dat,finishedPrev)
@@ -110,7 +120,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 			mainCombiner result
 	
 	testCombiner prev = do
-		ParseData code _ _ _ <- get
+		code <- gets pdCode
 		if empty code then return (Nothing, prev)
 		else do
 			impl1 <- get1Value
@@ -131,9 +141,10 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
-putAddRep (ParseData code context nib lit) = do
+putAddRep (ParseData code context nib lit dataUsed) = do
 	appendRepH (nib,lit)
-	modify $ \s -> s { pdCode=code, pdContext=context }
+	dataUsed2 <- gets pdDataUsed
+	modify $ \s -> s { pdCode=code, pdContext=context, pdDataUsed=dataUsed || dataUsed2 }
 
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 
@@ -195,7 +206,15 @@ tryArg (Fn f) prevTs _ _ = do
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
-	then return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i $ fromIntegral v }])
+	then return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i v }])
+	else tryArg tspec prevTypes nibs memoArgs
+
+tryArg (AutoData tspec) prevTypes nibs memoArgs = do
+	matched <- match tildaOp
+	if matched
+	then do
+		modify $ \s -> s { pdDataUsed = True }
+		return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
 	else tryArg tspec prevTypes nibs memoArgs
 
 -- get the args (possibly fail), ok to modify parse state and fail
@@ -253,11 +272,13 @@ get1Value = do
 	v <- getValuesMemo 1
 	return $ head v
 
+toThunk state = Thunk (pdCode state) (pdContext state)
+
 -- Gets the arg list
 getValuesMemo :: (?isSimple::Bool) => Int -> ParseState [Impl]
 getValuesMemo n = do
-	ParseData code context _ _ <- get
-	let exprs = take n $ head $ exprsByOffset $ Thunk code context
+	state <- get
+	let exprs = take n $ head $ exprsByOffset $ toThunk state
 	_ <- mapM (putAddRep.snd) exprs
 	return $ map fst exprs
 
@@ -266,12 +287,11 @@ data Thunk = Thunk Code [Arg]
 -- Gets the arg list (given an arg from each possible offset after this one)
 getValues :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
 getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
-	(impl, after@(ParseData afterCode afterContext _ _))=
-		runState (getValue offsetExprs) $ blankRep code context
-	afterThunk = Thunk afterCode afterContext
+	(impl, after) = runState (getValue offsetExprs) $ blankRep code context
+	afterThunk = Thunk (pdCode after) (pdContext after)
 	offsetAfterExprs =
-		if length afterContext == length context
-		then drop (cp afterCode-cp code) offsetExprs
+		if length (pdContext after) == length context
+		then drop (cp (pdCode after) - cp code) offsetExprs
 		else drop 1 $ exprsByOffset afterThunk
 
 -- Gets the arg lists from each possible offset (ParseData is what is after the Impl)

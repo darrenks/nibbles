@@ -34,7 +34,8 @@ app1Hs s impl = impl { implCode=hsApp (hsAtom s) (implCode impl) }
 data ParseData = ParseData { pdCode :: Code
                            , pdContext :: [Arg]
                            , pdNib :: SmartList Int
-                           , pdLit :: DList.DList Char }
+                           , pdLit :: DList.DList Char
+                           , pdDataUsed :: Bool } -- (used directly, not through $)
 type ParseState = State ParseData
 
 -- all relevant information for determining arg match in a more abridge form than arg spec
@@ -48,6 +49,7 @@ data ArgSpec
 	| ParseArg (VT, ParseState String)
 	| BaseMode
 	| Auto Bool
+	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn ([VT] -> (Int, [VT]))
 
@@ -70,7 +72,7 @@ appendRepA (nib,lit) = appendRep (nib,concat lit)
 
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =
-	ParseData code context (newSmartList []) (DList.fromList "")
+	ParseData code context (newSmartList []) (DList.fromList "") False
 
 getNib :: ParseData -> [Int]
 getNib = smartToList . pdNib

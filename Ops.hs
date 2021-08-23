@@ -44,7 +44,7 @@ rawOps = [
 	-- Test (size 3): 'a' -> 'a'
 	-- Test (size 3): '\n' -> '\n'
 	-- Test (size 3): ' ' -> ' '
-	-- Test (size 3): '-' -> '-'
+	-- Test (size 3): '/' -> '/'
 	-- Test (size 3): '0' -> '0'
 	-- Test (size 4): '!' -> '!'
 	-- Test chr 127 (size 5): '\DEL' -> '\DEL'
@@ -289,7 +289,7 @@ rawOps = [
 	-- Desc: divmod
 	-- Example: /~7 2 $ -> 3,1
 	-- Test: /7 ~ -> 3
-	op(["/","~"], [11,0], [autoTodo num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
+	op(["/","~"], [11,0], [AutoData num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
@@ -324,7 +324,7 @@ rawOps = [
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
 	-- Test: %~7 ~ -> 1
-	op(["%","~"], [12,0], [autoTodo num, AutoDefault num 2], "(swap.).divMod" ~> [VInt,VInt]),
+	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).divMod" ~> [VInt,VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
@@ -393,12 +393,17 @@ rawOps = [
 	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
 	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT)),
 	-- Desc: hash (md5) mod
-	-- Example: hm 5 100 -> 89
+	-- Example: hm~ "5a" 100 -> 62
 	-- Test: tb hm "asdf" 0 h -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm "d" 256 -> 173
 	-- Test: hm :~100 256 -> 173
-	extendOp ["?","~"] genericReason ("hm", [15,0], [autoTodo anyT, ParseArg intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
-	-- Desc: to base (~ for expr)
+	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, ParseArg intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
+	-- Desc: data salted hashmod
+	-- untested example: hm "5" 100 97 -> 62
+	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg intParser], (\[a1,a2]->do
+		modify $ \s -> s { pdDataUsed = True }
+		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 dat)`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
+	-- Desc: to base
 	-- Example: tb 10 03 -> [1,0,1]
 	-- Test: tb 6 b -> "110"
 	-- Test: tb 255 h -> "ff"
@@ -417,10 +422,10 @@ rawOps = [
 	-- Test: tb 10 " #" -> "# # "
 	-- Test: tb '\255' a -> "jv"
 	-- Test: tb 0 1 -> []
-	extendOp ["?",litDigit] genericReason ("tb", [15,1], [autoTodo num, BaseMode], \[a1,a2]->
+	extendOp ["?",litDigit] genericReason ("tb", [15,1], [AutoData num, BaseMode], \[a1,a2]->
 		if isList a2 then "\\a1 a2->map (a2!!) $ toBase (genericLength a2) a1"~>a2
 		else "flip toBase"~>vList1 a2),
-	-- Desc: from base (~ for expr)
+	-- Desc: from base
 	-- Example: fb :1 :0 1 03 -> 10
 	-- Test: fb "110" b -> 6
 	-- Test: fb "1@10" b -> 6
