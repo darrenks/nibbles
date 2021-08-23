@@ -4,7 +4,7 @@ import Data.List
 import Data.Char (chr,ord,isAlpha,isDigit,isSpace)
 import Data.Maybe (fromMaybe,catMaybes)
 import Data.Tuple (swap)
-import Data.List.Split (splitOn,splitWhen) -- needs cabal install --lib split
+import Data.List.Split (splitOn,splitWhen,chunksOf) -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
@@ -28,7 +28,6 @@ at (x:xs) n
  | otherwise = at xs (n-1)
 
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip (if n<0 then reverse a else a) [0..])
-reshape n a = takeWhile (not.null) $ unfoldr (Just.(splitAt n)) a
 
 iff :: Bool -> a -> b -> Either a b
 iff c b1 b2 = if c then Left b1 else Right b2

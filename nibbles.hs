@@ -8,6 +8,8 @@ import GHC.IO.Encoding
 import System.FilePath
 import System.Process
 import System.Exit
+import Control.Monad
+import Data.List.Split (chunksOf) -- needs cabal install --lib split
 
 import FileQuoter
 import Compile
@@ -60,15 +62,32 @@ main=do
 	let (impl, bRaw, lit)  = compileFn $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
-	let nibBytes = toBytes $ padToEvenNibbles bRaw
-
+	let binOnlyOps = any (==16) bRaw
+	let paddedNibs = padToEvenNibbles bRaw
+	let nibBytes = toBytes paddedNibs
+	
 	case filter isOpt args of
 		ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
-			if parseMode == FromLit then extraLitInfo compileFn lit bRaw else return ()
- 			fullHs <- toFullHs impl nibBytes
+			maybeNibBytes <- if binOnlyOps
+			then do
+				hPutStrLn stderr "Warning: you are using literal only ops"
+				return []
+			else do
+				when (parseMode == FromLit) $ do
+					let (_,_,binLit) = compileFn (Nib (paddedNibs) 0)
+					-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
+					when (binLit /= lit) $ do
+						hPutStrLn stderr "Warning: your code's binary would actual extract to:"
+						hPutStrLn stderr binLit
+						hPutStrLn stderr "instead of:"
+						hPutStrLn stderr lit
+					hPutStrLn stderr $ reverse $ reverse $ "size = " ++ (show $ length bRaw) ++ " nibbles"
+				return nibBytes
+ 			fullHs <- toFullHs impl maybeNibBytes
  			writeFile "out.hs" fullHs
- 			if ops /= ["-hs"] then runHs "out.hs" else return ()
+ 			when (ops /= ["-hs"]) $ runHs "out.hs"
 		["-c"] -> do
+			when binOnlyOps $ errorWithoutStackTrace "Error: you are using literal only ops"
 			let outname = (basename ++ ".nbb")
 			hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
 			writeFile outname nibBytes
@@ -77,22 +96,9 @@ main=do
 		e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
 
 isOpt = isPrefixOf "-"
-toBytes = map toByte . reshape 2
+toBytes = map toByte . chunksOf 2
 isOtherOption = flip elem ["-simple"]
 isSimple = elem "-simple"
-
-extraLitInfo compileFn lit bRaw = do
-	hPutStrLn stderr $ reverse $ reverse $ "size = " ++ (show $ length bRaw) ++ " nibbles"
-	let (_,_,binLit) = compileFn (Nib (padToEvenNibbles bRaw) 0)
-	if any (==16) bRaw then do
-		hPutStrLn stderr "Warning: you are using literal only ops"
-	-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
-	else if binLit /= lit then do
-		hPutStrLn stderr "Warning: your code's binary would actual extract to:"
-		hPutStrLn stderr binLit
-		hPutStrLn stderr "instead of:"
-		hPutStrLn stderr lit
-	else return ()
 
 toFullHs impl nibBytes = do
  	let header = unlines $ tail $ lines headerRaw -- remove "module Header"

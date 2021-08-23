@@ -1,73 +1,33 @@
-clarify fn0/etc (num rets)
-fold on prefixes (primo)
-	1 op folds, 1 char shorter using non matching string/int constants
-put rep in arg list instead of using istildastart
-
 better checking for commutative, taking into account what the code would be if swapping order with lets
-
-consider that extensions may make other extensions codes not useless
-
-also using an auto variable when it isn't available needs a check
-ideally could detect these automatically and check for possible collisions (maybe foreach on most common types)
-
-: really should be revamped to allow easier tuple construction but its complicated
-	should accept fn as first arg
-	singleton needs auto value from second arg, but this is hard because first arg fn breaks arg matching after (need to revamp convertop)
-(this could also allow for 2nd arg to if/else to be Default value (coerced 0 tuple)
-	abs needs to be something else
-	delete cons, instead have special way to create list of strings
-	if : with first value as a tuple then number of rets for second arg should match unless it is a list of a tuple
-	
--- -- todo mark rec snd pair as used since, it's already served a purpose
-
-
-For alpha release:
--more extensions
 
 debug features to add:
 	gather rest of program
 	show context values
 	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
 	see parse tree
+	better op not found error message (show arg types) (hard because memoize of arg types is lazy)
+	could support parenthesis that do nothing but cause error if parse isn't as expected
+	could support naming vars to not need DeBruijn indices in lit
 
-minor things:
--maybe
--use of char (and instances to convert for vec)
--write a how page / document code
--" " instead of "\n" in auto map inner separator
+maybe (2 possible versions, one that acts like id, one that acts like Nothing)
+either instead of bool/maybe?
 
-------------------------------------------
-should also have dependency bounds for dlist/etc.
--------------------------------
-auto input types (for command line args, use delims for list of ints)
-library reference?
+" " instead of "\n" in auto map inner separator
 
-non empty list for many [VT] for type safer haskell in compiler
+should have dependency bounds for dlist/etc (in cabal file?).
 
-fyi instead of coerce in user fn, could skip it in context lookup
+auto input types (for command line args, essentially read show form of any type, even tuples)
 
-for multipage quickref (coerce, etc)
-https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
+"non empty list" for many [VT] for type safer haskell implementation of static analysis
+
+multipage quickref (coerce, base modes, etc) https://stackoverflow.com/questions/1664049/can-i-force-a-page-break-in-html-printing
 
 website design art
 
-ParseError in parse instead of regular (need refactor to monad)
+infinity / handling div 0 errors/etc.
 
-better op not found error message (hard because memoize of arg types is lazy)
-
-either instead of bool/maybe
-maybe id, maybe nothing
-handle div 0 errors/etc
-infinity, iden init val
-
-index/prev in loop
-
-quickref to show return types
-
-switch to integer and char everywhere
 bounded integers/list size for more efficient math ops and no need for maybe on some list ops
-could support parenthesis that do nothing but cause error if parse isn't as expected
-also could support named lambdas/assignments that get converted into debruijns
-interpret instead of compile
 
 interpreter in addition to compiler (auto build it?)
+
+float/big decimal

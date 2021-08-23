@@ -209,7 +209,7 @@ rawOps = [
 	-- Desc: square
 	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
 	-- Test: sqr ,11 -> [[1,2,3,4],[5,6,7,8],[9,10,11]]
-	extendOp ["%","0"] genericReason ("sqr", [9,1,8], [list], "\\a->reshape (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1),
+	extendOp ["%","0"] genericReason ("sqr", [9,1,8], [list], "\\a->chunksOf (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1),
 	-- Desc: step
 	-- Example: %2,5 -> [1,3,5]
 	-- Test: % *~2,5 -> [5,3,1]
@@ -270,15 +270,17 @@ rawOps = [
 	-- Test mismatch dims: tr :"hi"~"y" -> ["hy","i"]
 	-- Test mismatch dims: tr :"h"~"yo" -> ["hy","o"]
 	-- Test 1 dim: tr "abc" -> ["a","b","c"]
+	-- Test tuple, unzip it: tr z,3"abc" $ -> [1,2,3],"abc"
 	extendOp ["\\","."] genericReason ("tr", [11,12], [list], \[a1] ->
 		case a1 of
-			VList [VList _] -> "transpose" ~> a1 -- todo could do fancy unzipping if tuple
-			otherwise -> "transpose.(:[])" ~> VList [a1]
+			VList [VList _] -> "transpose" ~> [a1]
+			VList (_:_:_) -> unzipTuple a1
+			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	-- Desc: chunk
-	-- Example: ck "abbc" ~ -> ["a","bb","c"]
-	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, auto], "group" ~> vList1.a1),
-	-- Desc: chunkWhile
+	-- Desc: group
+	-- Example: gp "abbc" ~ -> ["a","bb","c"]
+	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, auto], "group" ~> vList1.a1),
+	-- Desc: chunkWhile todo
 	-- todo could have also made this chunk while values same, or other behaviors
 	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
 	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, fn (elemT.a1)],
@@ -339,17 +341,17 @@ rawOps = [
 	-- Example: ch 100 ch 'e' -> 'd',101
 	-- Test: ch ~ -> '\NUL'
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 0], "id" ~> xorChr.(VChr:)),
-	-- Desc: reshape
+	-- Desc: chunksOf
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
-	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "reshape" ~> vList1 .a2),
+	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "chunksOf" ~> vList1 .a2),
 	-- Desc: nChunks
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
 	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
-	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->reshape (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt),
+	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->chunksOf (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt),
