@@ -66,8 +66,7 @@ rawOps = [
 	-- Desc: 3rd arg
 	-- Example: ;1;2;3 _ -> 1,2,3,1
 	op("_", [5], [], argn 3),
-	-- Desc: let fn
-	-- todo this ambiguous ;;; (that's okish for now since there are workarounds)
+	-- Desc: let fn (todo this needs a new home for its rep)
 	-- Example: ;;2+1$ $4 -> 3,5
 	-- Test (multiple args): ;;~1 2 +@$ $4 5 -> 3,9
 	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
@@ -230,7 +229,7 @@ rawOps = [
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	-- Test: a' ' -> 0
-	op("a", [10], [char], "bToI.isAlpha.safeChr" ~> VInt),
+	op("a", [10], [char], "bToI.isAlpha.chr" ~> VInt),
 	-- Desc: min
 	-- Example: [4 5 -> 4
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
@@ -296,7 +295,6 @@ rawOps = [
 	-- Example: 0 -> 0
 	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
 	-- Desc: divide
-	-- todo protect div 0?
 	-- Example: /7 2 -> 3
 	-- Test: / *~2 7 -> -1
 	-- Test: / *~2 *~7 -> 0

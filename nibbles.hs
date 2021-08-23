@@ -46,7 +46,8 @@ headerRaw :: String
 headerRaw = [litFile|Header.hs|]
 
 main=do
-	setLocaleEncoding char8
+	defaultEncoding <- getLocaleEncoding
+	setLocaleEncoding char8 -- (only for file reading/writing)
 	args <- getArgs
 	let (contentsIO, basename, parseMode) = case filter (not.isOpt) args of
 		[] -> (getContents, "a", FromLit)
@@ -85,6 +86,7 @@ main=do
 				return nibBytes
  			fullHs <- toFullHs impl maybeNibBytes
  			writeFile "out.hs" fullHs
+ 			setLocaleEncoding defaultEncoding
  			when (ops /= ["-hs"]) $ runHs "out.hs"
 		["-c"] -> do
 			when binOnlyOps $ errorWithoutStackTrace "Error: you are using literal only ops"

@@ -14,10 +14,9 @@ import qualified Data.ByteString.Lazy as B8
 import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
 import qualified Data.ByteString.Char8 as C8
 
-safeChr = chr.(`mod`256)
 sToA = map $ fromIntegral.ord
 aToS :: Integral i => [i] -> String
-aToS = map$safeChr.fromIntegral
+aToS = map$chr.fromIntegral
 bToI b = if b then 1 else 0
 
 at :: Integral i => [a] -> i -> Maybe a
