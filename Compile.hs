@@ -184,8 +184,8 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 		return $ Just (tail memoArgs, [impl])
 	else return Nothing
 
-tryArg (ParseArg (t,parser)) _ _ _ = do
-	code <- parser
+tryArg (ParseArg _ parser) _ _ _ = do
+	(t,code) <- parser
 	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
 
 tryArg BaseMode _ _ memoArgs = do

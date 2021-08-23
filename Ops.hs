@@ -31,14 +31,17 @@ rawOps = [
 	-- Test (size 2): 10 -> 10
 	-- Test (size 3): 20 -> 20
 	-- Test leading zero is separate: :05 -> [0,5]
-	op(litDigit, [1], [ParseArg intParser], ()), 
+	op(litDigit, [1], [ParseArg "int" intParser], ()), 
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
 	-- Test space (size 2): " " -> " "
 	-- Test empty (size 3): "" -> ""
 	-- Test escapes: "\"" -> "\""
 	-- Test binary (size 5): "\200" -> "\200"
-	op("\"", [2], [ParseArg strParser], ()),
+	-- Test list of strs (size 5) : """a" -> ["","a"]
+	-- Test list of strs (size 7) : "a""" -> ["a",""]
+	-- Test list of strs (size 7) : "a""b" -> ["a","b"]
+	op("\"", [2], [ParseArg "str" strParser], ()),
 	-- Desc: char
 	-- Example (size 4): 'b' -> 'b'
 	-- Test (size 3): 'a' -> 'a'
@@ -54,7 +57,7 @@ rawOps = [
 	-- Test chr 31 (size 5): '\US' -> '\US'
 	-- Test chr (size 5): '\128' -> '\128'
 	-- Test chr (size 5): '\255' -> '\255'
-	extendOp [",","\""] genericReason ("'", [13,2], [ParseArg chrParser], ()),
+	extendOp [",","\""] genericReason ("'", [13,2], [ParseArg "chr" chrParser], ()),
 	-- Desc: 1st arg
 	-- Example: ;1;2;3 $ -> 1,2,3,3
 	-- Test: ;1;2;3;4 ;$ -> 1,2,3,4,1
@@ -118,14 +121,8 @@ rawOps = [
 	-- Desc: abs
 	-- Example: ab *~5 -> 5
 	op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
-	-- Desc: cons
-	-- Example: :"ab"~"cd" -> ["ab","cd"]
-	-- Test coerce: :,2~ "34" -> ["12","34"]
-	op(":", [7], [list, auto, autoTodo anyT], \[a,c]->
-			let (coercedType, coerceFn) = coerceEither [a] [c] in
-				"\\a c->map"++coerceFn++"$[Left a,Right c]"~>VList coercedType),
 	-- Desc: append
-	-- Example: :"abc""def" -> "abcdef"
+	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
 	-- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
@@ -154,8 +151,8 @@ rawOps = [
 	-- Test: +3 3 -> 6
 	extendOp ["]"] commutativeReason ("+", [8], [num, AutoDefault vec 1], vectorize "+" xorChr),
 	-- Desc: split. Removing empties.
-	-- Example: %"a b c"" " -> ["a","b","c"]
-	-- Test empties: %" a  b "" " -> ["a","b"]
+	-- Example: %"a b c" " " -> ["a","b","c"]
+	-- Test empties: %" a  b " " " -> ["a","b"]
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	-- Test chr split: %"a b" ' ' -> ["a","b"]
@@ -223,7 +220,7 @@ rawOps = [
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
-	-- Test list truthy: &:""~"b"$ -> ["b"]
+	-- Test list truthy: &"""b"$ -> ["b"]
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1),
 	-- Desc: is alpha?
@@ -265,9 +262,9 @@ rawOps = [
 	-- Example: 0 -> 0
 	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl),
 	-- Desc: transpose
-	-- Example: tr :"hi"~"yo" -> ["hy","io"]
-	-- Test mismatch dims: tr :"hi"~"y" -> ["hy","i"]
-	-- Test mismatch dims: tr :"h"~"yo" -> ["hy","o"]
+	-- Example: tr "hi""yo" -> ["hy","io"]
+	-- Test mismatch dims: tr "hi""y" -> ["hy","i"]
+	-- Test mismatch dims: tr "h""yo" -> ["hy","o"]
 	-- Test 1 dim: tr "abc" -> ["a","b","c"]
 	-- Test tuple, unzip it: tr z,3"abc" $ -> [1,2,3],"abc"
 	extendOp ["\\","."] genericReason ("tr", [11,12], [list], \[a1] ->
@@ -397,10 +394,10 @@ rawOps = [
 	-- Test: tb hm "asdf" 0 h -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm "d" 256 -> 173
 	-- Test: hm :~100 256 -> 173
-	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, ParseArg intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
+	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, ParseArg "int" intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
 	-- Desc: data salted hashmod
 	-- untested example: hm "5" 100 97 -> 62
-	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg intParser], (\[a1,a2]->do
+	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 dat)`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 	-- Desc: to base
@@ -478,9 +475,9 @@ rawOps = [
 	-- Test tuple: ? z ,3 "abc" 2 -> 2
 	op("?", [15], [listToBeReferenced, elemOfA1], \[a1,a2]->"\\a e->1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
 	-- Desc: diff
-	-- Example: -"abcd""bd" -> "ac"
-	-- Test non existant elements: -"abc""de" -> "abc"
-	-- Test doesn't drop all: -"aa""a" -> "a"
+	-- Example: -"abcd" "bd" -> "ac"
+	-- Test non existant elements: -"abc" "de" -> "abc"
+	-- Test doesn't drop all: -"aa" "a" -> "a"
 	op("-", [15], [listToBeReferenced, sameAsA1], "\\\\" ~> a1),
 	
 	-- todo there are some type combinations that are invalid for bin 15

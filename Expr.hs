@@ -45,8 +45,8 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
 
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
 data ArgSpec
-	= Cond String (MatchTestData -> Bool)
-	| ParseArg (VT, ParseState String)
+	= Cond String {-desc-} (MatchTestData -> Bool)
+	| ParseArg String {-desc-} (ParseState (VT, String))
 	| BaseMode
 	| Auto Bool
 	| AutoData ArgSpec

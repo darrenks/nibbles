@@ -71,6 +71,8 @@ $Output
 	Hi
 	there
 
+A list of strings can be created by listing multiple strings together without spaces between them, e.g. `"hi""there"` -> `["hi","there"]`
+
 ### A note on example format in this tutorial
 
 -	Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketed, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`

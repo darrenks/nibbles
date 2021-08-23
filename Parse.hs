@@ -70,32 +70,49 @@ intToNib 10 = [0]
 intToNib n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
+parseStr :: Code -> ([String], Code)
 parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
 	| a8==1 = cont ' ' 1
-	| c==32 = ("", Nib (tail s) (cp+2))
+	| c==32 = if a<8
+		then ([""], Nib (tail s) (cp+2))
+		else let (r2,code2) = parseStr $ Nib (drop 1 s) (cp+2)
+			in ("":r2,code2)
 	| c==127 = cont (toByte $ tail s) 4
 	| otherwise = cont (chr c) 2
 	where
 		a8=a`mod`8
 		c=a8*16+head s
 		cont ch used = if a>=8
-			then ([ch], after)
-			else case parseStr after of (rest, rs) -> (ch:rest, rs)
+			then ([[ch]], after)
+			else let (rest:rest2, rs)=parseStr after in ((ch:rest):rest2, rs)
 			where after = Nib (drop (used-1) s) (cp+used)
-parseStr (Lit f s cp) = case readP_to_S (gather Lex.lex) s of
-	[((used, Lex.String str), rest)] -> (str, sLit f rest (cp+length used))
+
+parseStr (Lit f s cp) = 
+	case readP_to_S (gather Lex.lex) s of
+	[((used, Lex.String str), rest)] ->
+		let after = sLit f rest (cp+length used) in
+		case rest of
+			('"':_) ->
+				let (strRest, after2) = parseStr after
+				in (str:strRest, after2)
+			_ -> ([str], after)
 	_ -> error $ "unparsable string: " ++ s
 
-strToNib :: String -> [Int]
-strToNib "" = [2,0]
-strToNib s = (concatMap (\(c,last)->let oc = ord c in case c of
+strToNib :: [String] -> [Int]
+strToNib [""] = [2,0]
+strToNib [s] = (concatMap (\(c,last)->let oc = ord c in case c of
 	'\n' -> [last]
 	' ' -> [1+last]
 	c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
 	_ -> [last+div oc 16, mod oc 16]
 	) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
+
+strToNib ("":rest) = [10,0] ++ strToNib rest
+strToNib (s:rest) =
+	let nib1 = strToNib [s++" "]
+	in init nib1 ++ [10,0] ++ strToNib rest
 
 specialChars = "\n /.,`a@A0"
 specialChars127n = '\127':tail specialChars
@@ -205,30 +222,33 @@ consumeWhitespace (Lit f (c:s) cp)
 	| otherwise = Lit f (c:s) cp
 		where (comment, rest) = break (=='\n') s
 
-intParser :: (VT, ParseState String)
-intParser = (VInt, do
+intParser :: ParseState (VT, String)
+intParser = do
 	(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
 	genLit <- gets pdLit
 	appendRep (intToNib n," "++show n) -- only need to prepend " " if last was digit, but that would be expensive to check with dlist data structure
-	return $ flatHs $ i n)
+	return (VInt, flatHs $ i n)
 
-strParser :: (VT, ParseState String)
-strParser = (vstr, do
-	(s, rest) <- gets $ parseStr . pdCode
+strParser :: ParseState (VT,String)
+strParser = do
+	(ss, rest) <- gets $ parseStr . pdCode
 	modify $ \st -> st { pdCode=rest }
-	appendRep (strToNib s,tail $ show s)
-	return $ "sToA " ++ show s)
+	appendRep (strToNib ss, tail $ concat $ map show ss)
+	
+	return $ case ss of
+		[s] -> (vstr, "sToA " ++ show s)
+		_ -> (VList [vstr], "map sToA " ++ show ss)
 
-chrParser :: (VT, ParseState String)
-chrParser = (VChr, do
+chrParser :: ParseState (VT,String)
+chrParser = do
 	(s, rest) <- gets $ parseChr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
-	return $ "fromIntegral$ord " ++ show s)
+	return (VChr, "fromIntegral$ord " ++ show s)
 
-parserToImpl (t,parser) = do
-	hs <- parser
+parserToImpl parser = do
+	(t,hs) <- parser
 	return $ noArgsUsed { implType=t, implCode=hsParen $ hsAtom hs }
 
 parse1Nibble :: String -> [(Int, (Char, ParseState Impl))] -> State ParseData Impl

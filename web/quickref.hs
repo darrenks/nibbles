@@ -96,7 +96,7 @@ typeToStr (Auto binOnly) = if binOnly then "" else "~"
 typeToStr (Fn _) = "fn"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
-typeToStr (ParseArg (t,_)) = "{"++prettyType t++"}"
+typeToStr (ParseArg desc _) = "{"++desc++"}"
 typeToStr BaseMode = "mode"
 
 prettyType VInt = "int"
