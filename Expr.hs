@@ -52,7 +52,7 @@ data ArgSpec
 	| Auto Bool
 	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
-	| Fn ([VT] -> (Int, [VT]))
+	| Fn Bool {-require arg use?-} ([VT] -> (Int, [VT]))
 
 type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 

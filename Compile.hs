@@ -131,7 +131,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
 applyImpl :: Impl -> Impl -> Impl
-applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (max d1 d2) undefined undefined
+applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (Set.union d1 d2) undefined undefined
 
 makePairs :: [VT] -> [Impl] -> Impl
 makePairs fromTypes args = foldl applyImpl initImpl args where
@@ -171,8 +171,11 @@ tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
 		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
-		-> ParseState (Maybe ([(Impl, ParseData)], -- the memoized args after parsing arg
-                    	      [Impl])) -- the arg implementation (or empty)
+		-> ParseState (
+			Either
+				([(Impl, ParseData)], -- the memoized args after parsing arg
+             [Impl]) -- the arg implementation (or empty)
+            (Maybe Impl)) -- a constant resulting from unused args of a fn
 tryArg (Cond desc c) prevTypes nibs memoArgs = do
 	let (impl,nextState) = head memoArgs
 	state <- get
@@ -182,32 +185,39 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 		&& c (MatchTestData (prevTypes++[implType impl]) nibs state)
 	then do
 		putAddRep nextState
-		return $ Just (tail memoArgs, [impl])
-	else return Nothing
+		return $ Left (tail memoArgs, [impl])
+	else return $ Right Nothing
 
 tryArg (ParseArg _ parser) _ _ _ = do
 	(t,code) <- parser
-	return $ Just (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
+	return $ Left (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
 
 tryArg BaseMode _ _ memoArgs = do
 	appendRep ([]," ") -- because the 0 mode could be after a number
 	impl <- parse1Nibble "base mode" $ zip [0..] baseModes
-	return $ Just (error"memoized args cannot be used after base mode", [impl])
+	return $ Left (error"memoized args cannot be used after base mode", [impl])
 
 tryArg (Auto binOnly) _ _ memoArgs = do
 	let lit = if binOnly then [] else snd tildaOp
 	matched <- match (fst tildaOp, lit)
-	return $ if matched then Just (tail memoArgs, []) else Nothing
+	return $ if matched then Left (tail memoArgs, []) else Right Nothing
 
-tryArg (Fn f) prevTs _ _ = do
+tryArg (Fn reqArgUse f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
-	(impl,_) <- getLambdaValue nRets argT UnusedArg
-	return $ Just (error"memoized args cannot be used after fn", [impl])
+	-- todo make fn0 cleaner here?
+	(impl,used) <- getLambdaValue nRets argT UnusedArg
+	if reqArgUse then
+		error $ show used
+	else return ()
+	if reqArgUse && not (or used) then
+		return $ Right $ Just impl
+	else
+		return $ Left (error"memoized args cannot be used after fn", [impl])
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
-	then return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i v }])
+	then return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i v }])
 	else tryArg tspec prevTypes nibs memoArgs
 
 tryArg (AutoData tspec) prevTypes nibs memoArgs = do
@@ -215,7 +225,7 @@ tryArg (AutoData tspec) prevTypes nibs memoArgs = do
 	if matched
 	then do
 		modify $ \s -> s { pdDataUsed = True }
-		return $ Just (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
+		return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
 	else tryArg tspec prevTypes nibs memoArgs
 
 -- get the args (possibly fail), ok to modify parse state and fail
@@ -226,8 +236,8 @@ getArgsH prevArgs _ [] _ = return $ Just prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 	arg <- tryArg spec prevArgTypes nibs memoArgs
 	case arg of
-		Nothing -> return Nothing
-		Just (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
+		Right _ -> return Nothing
+		Left (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
 		nibs = (prevNibs++[pdNib $ snd $ head memoArgs])
 		prevArgTypes = map implType prevArgs

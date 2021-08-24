@@ -93,7 +93,8 @@ toQuickRef isSimple ((types,_)) = [
 
 typeToStr (Cond desc _) = desc
 typeToStr (Auto binOnly) = if binOnly then "" else "~"
-typeToStr (Fn _) = "fn"
+typeToStr (Fn True _) = "fn"
+typeToStr (Fn False _) = "fn|C"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = "{"++desc++"}"

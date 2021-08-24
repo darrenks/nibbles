@@ -113,8 +113,9 @@ str = Cond "str" $ exactType vstr
 
 noArgs = const []
 
-fn f = Fn $ \ts->(1, f ts)
-fn2 f = Fn $ \ts->(2, f ts)
+fn f = fnx $ \ts->(1, f ts)
+fn2 f = fnx $ \ts->(2, f ts)
+fnx = Fn False
 
 num = Cond "num" $ byType isNum
 vec = Cond "vec" $ byType $ const True

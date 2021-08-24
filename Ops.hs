@@ -76,6 +76,7 @@ rawOps = [
 	-- Test (mult args and rets): ;;~1 2 ~+$~+@~ $ @3 4 $ -> 2,3,4,5
 	-- Test (coerce arg): ;;2+1$ $"4" -> 3,5
 	-- Test (coerce pair): ;;~1 2 +@$  $"5"2 -> 3,7
+	-- Test deps: .,2;;2+@$ -> [3,4]
 	op([";",";"], [6,6], [fn noArgs, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
@@ -89,7 +90,7 @@ rawOps = [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op([";","~"], [6,0], [fn noArgs, Fn (\[a1]->(0, ret a1++[undefined]))],
+	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[undefined]))],
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
@@ -112,7 +113,7 @@ rawOps = [
 	-- Example: <3 it 3 +1$ -> [3,4,5]
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
 	-- Test tuple: <2 it ~1'a' +1$ +1@ -> [(1,'a'),(2,'b')]
-	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, Fn (\[a1]->(length $ ret a1, ret a1))],
+	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, fnx (\[a1]->(length $ ret a1, ret a1))],
 		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1)),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
@@ -145,7 +146,7 @@ rawOps = [
 	-- Test: +'a' 2 -> 'c'
 	-- Test: +' ' ' ' -> 64
 	-- Test vectorized: +1,3 -> [2,3,4]
-	-- Test 2d vectorized: +1 .,2 ,2 -> [[2,3],[2,3]]
+	-- Test 2d vectorized: +1 ^:,2~ 2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
 	-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
@@ -169,10 +170,10 @@ rawOps = [
 	op("tbd", [8], [str, int], undefinedImpl),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
-	-- Test 2d: *" ".,2,3 -> ["1 2 3","1 2 3"]
+	-- Test 2d: *" "^:,3~2 -> ["1 2 3","1 2 3"]
 	-- Test tuple: *" "z,3"abc" -> ["1 a","2 b","3 c"]
-	-- Test lopsided tuple: *" "z.,2,2"ab" -> [("1 2",'a'),("1 2",'b')]
-	-- Test: *" "z.,2,2.,2,2 -> [("1 2","1 2"),("1 2","1 2")]
+	-- Test lopsided tuple: *" "z^:,2~2"ab" -> [("1 2",'a'),("1 2",'b')]
+	-- Test: *" "z^:,2~ 2^:,2~2 -> [("1 2","1 2"),("1 2","1 2")]
 	op("*", [8], [str, list], join.a2),
 	-- Desc: product
 	-- Example: pd,4 -> 24
@@ -191,8 +192,8 @@ rawOps = [
 		),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
-	-- Test tuple: +.,2 z ,2 "ab" -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
-	-- Test tuple2: +z .,2,2 "ab" $ -> [1,2,1,2],"ab"
+	-- Test tuple: +^:z ,2 "ab"~2 -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
+	-- Test tuple2: +z ^:,2~2 "ab" $ -> [1,2,1,2],"ab"
 	-- \a -> (concat (map fst a), map snd a)
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
@@ -240,23 +241,23 @@ rawOps = [
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, Fn (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2))),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2))),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- todo make/test empty
 	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +@$ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
 	-- Test(accum has tuple): / ,3 ~ ~0 "" +@$ :$_ $ -> 6,"123"
 	-- Test coerce: / ,3 ~ 0 "5" -> 5
-	op("/", [10], [list, auto, fn noArgs, Fn (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) x) y) (i()) a" ~> ret a2)),
+	op("/", [10], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) x) y) (i()) a" ~> ret a2)),
 	-- Desc: foldr1
 	-- Example: /,3+@$ -> 6
 	-- Test coerce: /,3"5" -> 5
 	-- todo make/test empty
-	op("/", [10], [list, Fn $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
+	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
 	lowPriorityExtendOp ["\\","\\"] genericReason ("st", [11, 11], [list], "sort" ~> a1),
@@ -313,7 +314,14 @@ rawOps = [
 	extendOp [",","."] genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
-	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
+	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
+	op(".", [12], [list, Fn False $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
+	-- Desc: zip2
+	---- Example: ."abc"+1$ -> "bcd"
+	---- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
+	--- todo, coerce dim length can do the vectorizing for us??
+	-- ^ usedness doesn't work for: .,15."Fi""Bu" ^:$"zz"-~% @ hm$8 5 # 32
+	op(".", [12], [list, Fn False $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -348,7 +356,7 @@ rawOps = [
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
 	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
-	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->chunksOf (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> VInt),
+	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->chunksOf (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> vList1 . a2),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt),
@@ -376,7 +384,7 @@ rawOps = [
 	-- Test: <3^"ab" ~ -> "aba"
 	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
 		let (ap1, apf) = promoteList [a1] in
-		"(flip$(concat.).(genericReplicate))."++apf ~> ap1),
+		"(flip$(concat.).genericReplicate)."++apf ~> ap1),
 	-- Desc: tails
 	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
 	extendOp ["=","~"] genericReason ("ts", [14,0], [list], "tails"~>VList),
@@ -396,7 +404,7 @@ rawOps = [
 	-- Test: tb hm "asdf" 0 h -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm "d" 256 -> 173
 	-- Test: hm :100~ 256 -> 173
-	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, ParseArg "int" intParser], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
+	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, int {-ParseArg "int" intParser-}], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
 	-- Desc: data salted hashmod
 	-- untested example: hm "5" 100 97 -> 62
 	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
@@ -451,7 +459,7 @@ rawOps = [
 	-- Test: ?,:"" "" 1 0 -> 0
 	-- Test: ?,:5 5 $ 0 -> [5,5]
 	-- todo, the arg passed in should be marked optional used
-	lowPriorityOp(["?",","], [15,13], [list, fn ((:[]).a1), Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+	lowPriorityOp(["?",","], [15,13], [list, fn ((:[]).a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		),
 	-- Desc: if/else
@@ -459,7 +467,7 @@ rawOps = [
 	-- Test coerce: ? +1 0 1 "F" -> "1"
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
 	-- todo add ability to see c with $, but should it be for true value or both?
-	op("?", [15], [num, fn noArgs, Fn (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+	op("?", [15], [num, fn noArgs, fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a()) (b())" ~> coercedType
 		),
 	-- Desc: add w/ cast
@@ -487,7 +495,7 @@ rawOps = [
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
-	op("pt", [], [anyT], "" ~> errorWithoutStackTrace.show :: ([VT]->[VT],String)),
+	op("pt", [], [anyT], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [anyT], inspect.a1 ~> vstr),
@@ -495,11 +503,8 @@ rawOps = [
 	-- Example: ;5 ct -> error "$ LetArg VInt ..."
 	op("ct", [], [], gets pdContext >>= parseError . debugContext :: ParseState Impl),
 	-- Desc: error
-	-- Example: error "asdf" -> error "asdf"
+	-- Example: error p +2 1 -> error "3"
 	op("error", [], [str], "errorWithoutStackTrace.aToS" ~> vstr),
-	-- Desc: undefined
-	-- Example: un -> error "undefined"
-	op("un", [], [], "errorWithoutStackTrace \"undefined (todo put location in msg)\"" ~> vstr),
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr),
 	op("testCoerceToInt", [], [anyT], testCoerceTo [VInt]),

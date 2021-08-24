@@ -73,11 +73,11 @@ Of course this trick doesn't require laziness to return the right result, but in
 
 So far we've just been printing a single value or string. But if your program returns a list it is printed with newlines between each element. And if it is a list of lists then spaces between those inner elements. Example:
 
-	.,3 .,3 $
+	.,3 .,3 +@$
 $Output
-	1 2 3
-	1 2 3
-	1 2 3
+	2 3 4
+	3 4 5
+	4 5 6
 
 Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
