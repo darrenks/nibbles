@@ -119,7 +119,7 @@ rawOps = [
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
 	op([":"], [7], [fn noArgs, auto], "\\v->v():[]" ~> VList .ret.a1),
-	-- Desc: abs
+	--- Desc: abs
 	--- Example: ab *~5 -> 5
 	-- op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
 	-- Desc: append
@@ -315,12 +315,11 @@ rawOps = [
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
-	op(".", [12], [list, Fn False $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
-	-- Desc: zip2
-	---- Example: ."abc"+1$ -> "bcd"
-	---- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
+	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
+	op(".", [12], [list, Fn True $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
+	-- Desc: zip2 (incomplete)
+	-- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
 	--- todo, coerce dim length can do the vectorizing for us??
-	-- ^ usedness doesn't work for: .,15."Fi""Bu" ^:$"zz"-~% @ hm$8 5 # 32
 	op(".", [12], [list, Fn False $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]

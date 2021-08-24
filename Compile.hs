@@ -140,12 +140,21 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 	-- todo instead of fold apply, build the (expr1, expr2), etc, cleaner hs
 	pairMakerHs = if length args == 1 then "" else "("++replicate (length $ tail args) ','++")"
 
+-- todo fn name is a lie, also updates context
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
 putAddRep (ParseData code context nib lit dataUsed) = do
 	appendRepH (nib,lit)
-	dataUsed2 <- gets pdDataUsed
-	modify $ \s -> s { pdCode=code, pdContext=context, pdDataUsed=dataUsed || dataUsed2 }
+	dataUsed1 <- gets pdDataUsed
+	context1 <- gets pdContext
+	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed }
+
+unionUsed :: [Arg] -> [Arg] -> [Arg]
+unionUsed lhs rhs =
+	let (newOnes,oldOnes) = splitAt (length rhs - length lhs) rhs
+	in newOnes ++ (zipWith (\a b->b { argImpls=zipWith unionUsed1 (argImpls a) (argImpls b) } ) lhs oldOnes)
+	where unionUsed1 lhs rhs =
+		rhs { implUsed = if implUsed rhs==UsedArg then implUsed rhs else implUsed lhs }
 
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 
@@ -202,13 +211,11 @@ tryArg (Auto binOnly) _ _ memoArgs = do
 	matched <- match (fst tildaOp, lit)
 	return $ if matched then Left (tail memoArgs, []) else Right Nothing
 
+-- todo create another one called UnusedLeftOver which acts more like a normal Cond
 tryArg (Fn reqArgUse f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
 	-- todo make fn0 cleaner here?
 	(impl,used) <- getLambdaValue nRets argT UnusedArg
-	if reqArgUse then
-		error $ show used
-	else return ()
 	if reqArgUse && not (or used) then
 		return $ Right $ Just impl
 	else
@@ -290,7 +297,7 @@ getValuesMemo :: (?isSimple::Bool) => Int -> ParseState [Impl]
 getValuesMemo n = do
 	state <- get
 	let exprs = take n $ head $ exprsByOffset $ toThunk state
-	_ <- mapM (putAddRep.snd) exprs
+	mapM (putAddRep.snd) exprs
 	return $ map fst exprs
 
 data Thunk = Thunk Code [Arg]

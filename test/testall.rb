@@ -5,7 +5,7 @@ puts `runhaskell --ghc-arg=-Wno-tabs test/test.hs`
 pass &&= $?.exitstatus==0
 
 # parse speed test
-puts `ruby test/parse_speed_test.rb 2>/dev/null`
+puts `ruby test/parse_speed_test.rb` # 2>/dev/null`
 p $?.exitstatus!=0 ? "FAIL parse speed" : "SUCCESS parse speed"
 pass &&= $?.exitstatus==0
 
