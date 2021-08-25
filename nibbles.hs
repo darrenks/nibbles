@@ -113,12 +113,11 @@ toFullHs impl nibBytes = do
 
 runHs filename = do
 	-- Compile with -O for full laziness rather than using runhaskell
-	(_, _, Just hsErr, p) <- createProcess (proc "ghc" ["-O", filename]){ std_out = CreatePipe, std_err = CreatePipe }
+	(_, _, _, p) <- createProcess (proc "ghc" ["-O", "-Wno-tabs", filename]){ std_out = CreatePipe }
 	ex <- waitForProcess p
 	case ex of
 		ExitSuccess -> do
 			(_, Just hout, _, _) <- createProcess (proc "out" []){ std_out = CreatePipe }
 			hGetContents hout >>= putStr
 		ExitFailure _ -> do
-			hGetContents hsErr >>= hPutStr stderr
 			error "failed to compile hs (likely an internal nibbles bug, please report it!)"

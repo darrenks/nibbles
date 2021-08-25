@@ -23,13 +23,13 @@ import Types
 import Data.List
 
 truthy [VInt] = "(>0)"
-truthy [VChr] = "(\\c->c>0 && not (isSpace$chr c))"
+truthy [VChr] = "(\\c->c>0 && not (isSpace$chr$fromIntegral c))"
 truthy [VList _] = "(not.null)"
 truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
 
-inspect VInt = "(sToA.show)"
-inspect VChr = "(sToA.show.chr.fromIntegral)"
-inspect (VList [VChr]) = "(sToA.show.aToS)"
+inspect VInt = "(sToA.show.confirmInt)"
+inspect VChr = "(sToA.show.chr.fromIntegral.confirmInt)"
+inspect (VList [VChr]) = "(sToA.show.aToS.confirmList)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspectElem et++" v)) ++ (sToA \"]\"))"
 inspect a = error $ "unhandled type in inspect: " ++ show a
 inspectElem [et] = inspect et
@@ -43,25 +43,23 @@ varNamesN n = map (\tn -> "a"++show tn) [1..n]
 
 uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
 
-curryN n = "(\\f "++intercalate " " varNames++"->f ("++intercalate "," varNames ++ "))"
+curryN n = "(\\f "++intercalate " " varNames++"->f "++toTuple varNames++")"
 	where varNames = varNamesN n
 
-tupleLambda n f = "(\\"++recParen varNames++"->"++f varNames++")"
+tupleLambda n f = "(\\"++toTuple varNames++"->"++f varNames++")"
 	where varNames = varNamesN n
-
-recParen as = "("++intercalate "," as++")"
 
 appFst :: [VT] -> String -> String
-appFst t op = tupleLambda (length t) $ \args -> recParen ((op++" "++head args) : tail args)
+appFst t op = tupleLambda (length t) $ \args -> toTuple ((op++" "++head args) : tail args)
 
 unzipTuple :: VT -> ([VT], String)
-unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(recParen $ map (\i->
+unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(toTuple $ map (\i->
 	"map "++tupleLambda (length ts) (\args -> args!!i)++"a"
 	) [0..length ts-1]) ++ ")")
 
 flattenTuples :: Int -> Int -> [Char]
-flattenTuples t1 t2 = "(\\(("++varsFrom 1 t1++"),("++varsFrom (1+t1) (t1+t2)++"))->("++varsFrom 1 (t1+t2)++"))"
-	where varsFrom a b = intercalate "," $ map (\tn->"a"++show tn) [a..b]
+flattenTuples t1 t2 = "(\\("++varsFrom 1 t1++","++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
+	where varsFrom a b = toTuple $ map (\tn->"a"++show tn) [a..b]
 
 finish :: VT -> String
 finish (VList tt)
@@ -133,7 +131,7 @@ coerceToH (VList a, VList b) -- | csdim a == csdim b -- (sorta, not quite since 
 	= "(map"++coerceTo a b++")"
 
 coerceTo :: [VT] -> [VT] -> String
-coerceTo to from = tupleLambda (length from) $ \args -> recParen $
+coerceTo to from = tupleLambda (length from) $ \args -> toTuple $
 	zipWith3 (\t f a->"("++coerceToH(t,f)++" "++a++")") to from args ++ defaults
 	where defaults = map defaultValue $ drop (length from) to
 
@@ -162,7 +160,7 @@ csdim (t:_) = csdim [t]
 
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
 appTuple :: [String] -> String
-appTuple ops = tupleLambda (length ops) $ \varNames -> (recParen $ zipWith (++) ops varNames)
+appTuple ops = tupleLambda (length ops) $ \varNames -> (toTuple $ zipWith (++) ops varNames)
 
 coerce :: [VT] -> [VT] -> ([VT], String, String)
 coerce leftType rightType =

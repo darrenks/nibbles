@@ -1,5 +1,9 @@
+-- tuple
 -- Test: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 -- Test: z .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]
+
+-- int versus integer
+-- Test: %$=1"abc" -> 3
 
 -- Test: testCoerce2 1 1 -> "[VInt]"
 -- Test: testCoerce2 1 'a' -> "[VInt]"

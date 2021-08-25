@@ -14,10 +14,20 @@ import qualified Data.ByteString.Lazy as B8
 import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
 import qualified Data.ByteString.Char8 as C8
 
-sToA = map $ fromIntegral.ord
+sToA :: String -> [Integer]
+sToA = map (fromIntegral.ord)
+
 aToS :: Integral i => [i] -> String
 aToS = map$chr.fromIntegral
+
+bToI :: Bool -> Integer
 bToI b = if b then 1 else 0
+
+-- Check these types so we don't accidentally not catch type errors in tests which rely on show
+confirmInt :: Integral a => a -> a
+confirmInt = id
+confirmList :: [a] -> [a]
+confirmList = id
 
 at :: Integral i => [a] -> i -> Maybe a
 at [] _ = Nothing
@@ -26,21 +36,23 @@ at (x:xs) n
  | n == 0    = Just x
  | otherwise = at xs (n-1)
 
+step :: Integral i => i -> [a] -> [a]
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip (if n<0 then reverse a else a) [0..])
 
 iff :: Bool -> a -> b -> Either a b
 iff c b1 b2 = if c then Left b1 else Right b2
 
+finishLn :: String -> String
 finishLn "\n" = "\n"
 finishLn "" = "\n"
 finishLn (x:xs) = x:finishLn xs
 
-lazyAtMod :: [a] -> Integer -> a
+lazyAtMod :: Integral i => [a] -> i -> a
 lazyAtMod a i = fromMaybe
  (a!!fromIntegral(i`mod`fromIntegral (length a)))
  (at a i)
 
-asInts :: [Int] -> [Integer]
+asInts :: [Integer] -> [Integer]
 asInts = map (read::String->Integer) . asIntsH . aToS
 asIntsH :: String -> [String]
 asIntsH "" = []

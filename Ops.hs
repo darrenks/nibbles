@@ -90,7 +90,7 @@ rawOps = [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[undefined]))],
+	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[InvalidType]))],
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
@@ -229,7 +229,7 @@ rawOps = [
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	-- Test: a' ' -> 0
-	op("a", [10], [char], "bToI.isAlpha.chr" ~> VInt),
+	op("a", [10], [char], "bToI.isAlpha.chr.fromIntegral" ~> VInt),
 	-- Desc: min
 	-- Example: [4 5 -> 4
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
@@ -350,7 +350,7 @@ rawOps = [
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
-	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "chunksOf" ~> vList1 .a2),
+	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "chunksOf.fromIntegral" ~> vList1 .a2),
 	-- Desc: nChunks
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]

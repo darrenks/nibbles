@@ -131,7 +131,12 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
 applyImpl :: Impl -> Impl -> Impl
-applyImpl (Impl t1 hs1 d1 _ _) (Impl _ hs2 d2 _ _) = Impl t1 (hsApp hs1 hs2) (Set.union d1 d2) undefined undefined
+applyImpl (Impl t1 hs1 d1 _ _) (Impl t2 hs2 d2 _ _) =
+	-- This type annotation isn't needed but add it to the haskell code to catch if we forget to correctly set them (i.e. Int versus Integer)
+	let hs2annotated = case toHsType t2 of
+		Just ts -> hsApp (hsParen hs2) $ hsAtom $ "::"++ts
+		Nothing -> hsParen hs2 in
+	Impl t1 (hsApp hs1 hs2annotated) (Set.union d1 d2) undefined undefined
 
 makePairs :: [VT] -> [Impl] -> Impl
 makePairs fromTypes args = foldl applyImpl initImpl args where

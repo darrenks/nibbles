@@ -236,10 +236,6 @@ There is no concept of infinity yet, but it would be nice if there was. TODO cre
 
 If your program is a quine (in the binary version). Then don't add on the (usually helpful, but here disastrous) trailing newline to your output...
 
-## Arbitrary precision ish
-
-For most use of integers nibbles doesn't specify if it is an Integer or Int (the former means infinite precision in Haskell), and so it is left up to Haskell to decide. This was done in attempt to make it much more efficient, but in practice Haskell cannot do a very good job deciding with the little information Nibbles gives it (and there could very well be some bugs where one is an Int and another Integer - which would cause it not to compile). It probably would have been better to build a type safe interpreter than trying to create Haskell code (this was also done for efficiency, but is bad because the string manipulation lacks type safety information). The short term plan is to just switch everything to Integer. The long term plan would be to switch it to being an interpeter and doing bounded integer analysis to determine when things can be safely operated on as Ints. That's a lot of work potentially but could have some other cool uses for additional overloading.
-
 ## Beyond the $QuickRef
 
 TODO I've delete mapaccum for now, so this needs to be updated, but the principles apply.
