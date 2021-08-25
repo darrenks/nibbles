@@ -276,14 +276,13 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	-- Desc: group
-	-- Example: gp "abbc" ~ -> ["a","bb","c"]
-	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, auto], "group" ~> vList1.a1),
-	-- Desc: chunkWhile todo
-	-- todo could have also made this chunk while values same, or other behaviors
-	-- Example: ck "hey there world!" a$ -> ["hey","there","world"]
-	extendOp ["\\","&"] genericReason ("ck", [11,9], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->filter (/=[]) $ splitWhen (not."++truthy (ret a2) ++".("++uncurryN (length (elemT a1))++"f)) a" ~> vList1 a1),
+	-- Desc: groupBy
+	-- Example: gb "hi world!@" a$ -> ["hi"," ","world","!@"]
+	-- Test tuple: gb .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
+	-- Test tuple ret: gb ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
+	extendOp ["\\","&"] genericReason ("gb", [11,9], [list, fn (elemT.a1)],
+		\[a1,a2]->"\\a f->let ff = "++uncurryN (length $elemT a1)++" f "++
+			"in groupBy (\\a b->ff a==ff b) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
