@@ -8,7 +8,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join)
+import Polylib(coerceTo,fillAccums,join,truthy)
 import Ops
 import Types
 import Expr
@@ -209,7 +209,7 @@ tryArg (ParseArg _ parser) _ _ _ = do
 tryArg BaseMode _ _ memoArgs = do
 	appendRep ([]," ") -- because the 0 mode could be after a number
 	impl <- parse1Nibble "base mode" $ zip [0..] baseModes
-	return $ Left (error"memoized args cannot be used after base mode", [impl])
+	return $ Left (error"memoized args cannot be used after base mode (but could be)", [impl])
 
 tryArg (Auto binOnly) _ _ memoArgs = do
 	let lit = if binOnly then [] else snd tildaOp
@@ -225,6 +225,17 @@ tryArg (Fn reqArgUse f) prevTs _ _ = do
 		return $ Right $ Just impl
 	else
 		return $ Left (error"memoized args cannot be used after fn", [impl])
+
+tryArg (AutoNot fn) prevTs _ _ = do
+	matched <- match tildaOp
+	afterArg <- tryArg fn prevTs (error"impossible 43") (error"impossible 44")
+	return $ case afterArg of
+		Left (memo,[impl]) -> 
+			let
+				truthyImpl = app1Hs ((truthy $ ret $ implType impl)++".") impl
+				modifiedImpl = if matched then app1Hs "not." truthyImpl else truthyImpl
+			in Left (memo,[modifiedImpl])
+		Right _ -> error "can't use not of const fn yet"
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp

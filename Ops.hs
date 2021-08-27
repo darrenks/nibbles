@@ -216,16 +216,14 @@ rawOps = [
 	-- Test: % 1 ,0 -> []
 	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
 	op("%", [9], [AutoDefault num 2, list], "step" ~> a2),
-	-- Desc: reject
-	-- Example: &,5~%$2 -> [2,4]
-	-- Test truthy tuple: &,5~ ~%$2 1 -> [2,4]
-	op("&", [9], [list, auto, {- autoTodo $ -} fn (elemT.a1)], (\[a1,a2] -> "\\l f->filter (not."++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l") ~> a1),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &"""b"$ -> ["b"]
-	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
-	op("&", [9], [list, fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) a") ~> a1),
+	--- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
+	-- Test auto not: &,5~%$2 -> [2,4]
+	-- Test truthy tuple: &,5~ ~%$2 1 -> [2,4]
+	op("&", [9], [list, AutoNot $ fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++uncurryN (length (elemT a1))++"f) a") ~> a1),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	-- Test: a' ' -> 0
@@ -276,11 +274,18 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	-- Desc: groupBy
-	-- Example: gb "hi world!@" a$ -> ["hi"," ","world","!@"]
-	-- Test tuple: gb .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
-	-- Test tuple ret: gb ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp ["\\","&"] genericReason ("gb", [11,9], [list, fn (elemT.a1)],
+
+	-- Desc: splitWhen
+	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
+	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
+	op("sw", [], [list, {-AutoNot $-} fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> [VList [a1,a1], a1]),
+	
+	
+	-- Desc: groupOn todo change to group when? isn't that what above thing is?
+	-- Example: gp "hi world!@" a$ -> ["hi"," ","world","!@"]
+	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
+	-- Test tuple ret: gp ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
+	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, fn (elemT.a1)],
 		\[a1,a2]->"\\a f->let ff = "++uncurryN (length $elemT a1)++" f "++
 			"in groupBy (\\a b->ff a==ff b) a" ~> vList1 a1),
 	-- Desc: reverse
