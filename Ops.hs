@@ -81,7 +81,7 @@ rawOps = [
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
-			"\\x f->"++flattenTuples a2L 1 ++ "(" ++ uncurryN a1L ++ " f $ x(),f)" ~>
+			"\\x f->"++flattenTuples a2L 1 ++ "(f $ x(),f)" ~>
 			ret a2 ++ [VFn (ret a1) (ret a2)]
 			)),
 	-- Desc: let rec
@@ -94,8 +94,8 @@ rawOps = [
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
-		"\\x f -> let ff=fix (\\rec x->let (a,b,c)="++ uncurryN a1L ++"f x ("++ curryN a1L ++"rec) in if "
-		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), "++ curryN a1L ++"ff)" ~>
+		"\\x f -> let ff=fix (\\rec x->let (a,b,c)=f ("++flattenTuples a1L 1++"(x,rec)) in if "
+		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), ff)" ~>
 		rt ++ [VFn (ret a1) rt])),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
@@ -114,7 +114,7 @@ rawOps = [
 	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
 	-- Test tuple: <2 it ~1'a' +1$ +1@ -> [(1,'a'),(2,'b')]
 	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, fnx (\[a1]->(length $ ret a1, ret a1))],
-		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++"."++uncurryN (length$ret a1)++"f) (i())" ~> VList (ret a1)),
+		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -220,10 +220,10 @@ rawOps = [
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &"""b"$ -> ["b"]
-	--- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
+	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	-- Test auto not: &,5~%$2 -> [2,4]
 	-- Test truthy tuple: &,5~ ~%$2 1 -> [2,4]
-	op("&", [9], [list, AutoNot $ fn (elemT.a1)], (\[a1,a2] -> "\\a f->filter ("++uncurryN (length (elemT a1))++"f) a") ~> a1),
+	op("&", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1
 	-- Test: a' ' -> 0
@@ -239,18 +239,19 @@ rawOps = [
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) y) x) (i()) a"  ~> VList (ret a2))),
+	-- Test tuple: sc,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- todo make/test empty
 	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f y) x) a") ~> VList .elemT.a1),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +@$ -> 7
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
 	-- Test(accum has tuple): / ,3 ~ ~0 "" +@$ :$_ $ -> 6,"123"
 	-- Test coerce: / ,3 ~ 0 "5" -> 5
-	op("/", [10], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$"++uncurryN (length (ret a2))++"(("++uncurryN (length (elemT a1))++"f) x) y) (i()) a" ~> ret a2)),
+	op("/", [10], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a" ~> ret a2)),
 	-- Desc: foldr1
 	-- Example: /,3+@$ -> 6
 	-- Test coerce: /,3"5" -> 5
@@ -274,20 +275,17 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-
 	-- Desc: splitWhen
 	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
 	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
-	op("sw", [], [list, {-AutoNot $-} fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> [VList [a1,a1], a1]),
-	
-	
-	-- Desc: groupOn todo change to group when? isn't that what above thing is?
-	-- Example: gp "hi world!@" a$ -> ["hi"," ","world","!@"]
+	-- Test not: sw "abc\nde  f " ~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
+	op("sw", [], [list, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen f a" ~> [VList [a1,a1], a1]),
+	-- Desc: groupOn
+	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: gp ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
 	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->let ff = "++uncurryN (length $elemT a1)++" f "++
-			"in groupBy (\\a b->ff a==ff b) a" ~> vList1 a1),
+		\[a1,a2]->"\\a f->groupBy (\\a b->f a==f b) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
@@ -315,7 +313,7 @@ rawOps = [
 	-- Desc: sort by
 	-- Example: sb,4%$2 -> [2,4,1,3]
 	-- Test tuple: sb z ,3 "bca" @ -> [(3,'a'),(1,'b'),(2,'c')]
-	extendOp [",","."] genericReason ("sb", [13,12], [list, fn (elemT.a1)], \[a1,_]->"\\a f->sortOn ("++uncurryN (length (elemT a1))++"f) a" ~> a1),
+	extendOp [",","."] genericReason ("sb", [13,12], [list, fn (elemT.a1)], "\\a f->sortOn f a" ~> a1),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
@@ -481,7 +479,7 @@ rawOps = [
 	op("+", [15], [str, AutoDefault int 0], "(+).read.aToS" ~> VInt),
 	-- Desc: index by
 	-- Example: ?,100~ -*$$80 -> 9
-	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,a2]->"\\l f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".("++uncurryN (length (elemT a1))++"f)) l)") ~> VInt),
+	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,a2]->"\\l f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".f) l)") ~> VInt),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
@@ -519,8 +517,10 @@ rawOps = [
 	op("testCoerceToX", [], [fn noArgs, fn noArgs], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
 	op("testFinish", [], [anyT], finish.a1 ~> vstr)]
 
-foldr1Fn = (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$"++uncurryN (length (elemT a1))++"("++uncurryN (length (elemT a1))++" f x) y) a")
-mapFn = (\[a1,a2]->"(\\a f->map ("++uncurryN (length (elemT a1))++"f) a)")
+foldr1Fn :: [VT] -> String
+foldr1Fn = (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
+mapFn :: [VT] -> String
+mapFn = (\[a1,a2]->"(\\a f->map f a)")
 
 addHigherValueDeBruijnOps ops = concat [op(
 		replicate unary ';' ++ snd symb,

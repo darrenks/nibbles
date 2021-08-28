@@ -18,8 +18,7 @@ hsApp (HsCode a) (HsCode b) = hsParen $ HsCode $ a +++ single ' ' +++ b
 
 hsFn :: [HsCode] -> HsCode -> HsCode
 hsFn args (HsCode body) = HsCode $ flist "(\\" +++ argsLhs args +++ flist"->" +++ body +++ single ')' where
-	argsLhs [] = flist"()"
-	argsLhs hss = intercalate (single ' ') $ Prelude.map getHsCode hss
+	argsLhs hss = getHsCode $ hsParen $ HsCode $ intercalate (single ',') $ Prelude.map getHsCode hss
 
 hsLet :: [HsCode] -> HsCode -> HsCode -> HsCode
 hsLet vars (HsCode def) (HsCode body) = 

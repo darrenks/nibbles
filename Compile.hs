@@ -8,7 +8,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join,truthy)
+import Polylib(coerceTo,fillAccums,join,truthy,curryN)
 import Ops
 import Types
 import Expr
@@ -97,9 +97,9 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 					if last argsUsed then do
 						return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
 					else if argsUsed == [True,False] then do
-						return $ (applyImpl (app1Hs "(\\a f -> map (flip f ()) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
+						return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 					else do
-						rhsImpl <- convertPairToLet (app1Hs "(\\f->f()())" impl1) (ret $ implType impl1)
+						rhsImpl <- convertPairToLet (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
 						return $ join2 finishedPrev (finishIt rhsImpl)
 				VList e | not ?isSimple && e /= [VChr] -> do
 					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
@@ -391,7 +391,7 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 applyFirstClassFn :: (?isSimple::Bool) => Impl -> ParseState Impl
 applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> do
 	let initImpl = Impl undefined hs dep undefined undefined
-	convertPairToLet (foldl applyImpl initImpl impls) to
+	convertPairToLet (foldl applyImpl (app1Hs (curryN (length impls)) initImpl) impls) to
 applyFirstClassFn x = return x
 
 getNArgs :: (?isSimple::Bool) => [VT] -> ParseState [Impl]

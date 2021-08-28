@@ -8,7 +8,6 @@ module Polylib(
 	coerce,
 	coerceEither,
 	coerce2, coerceTo, -- test only
-	uncurryN,
 	curryN,
 	flattenTuples,
 	promoteList,
@@ -40,8 +39,6 @@ inspectElem ts = tupleLambda (length ts) $ \varNames -> "sToA \"(\"++"++
 firstOf xs = tupleLambda (length xs) $ head
 
 varNamesN n = map (\tn -> "a"++show tn) [1..n]
-
-uncurryN n = "(\\f->"++tupleLambda n (\args->"f "++intercalate " " args) ++ ")"
 
 curryN n = "(\\f "++intercalate " " varNames++"->f "++toTuple varNames++")"
 	where varNames = varNamesN n
@@ -188,8 +185,10 @@ flatten (VList [a]) = "concat." ++ flatten a
 flatten _ = "(:[])"
 
 -- Easier would be to modify the lambda if we had that structure still
--- e.g. 2 4 = "(\\f a1 a2 ->f a1 a2 () ())"
-fillAccums c n = "(\\f "++intercalate" "varNames++"->f "++intercalate" "rhs++")"
+-- e.g. 2 4 = "(\\f (a1,a2) ->f (a1,a2,(),()))"
+fillAccums c n = "(\\f "++parenNonNothing (intercalate","varNames)++"->f "++parenNonNothing(intercalate","rhs)++")"
 	where
 		varNames = varNamesN (n-c)
 		rhs = varNames ++ replicate c "()"
+		parenNonNothing "" = ""
+		parenNonNothing a = "("++a++")"
