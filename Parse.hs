@@ -8,8 +8,6 @@ module Parse(
 	chrParser,
 	parseDataExpr,
 	parseCountTuple,
-	parse1Nibble,
-	parserToImpl,
 	cp,
 	tildaOp,
 	onlyCheckMatch,
@@ -246,16 +244,6 @@ chrParser = do
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
 	return (VChr, "fromIntegral$ord " ++ show s)
-
-parserToImpl parser = do
-	(t,hs) <- parser
-	return $ noArgsUsed { implType=t, implCode=hsParen $ hsAtom hs }
-
-parse1Nibble :: String -> [(Int, (Char, ParseState Impl))] -> State ParseData Impl
-parse1Nibble name [] = parseError $ "symbol not found in " ++ name
-parse1Nibble name ((nib,(lit,impl)):rest) = do
-	match <- match ([nib],[[lit]])
-	if match then impl else parse1Nibble name rest
 
 parseDataExpr :: ParseState Integer
 parseDataExpr = do

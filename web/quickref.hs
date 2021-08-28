@@ -99,7 +99,6 @@ typeToStr (Fn False _) = "fn|C"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = "{"++desc++"}"
-typeToStr BaseMode = "mode"
 
 prettyType VInt = "int"
 prettyType (VList [VChr]) = "str"

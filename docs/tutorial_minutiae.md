@@ -209,24 +209,33 @@ $HiddenOutput "12 888\n34\n56\n78"
 
 Because string and ints are optimized for typical values, they aren't good at storing data. Ints use 1/4 of their bits to terminate or not, strings 1/8. And this is reasonable because most ints are small, and most strings don't need chars >= 128. However sometimes we just need to store data efficiently!
 
-To do that use `~` after your program and proceed it with a number. This number will consume the rest of your program, but it is stored optimally in the binary format (each nibble now makes up part of a base 16 number). To use this number the first DeBruijn index (`$`) now has the data value instead of the first int of input. You can easily convert it to lists of the desired radix with `to base` (`tb`).
+To do that use `~` after your program and proceed it with a number. This number will consume the rest of your program, but it is stored optimally in the binary format (each nibble now makes up part of a base 16 number). To use this number the first DeBruijn index (`$`) now has the data value instead of the first int of input.
 
+This program is only 14 nibbles instead of 17 encoded in octal.
 
-"helloworld" is 10 characters and takes 21 nibbles to be stored as a string, but we can use data to construct it with only 17:
-
-	tb$a~38933758647189
+	$ ~239234902394023 
 $HiddenOutput
-	helloworld
+	239234902394023
 
-Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique! And of course we would have to use a larger radix to create non-alpha symbols, but it can still be shorter for long enough strings.
+You can easily convert it to lists of a desired radix with `to base` (`tb`).
+ 
+Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto value defaults to using the data value (which then also prevents the data value from overwriting the first int input value). And after the end of the current root expression data is assumed to start rather than needing ~.
 
-FYI data will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
+This example shows 5006 being divmodded, without overwriting $ (which is 100 since no input).
 
-Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto value defaults to using the data value (which then also prevents the data value from overwriting the first int input value). And after the end of the current expression data is assumed to start rather than needing ~.
-
-	$tb~a38933758647189
+	*" ":$ :/~~1000 $ 5006
 $Output
-	100helloworld
+	100 5 6
+
+Data can be handy for recreating large strings.
+
+	+'a'tb26~6061555238104639959213973
+$Output
+	fizzbuzzhelloworld
+
+Which is 6 nibbles shorter than just using quotes. Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique! And of course we would have to use a larger radix to create non-alpha symbols, but it can still be shorter for long enough strings.
+
+FYI data will always be shorter if you are getting it from the auto value of a fn, but for use with `$` it will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 
 ## Infinity
 

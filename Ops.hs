@@ -402,7 +402,7 @@ rawOps = [
 	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT)),
 	-- Desc: hash (md5) mod
 	-- Example: hm~ "5a" 100 -> 62
-	-- Test: tb hm "asdf" 0 h -> "912ec803b2ce49e4a541068d495ab570"
+	-- Test: . tb 16 hm "asdf" 0 =$"123456789abcdef0" -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm "d" 256 -> 173
 	-- Test: hm :100~ 256 -> 173
 	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, int {-ParseArg "int" intParser-}], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
@@ -411,50 +411,19 @@ rawOps = [
 	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 dat)`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
-	-- Desc: to base
-	-- Example: tb 10 03 -> [1,0,1]
-	-- Test: tb 6 b -> "110"
-	-- Test: tb 255 h -> "ff"
-	-- Test: tb 255 o -> "377"
-	-- Test: tb 255 a -> "jv"
-	-- Test: tb 255 A -> "JV"
-	-- Test: tb 125458792 6 -> "Hello"
-	-- Test: tb 26729 B -> "hi"
-	-- Test: tb 10 2 -> [1,0,1,0]
-	-- Test: tb 10 1 -> [1,0]
-	-- Test: tb 13417 7 -> "hi"
-	-- Test: tb 7082 9 -> "hi"
-	-- Test: tb 10200 ~'e' -> "dd"
-	-- Test: tb 10200 'e' -> "dd"
-	-- Test: tb 10 ~+1 1 -> [1,0,1,0]
-	-- Test: tb 10 " #" -> "# # "
-	-- Test: tb '\255' a -> "jv"
-	-- Test: tb 0 1 -> []
-	extendOp ["?",litDigit] genericReason ("tb", [15,1], [AutoData num, BaseMode], \[a1,a2]->
-		if isList a2 then "\\a1 a2->map (a2!!) $ toBase (genericLength a2) a1"~>a2
-		else "flip toBase"~>vList1 a2),
-	-- Desc: from base
-	-- Example: fb :1 :0 1 03 -> 10
-	-- Test: fb "110" b -> 6
-	-- Test: fb "1@10" b -> 6
-	-- Test: fb "ff" h -> 255
-	-- Test: fb "377" o -> 255
-	-- Test: fb "jv" a -> 255
-	-- Test: fb "JV" A -> 255
-	-- Test: fb "Hello" 6 -> 125458792
-	-- Test: fb "hi" B -> 26729
-	-- Test: fb :1:0:1 0 2 -> 10
-	-- Test: fb :1 0 1 -> 10
-	-- Test: fb "hi" 7 -> 13417
-	-- Test: fb "hi" 9 -> 7082
-	-- Test: fb "dd" ~'e' -> 10200
-	-- Test: fb "dd" 'e' -> 10200
-	-- Test: fb :1:0:1 0 ~+1 1 -> 10
-	-- Test: fb "# # " " #" -> 10
-	-- Test: fb "" b -> 0
-	extendOp ["?",litDigit] genericReason ("fb", [15,1], [list, BaseMode], \[a1,a2]->
-		if isList a2 then "\\a1 a2->fromBase (genericLength a2) $ catMaybes $ map (flip elemIndex a2) a1"~>VInt
-		else "flip fromBase"~>VInt),
+ 	-- Desc: to base
+ 	-- Example: tb 2 10 -> [1,0,1,0]
+ 	-- Test: tb 2 0 -> []
+ 	-- Test: tb ~ 10 -> [1,0,1,0]
+ 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [AutoDefault num 2, AutoData num], "toBase"~>vList1 .a1),
+ 	-- Desc: from base
+ 	-- Example: fb 2 :1 :0 :1 0 -> 10
+ 	-- Test: fb 2 <0,3 -> 0
+ 	-- Test: fb ~ :1 :0 :1 0 -> 10
+ 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [AutoDefault num 2, list {-todo 1d-}], "fromBase"~>a1),
+ 	-- Desc: tbd
+ 	-- Example: 0 -> 0
+ 	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
 	-- Desc: if nonnull (lazy)
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0

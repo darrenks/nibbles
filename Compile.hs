@@ -161,26 +161,6 @@ unionUsed lhs rhs =
 	where unionUsed1 lhs rhs =
 		rhs { implUsed = if implUsed rhs==UsedArg then implUsed rhs else implUsed lhs }
 
-createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
-
-baseModes :: (?isSimple::Bool) => [(Char, ParseState Impl)]
-baseModes = [('~',get1Value {- todo not memoized but who cares -})
-            ,('b',createImplMonad vstr$hsParen$hsAtom"sToA \"01\"")
-            ,('h',createImplMonad vstr$hsParen$hsAtom"sToA $ ['0'..'9']++['a'..'f']")
-            ,('o',createImplMonad vstr$hsParen$hsAtom"sToA ['0'..'7']")
-            ,('a',createImplMonad vstr$hsParen$hsAtom"sToA ['a'..'z']")
-            ,('A',createImplMonad vstr$hsParen$hsAtom"sToA ['A'..'Z']")
-            ,('6',createImplMonad vstr$hsParen$hsAtom"sToA $ ['A'..'Z']++['a'..'z']++['0'..'9']++\"+/\"")
-            ,('B',createImplMonad VChr$i 256)
-            ,('2',createImplMonad VInt$i 2)
-            ,('1',createImplMonad VInt$i 10)
-            ,('7',createImplMonad VChr$i 128)
-            ,('9',createImplMonad vstr$hsParen$hsAtom"10:[32..126]")            
-            ,('0',parserToImpl intParser)
-            ,('\"',parserToImpl strParser)
-            ,('\'',parserToImpl chrParser)
-            ] -- one more is possible
-
 tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
@@ -205,11 +185,6 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 tryArg (ParseArg _ parser) _ _ _ = do
 	(t,code) <- parser
 	return $ Left (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
-
-tryArg BaseMode _ _ memoArgs = do
-	appendRep ([]," ") -- because the 0 mode could be after a number
-	impl <- parse1Nibble "base mode" $ zip [0..] baseModes
-	return $ Left (error"memoized args cannot be used after base mode (but could be)", [impl])
 
 tryArg (Auto binOnly) _ _ memoArgs = do
 	let lit = if binOnly then [] else snd tildaOp
