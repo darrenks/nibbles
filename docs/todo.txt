@@ -31,3 +31,5 @@ bounded integers/list size for more efficient math ops and no need for maybe on 
 interpreter in addition to compiler (auto build it?)
 
 float/big decimal
+
+memoize let rec
