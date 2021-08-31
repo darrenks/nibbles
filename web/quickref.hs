@@ -81,7 +81,7 @@ main=do
 
 toQuickRef isSimple ((types,_)) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
-		toHtml $ unwords $ map (replaceComplexType isSimple) $ map typeToStr types ]++
+		toHtml $ unwords $ map (replaceComplexType isSimple) typeStrs]++
 		if not isSimple then [
 	td $ H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toHtml (unwords autos)] else []
 	where
@@ -89,16 +89,18 @@ toQuickRef isSimple ((types,_)) = [
 		replaceComplexType True "vec" = "num"
 		replaceComplexType True "fn1" = "fn"
 		replaceComplexType _ s@_ = s
-		sort_type = if null types then "" else rootType $ Data.List.head types
+		typeStrs = catMaybes $ map typeToStr types
+		sort_type = if null types then "" else rootType $ Data.List.head typeStrs
 
-typeToStr (Cond desc _) = desc
-typeToStr (Auto binOnly) = if binOnly then "" else "~"
-typeToStr (AutoNot (Fn _ _ _)) = "not."
-typeToStr (Fn True _ _) = "fn"
-typeToStr (Fn False _ _) = "fn|C"
+typeToStr (Cond desc _) = Just desc
+typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
+typeToStr (AutoNot (Fn _ _ _)) = Nothing
+typeToStr (AutoSwap) = Nothing
+typeToStr (Fn True _ _) = Just "fn"
+typeToStr (Fn False _ _) = Just "fn|C"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
-typeToStr (ParseArg desc _) = "{"++desc++"}"
+typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
 
 prettyType VInt = "int"
 prettyType (VList [VChr]) = "str"
@@ -107,6 +109,8 @@ prettyType VChr = "chr"
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v
 	AutoData _ -> Just "data"
+	AutoSwap -> Just "swap"
+	AutoNot _ -> Just "not."
 	otherwise -> Nothing
 
 showAuto i
@@ -116,7 +120,7 @@ showAuto i
 
 isBinOnlyAuto (args,_) = if any (\t->case t of Auto True -> True; otherwise -> False) args then " 0" else ""
 
-rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ typeToStr t
+rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ t
 
 getExample (c:s) | isSpace c = getExample s
 getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- untested example: " s = Just (

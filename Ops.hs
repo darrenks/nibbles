@@ -275,15 +275,13 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	-- Desc: whenSplit
-	-- Example: sw "abc\nde  f " ~-~a$ $ -> " ",[("","abc"),("\n","de"),("  ","f")]
-	-- Test leading split: sw " a" ~-~a$ $ -> "",[(" ","a")]
-	op("sw", [], [list, auto, fn (elemT.a1)], \[a1,a2]->"\\a f->swap$mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [a1,VList [a1,a1]]),
 	-- Desc: splitWhen
 	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
 	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
 	-- Test snd ret isnt used implicitly: : sw ;"a$" -~a$ -> "a$"
-	op("sw", [], [list, fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [VList [a1,a1], a1]),
+	-- Test swapped: sw "abc\nde  f " ~-~a$ $ -> " ",[("","abc"),("\n","de"),("  ","f")]
+	-- Test swapped leading split: sw " a" ~-~a$ $ -> "",[(" ","a")]
+	op("sw", [], [list, AutoSwap, fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [VList [a1,a1], a1]),
 	-- Desc: groupOn
 	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]

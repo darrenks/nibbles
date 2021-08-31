@@ -163,6 +163,8 @@ unionUsed lhs rhs =
 	where unionUsed1 lhs rhs =
 		rhs { implUsed = if implUsed rhs==UsedArg then implUsed rhs else implUsed lhs }
 
+data SwapResultOrImpl = SwapResult | JustImpl Impl deriving Eq
+
 tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
@@ -170,7 +172,7 @@ tryArg :: (?isSimple::Bool) => ArgSpec ->
 		-> ParseState (
 			Either
 				([(Impl, ParseData)], -- the memoized args after parsing arg
-             [Impl]) -- the arg implementation (or empty)
+             [SwapResultOrImpl]) -- the arg implementation (or empty)
             (Maybe Impl)) -- a constant resulting from unused args of a fn
 tryArg (Cond desc c) prevTypes nibs memoArgs = do
 	let (impl,nextState) = head memoArgs
@@ -181,12 +183,12 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 		&& c (MatchTestData (prevTypes++[implType impl]) nibs state)
 	then do
 		putAddRep nextState
-		return $ Left (tail memoArgs, [impl])
+		return $ Left (tail memoArgs, [JustImpl impl])
 	else return $ Right Nothing
 
 tryArg (ParseArg _ parser) _ _ _ = do
 	(t,code) <- parser
-	return $ Left (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
+	return $ Left (error"todo memo args", [JustImpl $ noArgsUsed { implType=t, implCode=hsAtom code }])
 
 tryArg (Auto binOnly) _ _ memoArgs = do
 	let lit = if binOnly then [] else snd tildaOp
@@ -201,23 +203,27 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	if reqArgUse && not (or used) then
 		return $ Right $ Just impl
 	else
-		return $ Left (error"memoized args cannot be used after fn", [impl])
+		return $ Left (error"memoized args cannot be used after fn", [JustImpl impl])
 
 tryArg (AutoNot fn) prevTs _ _ = do
 	matched <- match tildaOp
 	afterArg <- tryArg fn prevTs (error"impossible 43") (error"impossible 44")
 	return $ case afterArg of
-		Left (memo,[impl]) -> 
+		Left (memo,[JustImpl impl]) -> 
 			let
 				truthyImpl = app1Hs ((truthy $ ret $ implType impl)++".") impl
 				modifiedImpl = if matched then app1Hs "not." truthyImpl else truthyImpl
-			in Left (memo,[modifiedImpl])
+			in Left (memo,[JustImpl modifiedImpl])
 		Right _ -> error "can't use not of const fn yet"
+
+tryArg AutoSwap prevTs _ memoArgs = do
+	matched <- match tildaOp
+	return $ Left (tail memoArgs, if matched then [SwapResult] else [])
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
-	then return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i v }])
+	then return $ Left (tail memoArgs, [JustImpl $ noArgsUsed { implType=VInt, implCode=i v }])
 	else tryArg tspec prevTypes nibs memoArgs
 
 tryArg (AutoData tspec) prevTypes nibs memoArgs = do
@@ -225,13 +231,13 @@ tryArg (AutoData tspec) prevTypes nibs memoArgs = do
 	if matched
 	then do
 		modify $ \s -> s { pdDataUsed = True }
-		return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
+		return $ Left (tail memoArgs, [JustImpl $ noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
 	else tryArg tspec prevTypes nibs memoArgs
 
 -- get the args (possibly fail), ok to modify parse state and fail
-getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe ([SwapResultOrImpl]))
 getArgs = getArgsH [] []
-getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
+getArgsH :: (?isSimple::Bool) => [SwapResultOrImpl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [SwapResultOrImpl])
 getArgsH prevArgs _ [] _ = return $ Just prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 	arg <- tryArg spec prevArgTypes nibs memoArgs
@@ -240,7 +246,15 @@ getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 		Left (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
 		nibs = (prevNibs++[pdNib $ snd $ head memoArgs])
-		prevArgTypes = map implType prevArgs
+		prevArgTypes = map implType $ getImplsFromMaybes prevArgs
+
+getImplsFromMaybes :: [SwapResultOrImpl] -> [Impl]
+getImplsFromMaybes = concatMap (\m -> case m of
+	SwapResult -> []
+	JustImpl i -> [i])
+
+anySwaps :: [SwapResultOrImpl] -> Bool
+anySwaps = any (==SwapResult)
 
 getLambdaValue numRets argType argUsedness = do
 	(newArg,body) <- pushLambdaArg argType argUsedness $ \newArg -> do
@@ -346,18 +360,21 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 	maybeArgs <- getArgs ats memoizedArgList
 	case maybeArgs of
 		Nothing -> return Nothing
-		Just args -> do
+		Just argsOrSwaps -> do
+			let args = getImplsFromMaybes argsOrSwaps
+			let swapResult = anySwaps argsOrSwaps
 			afterArgsCode <- gets pdCode
 		
 			-- Temporarily put the code pointer back for useful op error messages
 			modify $ \s -> s { pdCode=preOpCode }
-			(rt, initImpl) <- impl $ map implType args
+			(rt1, initImpl) <- impl $ map implType args
 			afterImplCode <- gets pdCode
 			if (cp preOpCode) /= (cp afterImplCode)
 			then error "modifying code in op impl is not supported (but it could be)"
 			else modify $ \s -> s { pdCode=afterArgsCode }
 		
-			let fullImpl = foldl applyImpl initImpl args
+			let fullImpl1 = foldl applyImpl initImpl args
+			let (rt, fullImpl) = if swapResult then (reverse rt1, app1Hs "swap" fullImpl1) else (rt1, fullImpl1)
 			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
 			result <- applyFirstClassFn unpairedFirst
 			return $ Just result

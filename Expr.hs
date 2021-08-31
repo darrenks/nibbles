@@ -55,6 +55,7 @@ data ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn Bool {-require arg use for match?-} ArgUsedness ([VT] -> (Int, [VT]))
 	| AutoNot ArgSpec {- only Fn -}
+	| AutoSwap
 
 type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 
