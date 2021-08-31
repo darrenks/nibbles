@@ -20,12 +20,15 @@ genericReason = "This usually means there is an alternative (likely shorter) way
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = parseError $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
+litExtError invalidLit lit reason = parseLitWarning $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 makeExtendOp priority invalidLit reason (lit, nib, t, impl) =
-	makeOp priority (invalidLit, [], t, litExtError invalidLit lit reason::ParseState Impl) ++ op (lit, nib, t, impl)
+	makeOp priority (invalidLit, [], t, \ts -> do
+		litExtError invalidLit lit reason
+		toImpl impl ts
+		) ++ op (lit, nib, t, impl)
 extendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 extendOp = makeExtendOp True
 lowPriorityExtendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
@@ -38,6 +41,7 @@ toUntypedImpl2 (ts,hs) = (ts,toUntypedImpl hs)
 
 class OpImpl impl where
 	toImpl :: impl -> [VT] -> ParseState ([VT], Impl) -- also include [VT] since some ops can produce multiple values
+instance OpImpl ([VT] -> ParseState ([VT], Impl)) where toImpl = id
 instance OpImpl ([VT] -> VT, [VT] -> String) where
 	toImpl (f1,f2) context = return ([f1 context], toUntypedImpl $ f2 context)
 instance OpImpl ([VT] -> VT, String) where

@@ -13,6 +13,7 @@ module Parse(
 	onlyCheckMatch,
 	match,
 	parseError,
+	parseLitWarning,
 	nextOffset,
 	consumeWhitespace,
 	litDigit,
@@ -52,7 +53,7 @@ tildaOp = ([0],["~"])
 parseInt (Nib (0:rest) cp) = (10, Nib rest (cp+1))
 parseInt (Nib s cp) = (n, rest) where
 	(n,rest) = parseNibInt s 0 cp
-	parseNibInt [] _ _ = error "unterminated number" -- todo auto range map (or add 0)
+	parseNibInt [] _ _ = error "unterminated number" -- todo make last digit base 16, but this is non trivial due to padding odd nibble lengths into bytes
 	parseNibInt(f:s) a cp
 		| f>=8 = (c,Nib s (cp+1))
 		| otherwise = parseNibInt s c (cp+1)
@@ -69,7 +70,7 @@ intToNib n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 parseStr :: Code -> ([String], Code)
-parseStr(Nib [] cp) = error "unterminated string" -- todo auto join (or add newline)
+parseStr(Nib [] cp) = error "unterminated string" -- todo make this string the new default separator instead of " ", but this is also non trivial due to padding odd nibble lengths into bytes
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
 	| a8==1 = cont ' ' 1
@@ -191,12 +192,18 @@ match (nib,lit) = do
 			return True
 		Nothing -> return False
 
-parseError :: String -> ParseState a
-parseError msg = do
+generateErrorMsg msg = do
 	s <- gets pdCode
-	return $ errorWithoutStackTrace $ msg ++ "\n" ++ case s of
+	return $ msg ++ "\n" ++ case s of
 		Lit f s cp -> literateError f cp
 		Nib s cp -> "at nibble #" ++ show cp ++ "\nnext nibble is" ++ fromMaybe "" (at s 0>>=Just . show)
+
+parseLitWarning :: String -> ParseState ()
+parseLitWarning msg = generateErrorMsg msg >>= addLitWarning
+
+parseError :: String -> ParseState a
+parseError msg = do
+	generateErrorMsg msg >>= errorWithoutStackTrace
 
 literateError s cp =
 	"at line: " ++ show lineno

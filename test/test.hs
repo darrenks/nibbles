@@ -43,15 +43,16 @@ runHs prog = do
 	hGetContents hout
 
 toTest(origLit, stdin, expect, size, isRaw) =
-	("\n\tlet input=sToA"++show stdin++"\n\t"++(if isRaw then "print$finishLn" else "putStrLn")++"$aToS$"++testHs, (expect,
-	outLit, origLit,
-	length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
-	flatHs (implCode implFromNib), testHs))
+	if null litWarnings then ("\n\tlet input=sToA"++show stdin++"\n\t"++(if isRaw then "print$finishLn" else "putStrLn")++"$aToS$"++testHs, (expect,
+		outLit, origLit,
+		length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
+		flatHs (implCode implFromNib), testHs))
+	else errorWithoutStackTrace $ intercalate "\n" litWarnings
 	where
 		cc = if isRaw then compile finish "" else compile inspect ","
-		(implFromLit, nib, outLit) =  cc $ Lit origLit origLit 0
+		(implFromLit, nib, outLit, litWarnings) =  cc $ Lit origLit origLit 0
 		testHs = flatHs (implCode implFromLit)
-		(implFromNib, _, _) = cc $ Nib (padToEvenNibbles nib) 0
+		(implFromNib, _, _, _) = cc $ Nib (padToEvenNibbles nib) 0
 
 removeSpaces = filter (not.isSpace)
 

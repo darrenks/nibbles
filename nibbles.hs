@@ -60,7 +60,7 @@ main=do
 	contents <- contentsIO
 	let ?isSimple = isSimple args
 	let compileFn = compile finish ""
-	let (impl, bRaw, lit)  = compileFn $ case parseMode of
+	let (impl, bRaw, lit, litWarnings)  = compileFn $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
 	let binOnlyOps = any (==16) bRaw
@@ -68,14 +68,13 @@ main=do
 	let nibBytes = toBytes paddedNibs
 	
 	case filter isOpt args of
+		-- if no c/e/v option specified then assume it means run
 		ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
-			maybeNibBytes <- if binOnlyOps
-			then do
-				hPutStrLn stderr "Warning: you are using literal only ops"
-				return []
+			errored <- litErrorHandle "Warning" binOnlyOps litWarnings
+			maybeNibBytes <- if errored then return []
 			else do
 				when (parseMode == FromLit) $ do
-					let (_,_,binLit) = compileFn (Nib (paddedNibs) 0)
+					let (_,_,binLit,_) = compileFn (Nib (paddedNibs) 0)
 					-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
 					when (binLit /= lit) $ do
 						hPutStrLn stderr "Warning: your code's binary would actual extract to:"
@@ -89,13 +88,23 @@ main=do
  			setLocaleEncoding defaultEncoding
  			when (ops /= ["-hs"]) $ runHs "out.hs"
 		["-c"] -> do
-			when binOnlyOps $ errorWithoutStackTrace "Error: you are using literal only ops"
+			errored <- litErrorHandle "Error" binOnlyOps litWarnings
+			when errored $ errorWithoutStackTrace "aborting"
 			let outname = (basename ++ ".nbb")
 			hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
 			writeFile outname nibBytes
 		["-e"] -> putStrLn lit
 		["-v"] -> putStrLn "nibbles alpha (unstable)"
 		e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
+	
+litErrorHandle msgPrefix binOnlyOps litWarnings = do
+	if binOnlyOps && null litWarnings then do
+		hPutStrLn stderr $ msgPrefix ++ ": you are using literal only ops"
+		return True
+	else if not (null litWarnings) then do
+		mapM_ (\msg -> hPutStrLn stderr $ msgPrefix++": " ++msg) litWarnings
+		return True
+	else return False
 
 isOpt = isPrefixOf "-"
 toBytes = map toByte . chunksOf 2

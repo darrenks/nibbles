@@ -20,7 +20,7 @@ import SmartList
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
-compile :: (?isSimple::Bool) => (VT -> String) -> String -> Code -> (Impl, [Int], String)
+compile :: (?isSimple::Bool) => (VT -> String) -> String -> Code -> (Impl, [Int], String, [String])
 compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	args =
 		[ Arg (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
@@ -68,7 +68,8 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 			\datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
 			\dat="++show (fromMaybe 0 dat) ++ ";\
 			\in "++autoMap) impl
-		return (finalImpl, nib, lit)
+		warnings <- gets pdLitWarnings
+		return (finalImpl, nib, lit, warnings)
 	
 	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
 	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
@@ -148,11 +149,12 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 -- todo fn name is a lie, also updates context
 -- add the current rep to the partialFinalState
 putAddRep :: ParseData -> ParseState ()
-putAddRep (ParseData code context nib lit dataUsed) = do
+putAddRep (ParseData code context nib lit dataUsed warnings) = do
 	appendRepH (nib,lit)
 	dataUsed1 <- gets pdDataUsed
 	context1 <- gets pdContext
-	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed }
+	warnings1 <- gets pdLitWarnings
+	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1 }
 
 unionUsed :: [Arg] -> [Arg] -> [Arg]
 unionUsed lhs rhs =

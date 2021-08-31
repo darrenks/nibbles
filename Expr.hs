@@ -36,7 +36,8 @@ data ParseData = ParseData { pdCode :: Code
                            , pdContext :: [Arg]
                            , pdNib :: SmartList Int
                            , pdLit :: DList.DList Char
-                           , pdDataUsed :: Bool } -- (used directly, not through $)
+                           , pdDataUsed :: Bool -- (used directly, not through $)
+                           , pdLitWarnings :: [String] }
 type ParseState = State ParseData
 
 -- all relevant information for determining arg match in a more abridge form than arg spec
@@ -58,6 +59,11 @@ type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 
 dToList = DList.toList
 
+addLitWarning :: String -> ParseState ()
+addLitWarning msg = do
+	modify $ \s -> s { pdLitWarnings = msg : pdLitWarnings s }
+	return ()
+
 appendRepH :: (SmartList Int,DList.DList Char) -> ParseState ()
 appendRepH (nib2,lit2) = do
 	nib <- gets pdNib
@@ -73,7 +79,7 @@ appendRepA (nib,lit) = appendRep (nib,concat lit)
 
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =
-	ParseData code context (newSmartList []) (DList.fromList "") False
+	ParseData code context (newSmartList []) (DList.fromList "") False []
 
 getNib :: ParseData -> [Int]
 getNib = smartToList . pdNib
