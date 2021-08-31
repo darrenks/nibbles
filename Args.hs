@@ -30,10 +30,10 @@ newLambdaArg argT argUsedness = do
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
 
-newLetArg :: [Arg] -> Impl -> [VT] -> Arg
-newLetArg context (Impl _ defHs defDepth _ _) defTypes = newArg where
+newLetArg :: ArgUsedness -> [Arg] -> Impl -> [VT] -> Arg
+newLetArg argUsedness context (Impl _ defHs defDepth _ usedness) defTypes = newArg where
 	depth = 1 + length context
-	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing UnusedArg) defTypes [1..]
+	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing argUsedness) defTypes [1..]
 	newArg = Arg impls $ LetArg defHs
 
 argn :: Int -> ParseState Impl

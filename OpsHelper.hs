@@ -61,6 +61,11 @@ instance OpImpl ([VT], [VT] -> String) where
 	toImpl (t,f2) context = return (t, toUntypedImpl $ f2 context)
 instance OpImpl ([VT], String) where
 	toImpl (t,s) context = return (t, toUntypedImpl s)
+-- todo there could be other instances where we want to support optionallets...
+instance OpImpl ([VT] -> (OptionalLets, String)) where
+	toImpl f context = do
+		let (OptionalLets t,impl)=toUntypedImpl2 $ f context
+		return (t,impl { implUsed = OptionalArg } )
 instance OpImpl ([VT] -> ([VT], String)) where
 	toImpl f context = return $ toUntypedImpl2 $ f context
 

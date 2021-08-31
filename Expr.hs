@@ -9,6 +9,7 @@ import SmartList
 import qualified Data.Set as Set
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
+data OptionalLets = OptionalLets [VT] -- used to denote that the extra rets should be marked optional
 
 data Impl = Impl { implType::VT
                  , implCode::HsCode

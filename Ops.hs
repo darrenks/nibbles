@@ -96,7 +96,7 @@ rawOps = [
 		    rt = ret $ head $ tail $ ret a2 in
 		"\\x f -> let ff=fix (\\rec x->let (a,b,c)=f ("++flattenTuples a1L 1++"(x,rec)) in if "
 		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), ff)" ~>
-		rt ++ [VFn (ret a1) rt])),
+		OptionalLets (rt ++ [VFn (ret a1) rt]))),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -278,11 +278,12 @@ rawOps = [
 	-- Desc: whenSplit
 	-- Example: sw "abc\nde  f " ~-~a$ $ -> " ",[("","abc"),("\n","de"),("  ","f")]
 	-- Test leading split: sw " a" ~-~a$ $ -> "",[(" ","a")]
-	op("sw", [], [list, auto, fn (elemT.a1)], \[a1,a2]->"\\a f->swap$mySplitWhen ("++truthy (ret a2)++".f) a" ~> [a1,VList [a1,a1]]),
+	op("sw", [], [list, auto, fn (elemT.a1)], \[a1,a2]->"\\a f->swap$mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [a1,VList [a1,a1]]),
 	-- Desc: splitWhen
 	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
 	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
-	op("sw", [], [list, fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> [VList [a1,a1], a1]),
+	-- Test snd ret isnt used implicitly: : sw ;"a$" -~a$ -> "a$"
+	op("sw", [], [list, fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [VList [a1,a1], a1]),
 	-- Desc: groupOn
 	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]

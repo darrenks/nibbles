@@ -100,12 +100,12 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 					else if argsUsed == [True,False] then do
 						return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 					else do
-						rhsImpl <- convertPairToLet (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
+						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
 						return $ join2 finishedPrev (finishIt rhsImpl)
 				VList e | not ?isSimple && e /= [VChr] -> do
 					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
 					if or $ drop (length e) argsUsed then do
-						convertPairToLet (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
+						convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
 					else if or $ take (length e) argsUsed then do
 						return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
 					else if ret (implType impl1) == [vstr] then do
@@ -113,7 +113,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 						let (rt,f) = join (VList e)
 						return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
 					else do
-						rhsImpl <- convertPairToLet (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
+						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
 						return $ join2 finishedPrev (finishIt rhsImpl)
 				otherwise -> do
 					impl1 <- get1Value
@@ -358,7 +358,7 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 			else modify $ \s -> s { pdCode=afterArgsCode }
 		
 			let fullImpl = foldl applyImpl initImpl args
-			unpairedFirst <- convertPairToLet fullImpl rt
+			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
 			result <- applyFirstClassFn unpairedFirst
 			return $ Just result
 
@@ -368,7 +368,7 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 applyFirstClassFn :: (?isSimple::Bool) => Impl -> ParseState Impl
 applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> do
 	let initImpl = Impl undefined hs dep undefined undefined
-	convertPairToLet (foldl applyImpl (app1Hs (curryN (length impls)) initImpl) impls) to
+	convertPairToLet UnusedArg (foldl applyImpl (app1Hs (curryN (length impls)) initImpl) impls) to
 applyFirstClassFn x = return x
 
 getNArgs :: (?isSimple::Bool) => [VT] -> ParseState [Impl]
@@ -379,10 +379,10 @@ getNArgs argTypes = do
 coerceImpl :: Impl -> VT -> Impl
 coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo [t] [et]) hs) dep undefined undefined
 
-convertPairToLet :: Impl -> [VT] -> ParseState Impl
-convertPairToLet (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined
-convertPairToLet impl implTypes = do
+convertPairToLet :: ArgUsedness -> Impl -> [VT] -> ParseState Impl
+convertPairToLet _ (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined
+convertPairToLet argUsedness impl implTypes = do
 	context <- gets pdContext
-	let letArg = newLetArg context impl implTypes
+	let letArg = newLetArg argUsedness context impl implTypes
 	modify $ \s -> s { pdContext=letArg:context }
 	return $ head $ argImpls letArg
