@@ -110,9 +110,11 @@ You can probably guess the auto values for each operation, but they are also lis
 
 Write a program to print the sum of all numbers in the input or the string "large" if that sum is greater than 100 (without computing the sum twice).
 
+One unexpected thing to warn you about is the true and false clauses of a `?` have the first argument (conditional value) passed to them which could save you an assignment if you wish to use that int.
+
 $Solution
 
-	? - ;+_ 100 "large" $
+	? - ;+_ 100 "large" @
 $HiddenOutput "1 2 3"
 	6
 $HiddenOutput "50 51"

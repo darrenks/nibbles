@@ -321,11 +321,11 @@ rawOps = [
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
-	op(".", [12], [list, Fn True $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
+	op(".", [12], [list, Fn True UnusedArg $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
 	-- Desc: zip2 (incomplete)
 	-- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
 	--- todo, coerce dim length can do the vectorizing for us??
-	op(".", [12], [list, Fn False $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
+	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -432,16 +432,20 @@ rawOps = [
 	-- Test: ?,:"" "" 1 0 -> 0
 	-- Test: ?,:5 5 $ 0 -> [5,5]
 	-- todo, the arg passed in should be marked optional used
-	lowPriorityOp(["?",","], [15,13], [list, fn ((:[]).a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+	lowPriorityOp(["?",","], [15,13], [list, Fn False OptionalArg $ \a1 -> (1,a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		),
 	-- Desc: if/else
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +1 0 1 "F" -> "1"
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
-	-- todo add ability to see c with $, but should it be for true value or both?
-	op("?", [15], [num, fn noArgs, fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
-		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a()) (b())" ~> coercedType
+	-- Test using cond value: ? +1 0 $ 5 -> 1
+	-- Test cond value doesn't clobber implicit: ;5 ? +1 0 -> 5,5
+	-- todo auto value "nothing" which coerces usefully
+	-- todo match number of rets in false clause (similarly to what should be done for :)
+	-- todo make clauses 1 fn, that way they could share let statements
+	op("?", [15], [num, Fn False OptionalArg $ \a1 -> (1,a1), Fn False OptionalArg (\[a1,a2]->(length$ret a2,[a1]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
+		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a c) (b c)" ~> coercedType
 		),
 	-- Desc: add w/ cast
 	-- todo return Maybe

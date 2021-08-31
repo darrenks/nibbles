@@ -194,10 +194,10 @@ tryArg (Auto binOnly) _ _ memoArgs = do
 	return $ if matched then Left (tail memoArgs, []) else Right Nothing
 
 -- todo create another one called UnusedLeftOver which acts more like a normal Cond
-tryArg (Fn reqArgUse f) prevTs _ _ = do
+tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
 	-- todo make fn0 cleaner here?
-	(impl,used) <- getLambdaValue nRets argT UnusedArg
+	(impl,used) <- getLambdaValue nRets argT argUsedness
 	if reqArgUse && not (or used) then
 		return $ Right $ Just impl
 	else

@@ -107,7 +107,7 @@ debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg 
 showArgType (Arg _ LambdaArg) = "LambdaArg"
 showArgType (Arg _ (LetArg _)) = "LetArg"
 
-showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " used: " ++ show (implUsed impl) ++ " depth: " ++ show (implDeps impl)
+showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " " ++ show (implUsed impl) ++ " deps: " ++ show (Set.toList $ implDeps impl)
 
 indexToOp :: Int -> String
 indexToOp = fromMaybe "<truncated>" . (at indexOps) where
