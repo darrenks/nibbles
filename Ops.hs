@@ -216,13 +216,16 @@ rawOps = [
 	-- Test: % 1 ,0 -> []
 	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
 	op("%", [9], [AutoDefault num 2, list], "step" ~> a2),
+	-- Desc: partition
+	-- Example: &,5~~%$2 $ -> [1,3,5],[2,4]
+	-- Example notted: &,5~~~%$2 $ -> [2,4],[1,3,5]
+	op("&", [9], [list, Auto False, Auto False, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
 	-- Test chr truthy: &"a b\nc"$ -> "abc"
 	-- Test list truthy: &"""b"$ -> ["b"]
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	-- Test auto not: &,5~%$2 -> [2,4]
-	-- Test truthy tuple: &,5~ ~%$2 1 -> [2,4]
 	op("&", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
 	-- Desc: is alpha?
 	-- Example: a'z' -> 1

@@ -50,7 +50,7 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
 data ArgSpec
 	= Cond String {-desc-} (MatchTestData -> Bool)
 	| ParseArg String {-desc-} (ParseState (VT, String))
-	| Auto Bool
+	| Auto Bool {-binOnly-}
 	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn Bool {-require arg use for match?-} ArgUsedness ([VT] -> (Int, [VT]))
