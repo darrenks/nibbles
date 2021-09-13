@@ -243,7 +243,7 @@ rawOps = [
 	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
-	-- todo make/test empty
+	-- Test empty: sc,0+@$ -> []
 	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
 	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 	-- Desc: foldr
@@ -255,7 +255,7 @@ rawOps = [
 	-- Desc: foldr1
 	-- Example: /,3+@$ -> 6
 	-- Test coerce: /,3"5" -> 5
-	-- todo make/test empty
+	-- Test empty: /,0+@$ -> 0
 	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: st"asdf" -> "adfs"
@@ -394,8 +394,8 @@ rawOps = [
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
-	-- todo empty list will error, maybe it should use maybe or default??
-	op("=", [14], [int, list], "\\i a->lazyAtMod a (fromIntegral i - 1)" ~> elemT.a2),
+	-- Test empty: =0"" -> ' '
+	op("=", [14], [int, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: zip
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+@$ -> [2,4,6]
@@ -493,7 +493,7 @@ rawOps = [
 	op("testFinish", [], [anyT], finish.a1 ~> vstr)]
 
 foldr1Fn :: [VT] -> String
-foldr1Fn = (\[a1,a2]->"\\a f->foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
+foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
 

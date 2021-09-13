@@ -16,7 +16,8 @@ module Polylib(
 	flatten,
 	appFst,
 	unzipTuple,
-	fillAccums) where
+	fillAccums,
+	defaultValue) where
 
 import Types
 import Data.List
@@ -130,11 +131,12 @@ coerceToH (VList a, VList b) -- | csdim a == csdim b -- (sorta, not quite since 
 coerceTo :: [VT] -> [VT] -> String
 coerceTo to from = tupleLambda (length from) $ \args -> toTuple $
 	zipWith3 (\t f a->"("++coerceToH(t,f)++" "++a++")") to from args ++ defaults
-	where defaults = map defaultValue $ drop (length from) to
+	where defaults = map defaultValue1 $ drop (length from) to
 
-defaultValue VInt = "0"
-defaultValue VChr = "32"
-defaultValue (VList _) = "[]"
+defaultValue1 (VInt) = "0"
+defaultValue1 (VChr) = "32"
+defaultValue1 (VList _) = "[]"
+defaultValue = toTuple . map defaultValue1
 
 baseElem (VList e) = baseElem $ head e
 baseElem t = t
