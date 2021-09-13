@@ -388,9 +388,9 @@ rawOps = [
 	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
 		let (ap1, apf) = promoteList [a1] in
 		"(flip$(concat.).genericReplicate)."++apf ~> ap1),
-	-- Desc: tails
-	-- Example: ts,3 -> [[1,2,3],[2,3],[3],[]]
-	extendOp ["=","~"] genericReason ("ts", [14,0], [list], "tails"~>VList),
+	-- Desc: inits
+	-- Example: is,3 -> [[],[1],[1,2],[1,2,3]]
+	extendOp ["=","~"] genericReason ("is", [14,0], [list], "inits"~>VList),
 	-- Desc: subscript. Wrapped.
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
