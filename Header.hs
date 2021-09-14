@@ -1,8 +1,9 @@
 module Header where
 
 import Data.List
-import Data.Char (chr,ord,isAlpha,isDigit,isSpace)
-import Data.Maybe (fromMaybe,catMaybes)
+import Data.Char (chr,ord,isAlpha,isDigit,isSpace,toLower)
+import Numeric (showHex)
+import Data.Maybe (fromMaybe,catMaybes,isJust)
 import Data.Tuple (swap)
 import Data.List.Split -- needs cabal install --lib split
 import Text.Read (readMaybe)
@@ -86,3 +87,15 @@ hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ m
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult
 listOr _ nonEmpty = nonEmpty
+
+parseNum :: [Integer] -> Integer -> Integer
+parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
+	case findIndex isJust digitIndices of
+		Just i -> let value = fromBase base $ catMaybes $ takeWhile isJust $ drop i digitIndices
+		              sign = if isSuffixOf "-" (take i str) then -1 else 1 in 
+		              sign * value
+		otherwise -> 0
+	where
+		str = map toLower $ aToS strI
+		digits = genericTake base $ ['0'..'9']++['a'..'z']
+		digitIndices = map (flip elemIndex digits) str

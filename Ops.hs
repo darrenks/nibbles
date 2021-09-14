@@ -442,6 +442,10 @@ rawOps = [
 	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 dat)`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
+	-- Desc: to hex
+	-- Example: hex 31 -> "1f"
+	-- Test negative: hex *~31 -> "-1f"
+	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
  	-- Desc: to base
  	-- Example: tb 2 10 -> [1,0,1,0]
  	-- Test: tb 2 0 -> []
@@ -475,12 +479,15 @@ rawOps = [
 	op("?", [15], [num, Fn False OptionalArg $ \a1 -> (1,a1), Fn False OptionalArg (\[a1,a2]->(length$ret a2,[a1]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a c) (b c)" ~> coercedType
 		),
-	-- Desc: add w/ cast
-	-- todo return Maybe
-	-- todo this blocks index by on string which is probably ok, but not ideal
-	-- Example: +"10" 2 -> 12
-	-- Test: +"10"~ -> 10
-	op("+", [15], [str, AutoDefault int 0], "(+).read.aToS" ~> VInt),
+	-- Desc: from base str
+	-- todo also consider returning the stuff after the parsed number...
+	-- todo try to get auto value 10 (can use it since index by does
+	-- Example: ``"1f" 16 -> 31
+	-- Test negative: ``"-1f" 16 -> -31
+	-- test uppercase: ``"1F" 16 -> 31
+	-- Test empty: ``"" 16 -> 0
+	-- Test invalids: ``"z1fz2" 16 -> 31
+	op("``", [15], [str, int], "parseNum" ~> VInt),
 	-- Desc: index by
 	-- Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
