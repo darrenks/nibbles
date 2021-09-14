@@ -9,6 +9,7 @@ hr {
 code { 
 	font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
 	padding: 3px;
+	white-space: pre-wrap;
 	background-color: #c9a6ed;
 	border:none;
 }

@@ -56,6 +56,7 @@ data ArgSpec
 	| Fn Bool {-require arg use for match?-} ArgUsedness ([VT] -> (Int, [VT]))
 	| AutoNot ArgSpec {- only Fn -}
 	| AutoSwap
+	| AutoOption String {- desc -}
 
 type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 

@@ -165,9 +165,35 @@ rawOps = [
 	-- Desc: words
 	-- Example: %"a\nb c.d"~ -> ["a","b","c.d"]
 	op("%", [8], [str, auto], "\\a->map sToA $ words (aToS a)" ~> vList1 .a1),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [8], [str, int], undefinedImpl),
+	
+	-- words steals the auto value from int, but justify doesn't need it
+	
+	-- Desc: justify
+	-- negative number of ljust instead of right
+	-- ~ before the obj to be justified to center (l/r determines rounding)
+	-- Lists vectorize (and also maxes their length with n)
+	
+	-- Example: | " " 4 "hi" -> "  hi"
+	-- Test ljust: | " " *~4 "hi" -> "hi  "
+	-- Test center: | " " 5 ~"hi" -> " hi  "
+	-- Test center left: | " " *~5 ~"hi" -> "  hi "
+	-- Test coerce: | " " 4 5 -> "   5"
+	-- Test list: | " " 0 >7,10 -> [" 8"," 9","10"]
+	-- Test ljust list: | " " *~1 >7,10 -> ["8 ","9 ","10"]
+	op("|", [8], [str, int, AutoOption "center", vec], \[a1,a2,o1,a3] ->
+		let justify t = 
+			"\\s n o->let oc = "++coerceTo [vstr] [t]++"o ;\
+						    \pad = concat (genericReplicate (abs n-genericLength oc) s) in " ++
+			(if o1 == OptionYes then
+				"let (smallPad,bigPad)=splitAt (length pad `div` 2) pad in \
+				\if n >= 0 then smallPad ++ oc ++ bigPad else bigPad ++ oc ++ smallPad"
+			else
+				"if n >= 0 then pad ++ oc else oc ++ pad") in
+		if isList a3 && a3 /= vstr then
+			"\\s n o->let ocs = map "++coerceTo [vstr] (elemT a3)++" o;\
+			            \ nmax = (if n<0 then -1 else 1) * (maximum $ abs n : map genericLength ocs) in \
+			            \ map ((" ++ justify vstr ++ ")s nmax) ocs"  ~> vList1 vstr
+		else justify a3 ~> vstr),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" "^:,3~2 -> ["1 2 3","1 2 3"]
@@ -218,7 +244,7 @@ rawOps = [
 	op("%", [9], [AutoDefault num 2, list], "step" ~> a2),
 	-- Desc: partition
 	-- Example: &,5~~%$2 $ -> [1,3,5],[2,4]
-	-- Example notted: &,5~~~%$2 $ -> [2,4],[1,3,5]
+	-- Test notted: &,5~~~%$2 $ -> [2,4],[1,3,5]
 	op("&", [9], [list, Auto False, Auto False, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
 	-- Desc: filter
 	-- Example: &,5%$2 -> [1,3,5]
@@ -342,7 +368,7 @@ rawOps = [
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
 	-- Desc: modulus
-	-- Example:  %7 2 -> 1
+	-- Example: %7 2 -> 1
 	-- Test: % *~2 7 -> 5
 	-- Test: % *~2 *~7 -> -2
 	-- Test: % 2 *~7 -> -5
@@ -457,7 +483,8 @@ rawOps = [
 	op("+", [15], [str, AutoDefault int 0], "(+).read.aToS" ~> VInt),
 	-- Desc: index by
 	-- Example: ?,100~ -*$$80 -> 9
-	op("?", [15], [list, auto, fn (elemT.a1)], (\[a1,a2]->"\\l f->1+(fromMaybe (-1) $ findIndex ("++truthy (ret a2)++".f) l)") ~> VInt),
+	-- Test negation: ?,5~ ~0 -> 1
+	op("?", [15], [list, auto, AutoNot $ fn (elemT.a1)], "\\l f->1+(fromMaybe (-1) $ findIndex f l)" ~> VInt),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0

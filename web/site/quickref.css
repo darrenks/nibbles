@@ -11,13 +11,15 @@ table, th, td {
 	font-family: SFMono-Regular,Consolas,Liberation Mono,Menlo,monospace; 
 	font-size: 12px; 
 	color: var(--color-text-primary); 
-	word-wrap: normal; 
+	word-wrap: normal;
+	white-space: pre-wrap;
 }
 
 .stretch{
 	height: 1rem;
 	text-align: justify;
 	text-justify: inter-word;
+	white-space: normal;
 }
 
 .stretch:after{

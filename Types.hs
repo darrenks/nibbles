@@ -3,7 +3,8 @@ module Types where
 import Data.List(intercalate)
 import Data.Maybe
 
-data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType -- | VMaybe VT | Nothing
+data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType
+	| OptionYes | OptionNo -- | VMaybe VT | Nothing
 	deriving (Show, Eq)
 
 vstr = VList [VChr]

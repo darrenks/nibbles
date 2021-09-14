@@ -132,6 +132,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 
 applyImpl :: Impl -> Impl -> Impl
+applyImpl impl1 impl2 | elem (implType impl2) [OptionYes, OptionNo] = impl1
 applyImpl (Impl t1 hs1 d1 _ _) (Impl t2 hs2 d2 _ _) =
 	-- This type annotation isn't needed but add it to the haskell code to catch if we forget to correctly set them (i.e. Int versus Integer)
 	let hs2annotated = case toHsType t2 of
@@ -219,6 +220,12 @@ tryArg (AutoNot fn) prevTs _ _ = do
 tryArg AutoSwap prevTs _ memoArgs = do
 	matched <- match tildaOp
 	return $ Left (tail memoArgs, if matched then [SwapResult] else [])
+
+tryArg (AutoOption desc) prevTs nibs memoArgs = do
+	matched <- match tildaOp
+	return $ Left $ if matched
+		then (tail memoArgs, [JustImpl $ noArgsUsed { implType=OptionYes }])
+		else (     memoArgs, [JustImpl $ noArgsUsed { implType=OptionNo }])
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp

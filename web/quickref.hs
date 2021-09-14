@@ -94,6 +94,7 @@ toQuickRef isSimple ((types,_)) = [
 
 typeToStr (Cond desc _) = Just desc
 typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
+typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot (Fn _ _ _)) = Nothing
 typeToStr (AutoSwap) = Nothing
 typeToStr (Fn True _ _) = Just "fn"
@@ -111,6 +112,7 @@ getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoData _ -> Just "data"
 	AutoSwap -> Just "swap"
 	AutoNot _ -> Just "not."
+	AutoOption desc -> Just desc
 	otherwise -> Nothing
 
 showAuto i

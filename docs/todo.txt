@@ -33,3 +33,5 @@ interpreter in addition to compiler (auto build it?)
 float/big decimal
 
 memoize let rec
+
+separate calculation of truthiness of ints for better lazy evaluation (and SmartList). i.e. max of a truthy int is truthy regardless of second arg, don't need to do the computation, but as it is, it would.
