@@ -16,6 +16,7 @@ module Polylib(
 	flatten,
 	appFst,
 	unzipTuple,
+	rotateTuple,
 	fillAccums,
 	defaultValue) where
 
@@ -54,6 +55,9 @@ unzipTuple :: VT -> ([VT], String)
 unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(toTuple $ map (\i->
 	"map "++tupleLambda (length ts) (\args -> args!!i)++"a"
 	) [0..length ts-1]) ++ ")")
+
+rotateTuple :: Int -> String
+rotateTuple n = tupleLambda n (toTuple.rotate) where rotate (a:as) = as++[a]
 
 flattenTuples :: Int -> Int -> [Char]
 flattenTuples t1 t2 = "(\\("++varsFrom 1 t1++","++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"

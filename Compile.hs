@@ -8,7 +8,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join,truthy,curryN)
+import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple)
 import Ops
 import Types
 import Expr
@@ -381,7 +381,11 @@ convertOp memoizedArgList (ats,impl) preOpCode = do
 			else modify $ \s -> s { pdCode=afterArgsCode }
 		
 			let fullImpl1 = foldl applyImpl initImpl args
-			let (rt, fullImpl) = if swapResult then (reverse rt1, app1Hs "swap" fullImpl1) else (rt1, fullImpl1)
+			-- todo, might need to do swapping elsewhere if the first arg could have been a tuple too, this assumes it was 1 that is why rotating is a true swap
+			let (rt, fullImpl) = if swapResult then let
+				(head:tail)=rt1 in
+				(tail ++ [head], app1Hs (rotateTuple (length rt1)) fullImpl1)
+				else (rt1, fullImpl1)
 			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
 			result <- applyFirstClassFn unpairedFirst
 			return $ Just result

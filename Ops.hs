@@ -109,12 +109,13 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate
-	-- Example: <3 it 3 +1$ -> [3,4,5]
-	-- Test coerce: <3 it 3 :""+1$ -> [3,4,5]
-	-- Test tuple: <2 it ~1'a' +1$ +1@ -> [(1,'a'),(2,'b')]
-	extendOp [":",":"] associativeReason ("it", [7,7], [fn noArgs, fnx (\[a1]->(length $ ret a1, ret a1))],
-		\[a1,a2]->"\\i f->iterate ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
+	-- Desc: iterate while uniq
+	-- Example: iq 10 %+1$3 $ -> [10,2,0,1],2
+	-- Test swap: iq 10 ~%+1$3 $ -> 2,[10,2,0,1]
+	-- Test tuple: iq ~1 2 @$ $ @ -> [(1,2),(2,1)],1,2
+	-- Test swap tuple: iq ~1 2 ~@$ $ @ -> 1,2,[(1,2),(2,1)]
+	extendOp [":",":"] associativeReason ("iq", [], [fn noArgs, AutoSwap, fnx (\[a1]->(length $ ret a1, ret a1))],
+		\[a1,a2]->"\\i f->"++flattenTuples 1 (length $ ret a1) ++" $ iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1) : ret a1),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]

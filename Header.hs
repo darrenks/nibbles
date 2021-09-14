@@ -9,6 +9,7 @@ import Data.List.Split -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
+import qualified Data.Set as Set
 
 -- for Hash
 import qualified Data.ByteString.Lazy as B8
@@ -99,3 +100,10 @@ parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
 		str = map toLower $ aToS strI
 		digits = genericTake base $ ['0'..'9']++['a'..'z']
 		digitIndices = map (flip elemIndex digits) str
+
+iterateWhileUniq :: Ord a => (a -> a) -> a -> ([a], a)
+iterateWhileUniq = iterateWhileUniqH Set.empty
+iterateWhileUniqH been f i =
+	if Set.member i been then ([], i)
+	else let (rest,terminator) = iterateWhileUniqH (Set.insert i been) f (f i) in
+		(i:rest, terminator)
