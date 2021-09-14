@@ -27,6 +27,8 @@ if Dir.exist?('web')
 	`ghc -Wno-tabs web/quickref.hs 2> /dev/null`
 	puts "ERROR: Quickref failed to compile!" if $?.exitstatus!=0
 	pass &&= $?.exitstatus==0
+	
+	`sh scripts/generate`
 end
 
 puts pass ? 'all tests pass' : 'FAIL'

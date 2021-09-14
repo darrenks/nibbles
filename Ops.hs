@@ -109,12 +109,12 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate while uniq
+	-- Desc: iterate while uniq (todo do we want to make second ret the repeated part?)
 	-- Example: iq 10 %+1$3 $ -> [10,2,0,1],2
 	-- Test swap: iq 10 ~%+1$3 $ -> 2,[10,2,0,1]
 	-- Test tuple: iq ~1 2 @$ $ @ -> [(1,2),(2,1)],1,2
 	-- Test swap tuple: iq ~1 2 ~@$ $ @ -> 1,2,[(1,2),(2,1)]
-	extendOp [":",":"] associativeReason ("iq", [], [fn noArgs, AutoSwap, fnx (\[a1]->(length $ ret a1, ret a1))],
+	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoSwap, fnx (\[a1]->(length $ ret a1, ret a1))],
 		\[a1,a2]->"\\i f->"++flattenTuples 1 (length $ ret a1) ++" $ iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1) : ret a1),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
@@ -480,7 +480,7 @@ rawOps = [
 	op("?", [15], [num, Fn False OptionalArg $ \a1 -> (1,a1), Fn False OptionalArg (\[a1,a2]->(length$ret a2,[a1]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a c) (b c)" ~> coercedType
 		),
-	-- Desc: from base str
+	-- Desc: from base str (todo choose lit name)
 	-- todo also consider returning the stuff after the parsed number...
 	-- todo try to get auto value 10 (can use it since index by does
 	-- Example: ``"1f" 16 -> 31
@@ -506,6 +506,39 @@ rawOps = [
 	
 	-- todo there are some type combinations that are invalid for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
+	
+	-- Desc: take drop while
+	-- Example: tw ,5 -3$ $ -> [1,2],[3,4,5]
+	-- Test not: tw ,5 ~-$3 $ -> [1,2,3],[4,5]
+	op("tw", [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: drop take while
+	-- Example: dw ,5 -3$ $ -> [3,4,5],[1,2]
+	-- Test not: dw ,5 ~-$3 $ -> [4,5],[1,2,3]
+	op("dw", [], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: take drop, auto = uncons
+	-- Example: td ,5 2 $ -> [1,2],[3,4,5]
+	-- Test negative: td ,3 *~2 $ -> [],[1,2,3]
+	op("td", [], [list, int], "flip genericSplitAt" ~> \[a1,_]->[a1::VT,a1]),
+	
+	
+	-- Desc: drop take, auto = consun
+	-- Example: dt ,5 2 $ -> [3,4,5],[1,2]
+	-- Test negative: dt ,3 *~2 $ -> [1,2,3],[]
+	op("dt", [], [list, int], "(swap.).flip genericSplitAt" ~> \[a1,_]->[a1::VT,a1]),
+
+	-- Desc: un cons
+	-- Example: uncons ,3 $ -> 1,[2,3]
+	-- Test empty: uncons ,0 $ -> 0,[]
+	-- Test tuple: uncons z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
+	-- Test tuple empty: uncons z ,0"a" $ @ -> 0,' ',[]
+	op("uncons", [], [list], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
+	
+	-- Desc: cons un
+	-- Example: consun ,3 $ -> [2,3],1
+	-- Test empty: consun ,0 $ -> [],0
+	-- Test tuple: consun z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
+	-- Test tuple empty: consun z ,0"a" $ @ -> [],0,' '
+	op("consun", [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
