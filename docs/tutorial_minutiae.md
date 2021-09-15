@@ -18,17 +18,19 @@ There are a few exceptions:
 *	Empty string is 3 nibbles.
 *	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline which should be more common).
 
+FYI strings don't use ascii, since it seems bad that the first 32 ascii characters are essentially useless.
+
 **Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
 *	\n
 *	space
-*	/
 *	.
 *	,
-*	\`
+*	-
 *	a
-*	@
+*	z
 *	A
+*	Z
 *	0
 
 Binary chars will require 5 nibbles.

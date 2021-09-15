@@ -16,11 +16,27 @@ import qualified Data.ByteString.Lazy as B8
 import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
 import qualified Data.ByteString.Char8 as C8
 
+charList = ' ':['a'..'z']++".,!?_\n"++['A'..'Z']++['0'..'9']
+	++"-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
+	++['\0'..'\9']++"\127"++['\11'..'\31']
+inverseCharList :: [Integer]
+inverseCharList = map fromIntegral $ catMaybes $ map (flip elemIndex charList) ['\0'..'\127']
+newli = inverseCharList !! ord '\n'
+space = inverseCharList !! ord ' '
+
+myChr :: Integral i => i -> Char
+myChr i | i < 0 = myChr $ i `mod` 96
+        | i < 128 = charList !! fromIntegral i
+        | otherwise = chr $ fromIntegral i
+myOrd :: Char -> Integer
+myOrd c | c < '\128' =  fromIntegral $ inverseCharList !! ord c
+        | otherwise = fromIntegral $ ord c
+
 sToA :: String -> [Integer]
-sToA = map (fromIntegral.ord)
+sToA = map (fromIntegral.myOrd)
 
 aToS :: Integral i => [i] -> String
-aToS = map$chr.fromIntegral
+aToS = map$myChr.fromIntegral
 
 bToI :: Bool -> Integer
 bToI b = if b then 1 else 0
@@ -83,7 +99,7 @@ toBase :: (Integral a, Integral b) => b -> Integer -> [a]
 toBase b n = reverse $ map (fromIntegral.flip mod b) $ takeWhile (>0) $ iterate (flip div b) (fromIntegral n)
 
 hlist :: Integral i => [i] -> Integer
-hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) (map fromIntegral a)
+hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) (map (\e->fromIntegral$ord$myChr e) a)
 
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult

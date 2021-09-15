@@ -113,7 +113,7 @@ strToNib (s:rest) =
 	let nib1 = strToNib [s++" "]
 	in init nib1 ++ [10,0] ++ strToNib rest
 
-specialChars = "\n /.,`a@A0"
+specialChars = "\n -.,azAZ0"
 specialChars127n = '\127':tail specialChars
 swap127 '\n' = '\127'
 swap127 '\127' = '\n'
@@ -250,7 +250,7 @@ chrParser = do
 	(s, rest) <- gets $ parseChr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
-	return (VChr, "fromIntegral$ord " ++ show s)
+	return (VChr, "myOrd " ++ show s)
 
 parseDataExpr :: ParseState Integer
 parseDataExpr = do

@@ -56,11 +56,11 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 
 		let autoMap = if ?isSimple then "" else 
 			if allInputUsed || allInputUsedAsInts then ""
-			else if sndLineUsed then "intercalate [10] $ flip map (listOr [[]] (chunksOf 2 strLines)) $ \\strLines -> "
-			else if fstLineUsed then "intercalate [10] $ flip map (listOr [[]] (chunksOf 1 strLines)) $ \\strLines -> "
-			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [10] $ flip map intMatrix2 $ \\intList ->"
-			else if sndIntUsed then "intercalate [10] $ flip map (listOr [[]] (chunksOf 2 intList)) $ \\intList -> "
-			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "intercalate [10] $ flip map (listOr [[]] (chunksOf 1 intList)) $ \\intList -> "
+			else if sndLineUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 2 strLines)) $ \\strLines -> "
+			else if fstLineUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 1 strLines)) $ \\strLines -> "
+			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [newli] $ flip map intMatrix2 $ \\intList ->"
+			else if sndIntUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 2 intList)) $ \\intList -> "
+			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 1 intList)) $ \\intList -> "
 			else ""
 		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\

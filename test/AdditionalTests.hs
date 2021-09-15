@@ -3,7 +3,7 @@
 -- Test: z .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]
 
 -- int versus integer
--- Test: %$=1"abc" -> 3
+-- Test: %$=1"cde" -> 1
 
 -- Test: testCoerce2 1 1 -> "[VInt]"
 -- Test: testCoerce2 1 'a' -> "[VInt]"
@@ -37,24 +37,24 @@
 -- Test: testCoerce2 z,3"abc" z"abc",3 -> "[VList [VInt,VInt]]"
 ------------------------------------------------------------------	
 -- Test: testCoerceToInt 1 -> 1
--- Test: testCoerceToInt 'a' -> 97
+-- Test: testCoerceToInt 'a' -> 1
 -- Test: testCoerceToInt ,3 -> 6
 -- Test: testCoerceToInt "abc" -> 0
 -- Test: testCoerceToInt "12" -> 12
 -- Test: testCoerceToInt ^:,3~3 -> 18
 -- Test: testCoerceToInt ^:"3"~3 -> 9
 
--- Test: testCoerceToChr 100 -> 'd'
+-- Test: testCoerceToChr 4 -> 'd'
 -- Test: testCoerceToChr 'a' -> 'a'
--- Test: testCoerceToChr :100 200 -> 'd'
+-- Test: testCoerceToChr :4 200 -> 'd'
 -- Test: testCoerceToChr "abc" -> 'a'
--- Test: testCoerceToChr .,3 .,3 +*100$@ -> 'e'
+-- Test: testCoerceToChr .,3 .,3 +*2$@ -> 'c'
 -- Test: testCoerceToChr ^:"abc"~3 -> 'a'
 
 -- Test: testCoerceToListInt 100 -> [100]
--- Test: testCoerceToListInt 'a' -> [97]
+-- Test: testCoerceToListInt 'a' -> [1]
 -- Test: testCoerceToListInt ,3 -> [1,2,3]
--- Test: testCoerceToListInt "abc" -> [97,98,99]
+-- Test: testCoerceToListInt "abc" -> [1,2,3]
 -- Test: testCoerceToListInt ^:,3~3 -> [1,2,3,1,2,3,1,2,3]
 -- Test: testCoerceToListInt ^:"abc"~3 -> [0,0,0]
 -- Test: testCoerceToListInt ^:"12"~3 -> [12,12,12]
@@ -67,11 +67,11 @@
 -- Test: testCoerceToStr ^:"abc"~3 -> "abcabcabc"
 
 -- Test: testCoerceToListListInt 100 -> [[100]]
--- Test: testCoerceToListListInt 'a' -> [[97]]
+-- Test: testCoerceToListListInt 'a' -> [[1]]
 -- Test: testCoerceToListListInt ,3 -> [[1,2,3]]
--- Test: testCoerceToListListInt "abc" -> [[97,98,99]]
+-- Test: testCoerceToListListInt "abc" -> [[1,2,3]]
 -- Test: testCoerceToListListInt ^:,3~3 -> [[1,2,3],[1,2,3],[1,2,3]]
--- Test: testCoerceToListListInt ^:"abc"~3 -> [[97,98,99],[97,98,99],[97,98,99]]
+-- Test: testCoerceToListListInt ^:"abc"~3 -> [[1,2,3],[1,2,3],[1,2,3]]
 
 -- Test: testCoerceToListStr 100 -> ["100"]
 -- Test: testCoerceToListStr 'a' -> ["a"]

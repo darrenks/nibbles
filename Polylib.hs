@@ -24,12 +24,12 @@ import Types
 import Data.List
 
 truthy [VInt] = "(>0)"
-truthy [VChr] = "(\\c->c>0 && not (isSpace$chr$fromIntegral c))"
+truthy [VChr] = "(\\c->c>0 && not (isSpace$myChr c))"
 truthy [VList _] = "(not.null)"
 truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
 
 inspect VInt = "(sToA.show.confirmInt)"
-inspect VChr = "(sToA.show.chr.fromIntegral.confirmInt)"
+inspect VChr = "(sToA.show.myChr.confirmInt)"
 inspect (VList [VChr]) = "(sToA.show.aToS.confirmList)"
 inspect (VList et) = "(\\v -> (sToA \"[\") ++ (intercalate (sToA \",\") (map "++inspectElem et++" v)) ++ (sToA \"]\"))"
 inspect a = error $ "unhandled type in inspect: " ++ show a
@@ -66,8 +66,8 @@ flattenTuples t1 t2 = "(\\("++varsFrom 1 t1++","++varsFrom (1+t1) (t1+t2)++")->(
 finish :: VT -> String
 finish (VList tt)
 	| d >= 3 = joinC "[]"
-	| d == 2 = joinC "[32]"
-	| d == 1 = compose1 "(++[10])" $ joinC "[10]" -- todo might not want that newline for empty list? like unlines
+	| d == 2 = joinC "[space]"
+	| d == 1 = compose1 "(++[newli])" $ joinC "[newli]" -- todo might not want that newline for empty list? like unlines
 	where
 		d = sdim tt
 		joinC s = compose1 (finish jt) $ app1 js s where (jt,js) = join (VList tt)
@@ -138,7 +138,7 @@ coerceTo to from = tupleLambda (length from) $ \args -> toTuple $
 	where defaults = map defaultValue1 $ drop (length from) to
 
 defaultValue1 (VInt) = "0"
-defaultValue1 (VChr) = "32"
+defaultValue1 (VChr) = "space"
 defaultValue1 (VList _) = "[]"
 defaultValue = toTuple . map defaultValue1
 
