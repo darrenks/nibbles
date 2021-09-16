@@ -17,7 +17,7 @@ data Impl = Impl { implType::VT
                  , implName::Maybe String
                  , implUsed::ArgUsedness
                  } deriving (Eq, Show)
-noArgsUsed = Impl undefined undefined (Set.singleton 0) Nothing UnusedArg
+noArgsUsed = Impl (error "undefined impl type") (hsAtom "(error \"undefined impl code\")") (Set.singleton 0) Nothing UnusedArg
 
 data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving (Show, Eq)
 data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show
@@ -57,6 +57,7 @@ data ArgSpec
 	| AutoNot ArgSpec {- only Fn -}
 	| AutoSwap
 	| AutoOption String {- desc -}
+	| OptionalFn ([VT] -> (Int, [VT])) -- returns a fn if its args are used, otherwise an impl with type ItWasAConstant
 
 type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 

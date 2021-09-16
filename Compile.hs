@@ -206,6 +206,17 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	else
 		return $ Left (error"memoized args cannot be used after fn", [JustImpl impl])
 
+tryArg (OptionalFn f) prevTs _ memoArgs = do
+	let (nRets, argT) = f prevTs
+	(impl,used) <- getLambdaValue nRets argT UnusedArg
+	code <- gets pdCode
+	context <- gets pdContext
+	if not (or used) then
+		return $ Left ((impl, blankRep code context):error "cannot used memo args after the one after optional fn", [JustImpl $ noArgsUsed { implType=ItWasAConstant}])
+	else
+		return $ Left (head $ exprsByOffset $ Thunk code context, [JustImpl impl])
+
+
 tryArg (AutoNot fn) prevTs _ _ = do
 	matched <- match tildaOp
 	afterArg <- tryArg fn prevTs (error"impossible 43") (error"impossible 44")

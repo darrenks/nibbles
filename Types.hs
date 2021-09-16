@@ -4,7 +4,8 @@ import Data.List(intercalate)
 import Data.Maybe
 
 data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType
-	| OptionYes | OptionNo -- | VMaybe VT | Nothing
+	| OptionYes | OptionNo | ItWasAConstant -- only for code gen, not real types
+	-- | VMaybe VT | Nothing -- (other ideas)
 	deriving (Show, Eq)
 
 vstr = VList [VChr]
@@ -35,5 +36,7 @@ toHsType (VList ts) =
 		Just $ "[" ++ (toTuple $ catMaybes elems) ++ "]"
 	else Nothing
 toHsType (VFn a b) = Nothing
+toHsType (ItWasAConstant) = Nothing
+toHsType e = error $ "cant toHsType " ++ show e
 -- won't work since sometimes its curried and others not?
 --toHsType (VFn a b) = "((" ++ (intercalate "->" $ map toHsType a) ++ ")->"++(toTuple $ map toHsType b)++ ")"

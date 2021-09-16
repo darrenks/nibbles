@@ -1,3 +1,4 @@
+{-# LANGUAGE FlexibleContexts #-} -- for binarySetOp type
 module Ops where
 
 import Types
@@ -589,25 +590,26 @@ rawOps = [
 		\zip3 a (map f a) [0..]" ~> vList1.a1),
 
 	-- Desc: uniq on (nubOn) could make \ needed to do "on"
-	-- Example: uniq "abcb" $ -> "abc"
+	-- Example: uniq "bcba" $ -> "bca"
 	op("uniq",[],[list, fn $ elemT.a1],"\\a f->nubBy (onToBy f) a"~>a1),
 	
-	-- and promote to list...
-	-- use deleteFirstBy (converted to on)
-	-- Desc: list intersect todo by
+	-- Desc: list intersect
 	-- Example: `& "abaccd" "aabce" -> "abac"
-	op("`&",[],[list,list],"\\a b->a \\\\ (a \\\\ b)" ~> a1),
-	-- Desc: list union todo by
+	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
+	-- Test coerce: `& ,3 1 -> [1]
+	--- Test tuple todo
+	-- Test by: `& ,5 %$2 :1 1 -> [3,5]
+	-- Test true set by: `& ,5 ~ %$2 :1 1 -> [1]
+	binarySetOp "`&" "a - (a - b)",
+	-- Desc: list union
 	-- Example: `| "abccd" "aabce" -> "abccdae"
-	op("`|",[],[list,list],"\\a b->a ++ (b \\\\ a)" ~> a1),
-	-- Desc: list xor todo by
+	binarySetOp "`|" "a ++ (b - a)",
+	-- Desc: list xor
 	-- Example: `^ "aabce" "abbde" -> "acbd"
-	op("`^",[],[list,list],"\\a b->(a \\\\ b) ++ (b \\\\ a)" ~> a1),
-	-- Desc: difference by
-	-- todo (have a special case already)
-	-- make 2nd arg fn, then if constant it is 2nd arg, else it is by, and take a 2nd arg
+	binarySetOp "`^" "(a-b) ++ (b-a)",
+	-- Desc: list difference
 	-- Example: `- "aabd" "abc" -> "ad"
-	op("`-",[],[list,list],"\\a b->a \\\\ b" ~> a1),
+	binarySetOp "`-" "a-b",
 	
 	-- todo vectorize these?
 	-- Desc: bit union
@@ -660,6 +662,26 @@ foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
+
+-- todo handle mismatch tuple better (by)
+-- allows ~ to make it a true set up (duplicates removed)
+-- allows option 2nd arg fn that makes it a "on" op
+-- coerces/etc.
+-- code must be defined using -
+binarySetOp name code =
+	op(name, [], [list,AutoOption "uniq",OptionalFn (\[a1,_]->(1,elemT a1)),anyT], \[a1,o1,optionalFn,a2]-> let
+		(coercedType, coerceFnA, coerceFnB) = coerce [a1] bt
+		replaceMinus = concatMap (\c->if c=='-' then "`minus`" else [c])
+		maybeNub = if o1==OptionYes then "(nubBy (onToBy snd))" else "id"
+		(byFn,bcode,bt) = case optionalFn of
+			ItWasAConstant -> ("id","(bb())",ret a2) -- todo handle tuple elem, multi ()
+			otherwise -> ("ff","bb",[a2])
+		zipBy = "(\\x -> zip x $ map " ++ byFn ++ " x)"
+	 in
+		"\\aa ff bb->let minus=deleteFirstsBy (onToBy snd);\
+		\a="++maybeNub++"$"++zipBy++"$"++coerceFnA++"aa;\
+		\b="++maybeNub++"$"++zipBy++"$"++coerceFnB++bcode++" in \
+		\map fst $ "++maybeNub++"$"++replaceMinus code~>coercedType)
 
 addHigherValueDeBruijnOps ops = concat [op(
 		replicate unary ';' ++ snd symb,

@@ -102,6 +102,7 @@ typeToStr (Fn False _ _) = Just "fn|C"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
+typeToStr (OptionalFn _) = Just $ "fn?"
 
 prettyType VInt = "int"
 prettyType (VList [VChr]) = "str"
