@@ -86,21 +86,18 @@ rawOps = [
 			"\\x f->"++flattenTuples a2L 1 ++ "(f $ x(),f)" ~>
 			ret a2 ++ [VFn (ret a1) (ret a2)]
 			)),
-	-- Desc: let rec
-	-- Example (fact): ;~ 5 $ 1 *@-$~$ $3 -> 120,6
-	-- Test (multiple args): ;~ ~3 4 $ 0 +_@ -$1 @   $ 5 6 -> 12,30
-	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
+	-- Desc: recursion
+	-- Example (fact): ;~ 5 $ 1 *@-$~$ -> 120
+	-- Test (multiple args): ;~ ~3 4 $ 0 +_@ -$1 @ -> 12
+	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $ -> 4,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " dehllloorw!"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
 	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[InvalidType]))],
-	(\[a1,a2]->
-		let a1L = length $ ret a1
-		    rt = ret $ head $ tail $ ret a2 in
-		"\\x f -> let ff=memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples a1L 1++"(x,rec)) in if "
-		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), ff)" ~>
-		OptionalLets (rt ++ [VFn (ret a1) rt]))),
+	\[a1,a2]->
+		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if "
+		++truthy [head $ ret a2]++" a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
