@@ -1,10 +1,12 @@
 module Header where
 
+import Data.Function.Memoize -- needs cabal install --lib memoize
 import Data.List
 import Data.Char (chr,ord,isAlpha,isDigit,isSpace,toLower)
 import Numeric (showHex)
 import Data.Maybe (fromMaybe,catMaybes,isJust)
 import Data.Tuple (swap)
+import Data.Bits
 import Data.List.Split -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
@@ -40,6 +42,9 @@ aToS = map$myChr.fromIntegral
 
 bToI :: Bool -> Integer
 bToI b = if b then 1 else 0
+
+onToBy :: Eq a => (t -> a) -> t -> t -> Bool
+onToBy f x y = f x == f y
 
 -- Check these types so we don't accidentally not catch type errors in tests which rely on show
 confirmInt :: Integral a => a -> a
@@ -117,9 +122,12 @@ parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
 		digits = genericTake base $ ['0'..'9']++['a'..'z']
 		digitIndices = map (flip elemIndex digits) str
 
-iterateWhileUniq :: Ord a => (a -> a) -> a -> ([a], a)
-iterateWhileUniq = iterateWhileUniqH Set.empty
+iterateWhileUniq :: Ord a => (a -> a) -> a -> ([a], [a])
+iterateWhileUniq f i =
+	let uniqPart = iterateWhileUniqH Set.empty f i
+	    Just repeatedIndex = elemIndex (f (last uniqPart)) uniqPart
+	in (uniqPart, drop repeatedIndex uniqPart)
 iterateWhileUniqH been f i =
-	if Set.member i been then ([], i)
-	else let (rest,terminator) = iterateWhileUniqH (Set.insert i been) f (f i) in
-		(i:rest, terminator)
+	if Set.member i been then []
+	else i : iterateWhileUniqH (Set.insert i been) f (f i)
+

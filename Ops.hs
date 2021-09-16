@@ -91,11 +91,13 @@ rawOps = [
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $  @2$ -> 4,7,5,7
 	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " dehllloorw!"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
+	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
+	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
 	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[InvalidType]))],
 	(\[a1,a2]->
 		let a1L = length $ ret a1
 		    rt = ret $ head $ tail $ ret a2 in
-		"\\x f -> let ff=fix (\\rec x->let (a,b,c)=f ("++flattenTuples a1L 1++"(x,rec)) in if "
+		"\\x f -> let ff=memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples a1L 1++"(x,rec)) in if "
 		++truthy [head $ ret a2]++" a then c else b) in "++flattenTuples (length rt) 1 ++ "(ff $ x(), ff)" ~>
 		OptionalLets (rt ++ [VFn (ret a1) rt]))),
 	-- Desc: let
@@ -110,13 +112,14 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate while uniq (todo do we want to make second ret the repeated part?)
-	-- Example: iq 10 %+1$3 $ -> [10,2,0,1],2
-	-- Test swap: iq 10 ~%+1$3 $ -> 2,[10,2,0,1]
-	-- Test tuple: iq ~1 2 @$ $ @ -> [(1,2),(2,1)],1,2
-	-- Test swap tuple: iq ~1 2 ~@$ $ @ -> 1,2,[(1,2),(2,1)]
+	-- Desc: iterate while uniq
+	-- Example: iq 10 %+1$3 $ -> [10,2,0,1],[2,0,1]
+	-- Test swap: iq 10 ~%+1$3 $ -> [2,0,1],[10,2,0,1]
+	-- Test tuple: iq ~1 2 @$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
+	-- Test swap tuple: iq ~1 2 ~@$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
+	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
 	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoSwap, fnx (\[a1]->(length $ ret a1, ret a1))],
-		\[a1,a2]->"\\i f->"++flattenTuples 1 (length $ ret a1) ++" $ iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1) : ret a1),
+		\[a1,a2]->"\\i f->iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -306,7 +309,12 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	-- Desc: splitWhen
+	
+-- 	todo prepend an empty so simpler data strucutre
+-- 	aka grouped partition
+-- 	return tuple of list or list of tuple?
+		
+	-- Desc: splitWhen (todo groupWhen, is this needed, what is simplest alt?)
 	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
 	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
 	-- Test snd ret isnt used implicitly: : sw ;"a$" -~a$ -> "a$"
@@ -318,7 +326,7 @@ rawOps = [
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: gp ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
 	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->groupBy (\\a b->f a==f b) a" ~> vList1 a1),
+		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
@@ -421,7 +429,7 @@ rawOps = [
 	-- Desc: inits
 	-- Example: is,3 -> [[],[1],[1,2],[1,2,3]]
 	extendOp ["=","~"] genericReason ("is", [14,0], [list], "inits"~>VList),
-	-- Desc: subscript. Wrapped.
+	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
@@ -546,6 +554,84 @@ rawOps = [
 	-- Desc: from ascii
 	-- Example: fromascii 100 -> 'd'
 	op("fromascii", [], [int], "myOrd.chr.fromIntegral" ~> VChr),
+	
+	-- Desc: signum
+	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
+	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
+	
+	-- Desc: == (todo coerce or restrict)
+	-- Example: eq 1 2 eq 1 1 -> 0,1
+	op("eq",[],[anyT, autoTodo {- truthy? -} anyT],"(bToI.).(==)" ~> VInt),
+	
+	-- Desc: assign subscript []= (todo mod len?)
+	-- Example: sassigns"abcd"2 +1$ -> "accd"
+	-- todo invalid index
+	-- todo test tuple
+	op("sassigns",[],[list, autoTodo int, fnx $ \[a1,_]->(length $ elemT a1, elemT a1)],"\\a i e->let (lhs,rhs)=genericSplitAt (i-1) a in \
+		\lhs ++ (e (head rhs):tail rhs)" ~> a1),
+	
+	-- Desc: intersperse (todo if arg is larger dims, then make it like zip (with repeat?)
+	-- Example: intersperse ,3 2 -> [1,2,2,2,3]
+	op("intersperse",[],[listToBeReferenced,elemOfA1],"flip intersperse" ~> a1),
+	
+	-- Desc: split list (todo promote to list when needed)
+	-- Example: split ,5 :3~ -> [[1,2],[4,5]]
+	-- Test end splits: split "abca" "a" -> ["","bc",""]
+	op("split",[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
+	
+	-- Desc: groupAllOn
+	-- Example: groupAllOn "cabcb" $ -> ["cc","a","bb"]
+	op("groupAllOn",[],[list, fn $ elemT.a1],"\\a f->\
+		\map (map (\\(e,_,_)->e)) $\
+		\sortOn (\\((_,_,ind):_)->ind) $\
+		\groupBy (onToBy (\\(_,fa,_)->fa)) $\
+		\sortOn (\\(_,fa,_)->fa) $\
+		\zip3 a (map f a) [0..]" ~> vList1.a1),
+
+	-- Desc: uniq on (nubOn) could make \ needed to do "on"
+	-- Example: uniq "abcb" $ -> "abc"
+	op("uniq",[],[list, fn $ elemT.a1],"\\a f->nubBy (onToBy f) a"~>a1),
+	
+	-- and promote to list...
+	-- use deleteFirstBy (converted to on)
+	-- Desc: list intersect todo by
+	-- Example: `& "abaccd" "aabce" -> "abac"
+	op("`&",[],[list,list],"\\a b->a \\\\ (a \\\\ b)" ~> a1),
+	-- Desc: list union todo by
+	-- Example: `| "abccd" "aabce" -> "abccdae"
+	op("`|",[],[list,list],"\\a b->a ++ (b \\\\ a)" ~> a1),
+	-- Desc: list xor todo by
+	-- Example: `^ "aabce" "abbde" -> "acbd"
+	op("`^",[],[list,list],"\\a b->(a \\\\ b) ++ (b \\\\ a)" ~> a1),
+	-- Desc: difference by
+	-- todo (have a special case already)
+	-- make 2nd arg fn, then if constant it is 2nd arg, else it is by, and take a 2nd arg
+	-- Example: `- "aabd" "abc" -> "ad"
+	op("`-",[],[list,list],"\\a b->a \\\\ b" ~> a1),
+	
+	-- todo vectorize these?
+	-- Desc: bit union
+	-- Example: `| 6 3 -> 7
+	-- Test chr: `| ~ 'b' -> 'c'
+	op("`|",[],[AutoDefault num 1,AutoDefault num 2],".|."~>orChr),
+	-- Desc: bit intersection
+	-- Example: `& 6 3 -> 2
+	op("`&",[],[AutoDefault num 1,AutoDefault num 2],".&."~>xorChr),
+	-- Desc: bit xor
+	-- Example: `^ 6 3 -> 5
+	op("`^",[],[AutoDefault num 1,AutoDefault num 2],"xor"~>xorChr),
+	
+	-- Desc: or (todo coerce/etc, only need this op for lists though)
+	-- Example: or"" "b" or "a" "c" -> "b","a"
+	op("or",[],[autoTodo anyT,anyT],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
+	
+	--- Desc: character class
+	-- AaSs etc
+	
+	-- Desc: strip (todo might only need for str)
+	-- Example: Strip " bcd\n" -> "bcd"
+	op("Strip",[],[list],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
+		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"

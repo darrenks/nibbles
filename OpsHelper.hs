@@ -166,10 +166,10 @@ isExtOpt (types,_) = any (\t -> case t of
 	Cond desc _ -> elem '>' desc
 	otherwise -> False) types
 isOpSimple (isPriority, lits, nib, op) =
-	(not (isExtension (lit, nib, op))
+	(not (isExtension (lit, nib, op) || null nib)
 	||elem lit whitelist)
-	&& not (elem lit blacklist)
+		&& not (elem lit blacklist)
 	where
 		lit = concat lits
-		whitelist = ["ct"]
+		whitelist = ["ct","p"]
 		blacklist = ["tbd", "z"]

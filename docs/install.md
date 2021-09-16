@@ -7,7 +7,7 @@ You will need **GHC 8.10.4** and **cabal 3.4.0.0** (or greater).
 
 ### Install some libs
 
-	> cabal install --lib dlist split pureMD5
+	> cabal install --lib dlist split pureMD5 memoize
 
 ### Install Nibbles
 Download the [latest stable version](https://nibbles.golf/nibbles-latest.tgz), unpack it then compile it.

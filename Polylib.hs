@@ -59,8 +59,9 @@ unzipTuple (VList ts) = (map (VList.(:[])) ts, "(\\a->"++(toTuple $ map (\i->
 rotateTuple :: Int -> String
 rotateTuple n = tupleLambda n (toTuple.rotate) where rotate (a:as) = as++[a]
 
+-- These ~ are because tuples aren't considered irrefutable in Haskell pattern matching, terrible blunder on Haskell's part in my opinion. Without this, things like iterateWhileUniq isn't lazy (that is it will compute the repeated value even if it isn't used). https://stackoverflow.com/questions/67995144/is-pattern-matching-tuples-not-fully-lazy/67995445#67995445
 flattenTuples :: Int -> Int -> [Char]
-flattenTuples t1 t2 = "(\\("++varsFrom 1 t1++","++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
+flattenTuples t1 t2 = "(\\(~"++varsFrom 1 t1++", ~"++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
 	where varsFrom a b = toTuple $ map (\tn->"a"++show tn) [a..b]
 
 finish :: VT -> String
