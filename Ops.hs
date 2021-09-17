@@ -349,10 +349,9 @@ rawOps = [
 	-- Example: <3,5 -> [1,2,3]
 	-- todo test/make negative
 	op("<", [11], [num, list], "take.fromIntegral" ~> a2),
-	-- Desc: sort by
-	-- Example: sb,4%$2 -> [2,4,1,3]
-	-- Test tuple: sb z ,3 "bca" @ -> [(3,'a'),(1,'b'),(2,'c')]
-	extendOp [",","."] genericReason ("sb", [13,12], [list, fn (elemT.a1)], "\\a f->sortOn f a" ~> a1),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	extendOp [",","."] genericReason ("tbd", [13,12], [list], undefinedImpl),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
@@ -578,13 +577,14 @@ rawOps = [
 	op("split",[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
 	
 	-- Desc: groupAllOn
-	-- Example: groupAllOn "cabcb" $ -> ["cc","a","bb"]
-	op("groupAllOn",[],[list, fn $ elemT.a1],"\\a f->\
-		\map (map (\\(e,_,_)->e)) $\
-		\sortOn (\\((_,_,ind):_)->ind) $\
-		\groupBy (onToBy (\\(_,fa,_)->fa)) $\
+	-- Example: groupAllOn "cabcb" $ -> ["a","bb","cc"]
+	-- Test: groupAllOn "cabcb" ~$ -> ["cc","a","bb"]
+	op("groupAllOn",[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
+		\map (map (\\(e,_,_)->e)) $"++
+		(if o==OptionYes then "sortOn (\\((_,_,ind):_)->ind) $" else "")++
+		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
 		\sortOn (\\(_,fa,_)->fa) $\
-		\zip3 a (map f a) [0..]" ~> vList1.a1),
+		\zip3 a (map f a) [0..]" ~> vList1 a1),
 
 	-- Desc: uniq on (nubOn) could make \ needed to do "on"
 	-- Example: uniq "bcba" $ -> "bca"
