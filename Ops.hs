@@ -631,6 +631,20 @@ rawOps = [
 	-- Example: Strip " bcd\n" -> "bcd"
 	op("Strip",[],[list],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
+		
+	-- Desc: nary cartesian product
+	-- Example: cart rs 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
+	op("cart",[],[listOf list],"sequence"~>a1),
+	-- Desc: permutations
+	-- Example: perm "abc" -> ["abc","bac","cba","bca","cab","acb"]
+	op("perm",[],[list],"permutations"~>vList1.a1),
+	-- Desc: subsequences
+	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	op("subs",[],[list],"subsequences"~>vList1.a1),
+	-- Desc: slices
+	-- todo might not be most efficient way, also test negative/etc
+	-- Example: slices 2 "abcd" -> ["ab","bc","cd"]
+	op("slices",[],[int,list],"\\n a->zipWith drop [0..] $ genericDrop n $ inits a"~>vList1.a2),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
