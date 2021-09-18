@@ -136,7 +136,7 @@ There's a lot more possibilities here, but it isn't obvious what the most common
 
 ## Auto Map
 
-If your program uses input but not the entire raw input (`;_`) then your program will auto map.
+If your program uses input but not the entire raw input (`;_` or `;;$`) then your program will auto map.
 
 Suppose the input to your program is
 
@@ -206,6 +206,34 @@ Because it automapped on pairs of lines. Note that if there had been an odd numb
 	p ;_
 $HiddenOutput "12 888\n34\n56\n78"
 	"12 888\n34\n56\n78"
+
+If auto mapping occurs then the outer list default separator becomes `" "` instead of `"\n"` and the inner list default separator becomes `""` intead of `" "`. This is because if automapping, each output already uses the newline, it's unlikely you'd also want to separate list elements by a newline.
+
+E.g. if your input is
+
+	1 2
+	3 4
+
+then
+
+	\_
+$Output "1 2\n3 4"
+	2 1
+	4 3
+
+But if the input was just
+
+	1 2
+
+then 
+
+	\_
+$Output "1 2"
+	2
+	1
+
+
+
 
 ## Data
 

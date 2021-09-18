@@ -20,7 +20,7 @@ import SmartList
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
-compile :: (?isSimple::Bool) => (VT -> String) -> String -> Code -> (Impl, [Int], String, [String])
+compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> Code -> (Impl, [Int], String, [String])
 compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	args =
 		[ Arg (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
@@ -42,7 +42,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 	doCompile = do
 		impl1 <- get1Value
 		(dat,body) <- if separator == "" then mainCombiner impl1
-			else testCombiner $ finishIt impl1
+			else testCombiner $ finishIt impl1 False
 		context <- gets pdContext
 		impl <- popArg 0 body
 		nib <- gets getNib
@@ -54,30 +54,33 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		
 		let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
 
-		let autoMap = if ?isSimple then "" else 
+		-- todo idea: only auto map on snd (first is like a header)
+		let autoMap = if ?isSimple then "" else
 			if allInputUsed || allInputUsedAsInts then ""
-			else if sndLineUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 2 strLines)) $ \\strLines -> "
-			else if fstLineUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 1 strLines)) $ \\strLines -> "
-			else if intsUsed then "let intMatrix2 = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [newli] $ flip map intMatrix2 $ \\intList ->"
-			else if sndIntUsed then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 2 intList)) $ \\intList -> "
-			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "intercalate [newli] $ flip map (listOr [[]] (chunksOf 1 intList)) $ \\intList -> "
+			else if sndLineUsed then "let autoMapList = (listOr [[]] (chunksOf 2 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
+			else if fstLineUsed then "let autoMapList = (listOr [[]] (chunksOf 1 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
+			-- todo could also set a customer inner seperator
+			else if intsUsed then "let autoMapList = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [newli] $ flip map autoMapList $ \\intList -> "
+			else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
+			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
 			else ""
 		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\
 			\intList=concat intMatrix;\
 			\datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
-			\dat="++show (fromMaybe 0 dat) ++ ";\
-			\in "++autoMap) impl
+			\dat="++show (fromMaybe 0 dat) ++";\
+			\autoMapList=[];\
+			\in "++autoMap++"let (firstSep,secondSep)=if length autoMapList > 1 then ([],[space]) else ([space],[newli]) in") impl
 		warnings <- gets pdLitWarnings
 		return (finalImpl, nib, lit, warnings)
 	
-	finishIt impl = (app1Hs (finishFn $ implType impl) impl) { implType = vstr }
+	finishIt impl isLast = (app1Hs (finishFn (implType impl) isLast) impl) { implType = vstr }
 	join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
 
 	mainCombiner :: Impl -> ParseState (Maybe Integer, Impl)
 	mainCombiner prev = do
-		let finishedPrev = finishIt prev
 		code <- gets pdCode
+		let finishedPrev = finishIt prev (empty code)
 		if empty code then return (Nothing, finishedPrev)
 		else do
 			context <- gets pdContext
@@ -101,7 +104,8 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 						return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 					else do
 						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
-						return $ join2 finishedPrev (finishIt rhsImpl)
+						afterCode <- gets pdCode
+						return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
 				VList e | not ?isSimple && e /= [VChr] -> do
 					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
 					if or $ drop (length e) argsUsed then do
@@ -114,10 +118,12 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 						return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
 					else do
 						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
-						return $ join2 finishedPrev (finishIt rhsImpl)
+						afterCode <- gets pdCode
+						return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
 				otherwise -> do
 					impl1 <- get1Value
-					return $ join2 finishedPrev (finishIt impl1)
+					afterCode <- gets pdCode
+					return $ join2 finishedPrev (finishIt impl1 (empty afterCode))
 			
 			mainCombiner result
 	
@@ -127,7 +133,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		else do
 			impl1 <- get1Value
 			case impl1 of -- stupid work around because laziness causes infinite loop on error if
-				(Impl _ _ _ _ _) -> testCombiner (join2 prev (finishIt impl1))
+				(Impl _ _ _ _ _) -> testCombiner (join2 prev (finishIt impl1 False))
 	
 	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
 

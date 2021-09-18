@@ -668,7 +668,7 @@ rawOps = [
 	op("testCoerceToListListInt", [], [anyT], testCoerceTo [VList [VList [VInt]]]),
 	op("testCoerceToListStr", [], [anyT], testCoerceTo [VList [vstr]]),
 	op("testCoerceToX", [], [fn noArgs, fn noArgs], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
-	op("testFinish", [], [anyT], finish.a1 ~> vstr)]
+	op("testFinish", [], [anyT], flip finish False . a1 ~> vstr)]
 
 foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
