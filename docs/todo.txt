@@ -12,8 +12,6 @@ debug features to add:
 maybe (2 possible versions, one that acts like id, one that acts like Nothing)
 either instead of bool/maybe?
 
-" " instead of "\n" in auto map inner separator
-
 should have dependency bounds for dlist/etc (in cabal file?).
 
 auto input types (for command line args, essentially read show form of any type, even tuples)

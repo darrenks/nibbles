@@ -560,14 +560,7 @@ rawOps = [
 	-- Desc: == (todo coerce or restrict)
 	-- Example: eq 1 2 eq 1 1 -> 0,1
 	op("eq",[],[anyT, autoTodo {- truthy? -} anyT],"(bToI.).(==)" ~> VInt),
-	
-	-- Desc: assign subscript []= (todo mod len?)
-	-- Example: sassigns"abcd"2 +1$ -> "accd"
-	-- todo invalid index
-	-- todo test tuple
-	op("sassigns",[],[list, autoTodo int, fnx $ \[a1,_]->(length $ elemT a1, elemT a1)],"\\a i e->let (lhs,rhs)=genericSplitAt (i-1) a in \
-		\lhs ++ (e (head rhs):tail rhs)" ~> a1),
-	
+		
 	-- Desc: intersperse (todo if arg is larger dims, then make it like zip (with repeat?)
 	-- Example: intersperse ,3 2 -> [1,2,2,2,3]
 	op("intersperse",[],[listToBeReferenced,elemOfA1],"flip intersperse" ~> a1),
@@ -642,10 +635,6 @@ rawOps = [
 	-- Desc: subsequences
 	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
 	op("subs",[],[list],"subsequences"~>vList1.a1),
-	-- Desc: slices
-	-- todo might not be most efficient way, also test negative/etc
-	-- Example: slices 2 "abcd" -> ["ab","bc","cd"]
-	op("slices",[],[int,list],"\\n a->zipWith drop [0..] $ genericDrop n $ inits a"~>vList1.a2),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
