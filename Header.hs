@@ -62,11 +62,6 @@ at (x:xs) n
 step :: Integral i => i -> [a] -> [a]
 step n a = map fst $ filter ((==0).(`mod`n).snd) (zip (if n<0 then reverse a else a) [0..])
 
--- returns [(split by, non split by)], remaining split by
-mySplitWhen :: Eq a => (a -> Bool) -> [a] -> ([([a],[a])],[a])
-mySplitWhen f a =
-	let r = chunksOf 2 $ (split.condense.whenElt) (not.f) a		
-	in (map (\[a,b]->(a,b)) (init r), head $ last r)
 
 iff :: Bool -> a -> b -> Either a b
 iff c b1 b2 = if c then Left b1 else Right b2

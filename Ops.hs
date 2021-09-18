@@ -116,8 +116,8 @@ rawOps = [
 	-- Test tuple: iq ~1 2 @$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
 	-- Test swap tuple: iq ~1 2 ~@$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
 	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoSwap, fnx (\[a1]->(length $ ret a1, ret a1))],
-		\[a1,a2]->"\\i f->iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
+	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "swap", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "swap$" else "")++"iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -308,17 +308,18 @@ rawOps = [
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
 	
--- 	todo prepend an empty so simpler data strucutre
--- 	aka grouped partition
--- 	return tuple of list or list of tuple?
-		
-	-- Desc: splitWhen (todo groupWhen, is this needed, what is simplest alt?)
-	-- Example: sw "abc\nde  f " -~a$ $ -> [("","abc"),("\n","de"),("  ","f")]," "
-	-- Test leading split: sw " a" -~a$ $ -> [(" ","a")],""
-	-- Test snd ret isnt used implicitly: : sw ;"a$" -~a$ -> "a$"
-	-- Test swapped: sw "abc\nde  f " ~-~a$ $ -> " ",[("","abc"),("\n","de"),("  ","f")]
-	-- Test swapped leading split: sw " a" ~-~a$ $ -> "",[(" ","a")]
-	op("sw", [], [list, AutoSwap, fn (elemT.a1)], \[a1,a2]->"\\a f->mySplitWhen ("++truthy (ret a2)++".f) a" ~> OptionalLets [VList [a1,a1], a1]),
+	-- Desc: grouped partition
+	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
+	-- assumes that the input ends with a match, if it does not, then it appends an empty match
+	-- so that you may have access to the final non matching sequence.
+	-- Example: gw "abc\nde  f" a$ -> [("abc",""),("de","\n"),("f","  ")]
+	-- Test leading non match: gw " a" a$ -> [("a"," ")]
+	-- Test trailing non match: gw "a " a$ -> [("a",""),(""," ")]
+	-- Test outer non match: gw " a " a$ -> [("a"," "),(""," ")]
+	-- Test not: gw " a" ~a$ -> [(" ",""),("","a")]
+	op("gw", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
+		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
+		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: groupOn
 	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]

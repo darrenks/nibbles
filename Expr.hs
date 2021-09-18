@@ -55,7 +55,6 @@ data ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn Bool {-require arg use for match?-} ArgUsedness ([VT] -> (Int, [VT]))
 	| AutoNot ArgSpec {- only Fn -}
-	| AutoSwap
 	| AutoOption String {- desc -}
 	| OptionalFn ([VT] -> (Int, [VT])) -- returns a fn if its args are used, otherwise an impl with type ItWasAConstant
 

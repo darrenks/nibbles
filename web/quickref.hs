@@ -96,7 +96,6 @@ typeToStr (Cond desc _) = Just desc
 typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot (Fn _ _ _)) = Nothing
-typeToStr (AutoSwap) = Nothing
 typeToStr (Fn True _ _) = Just "fn"
 typeToStr (Fn False _ _) = Just "fn|C"
 typeToStr (AutoDefault t _) = typeToStr t
@@ -111,7 +110,6 @@ prettyType VChr = "chr"
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v
 	AutoData _ -> Just "data"
-	AutoSwap -> Just "swap"
 	AutoNot _ -> Just "not."
 	AutoOption desc -> Just desc
 	otherwise -> Nothing
