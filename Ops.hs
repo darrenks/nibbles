@@ -571,11 +571,10 @@ rawOps = [
 		\sortOn (\\(_,fa,_)->fa) $\
 		\zip3 a (map f a) [0..]" ~> vList1 a1),
 
-	-- Desc: uniq on (nubOn) could make \ needed to do "on"
-	-- Example: uniq "bcba" $ -> "bca"
-	op("uniq",[],[list, fn $ elemT.a1],"\\a f->nubBy (onToBy f) a"~>a1),
-	
-	-- Desc: list intersect
+	-- Desc: uniq
+	-- Example: uniq "bcba" -> "bca"
+	op("uniq",[],[list],"nub"~>a1),
+	-- Desc: list intersection
 	-- Example: `& "abaccd" "aabce" -> "abac"
 	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
 	-- Test coerce: `& ,3 1 -> [1]
