@@ -46,10 +46,9 @@ rawOps = [
 	-- Desc: char
 	-- Example (size 4): 'b' -> 'b'
 	-- Test (size 3): 'a' -> 'a'
-	-- Test (size 3): 'z' -> 'z'
 	-- Test (size 3): '\n' -> '\n'
 	-- Test (size 3): ' ' -> ' '
-	-- Test (size 3): '-' -> '-'
+	-- Test (size 3): '/' -> '/'
 	-- Test (size 3): '0' -> '0'
 	-- Test (size 4): '!' -> '!'
 	-- Test chr 127 (size 5): '\DEL' -> '\DEL'
@@ -90,7 +89,7 @@ rawOps = [
 	-- Example (fact): ;~ 5 $ 1 *@-$~$ -> 120
 	-- Test (multiple args): ;~ ~3 4 $ 0 +_@ -$1 @ -> 12
 	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $ -> 4,7
-	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " dehllloorw!"
+	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
@@ -147,7 +146,7 @@ rawOps = [
 	-- Desc: add
 	-- Example: +2 1 -> 3
 	-- Test: +'a' 2 -> 'c'
-	-- Test: +'\n' '\n' -> 64
+	-- Test: +'\n' '\n' -> 20
 	-- Test vectorized: +1,3 -> [2,3,4]
 	-- Test 2d vectorized: +1 ^:,2~ 2 -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
@@ -265,7 +264,7 @@ rawOps = [
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
-	-- Test: *2 "dd" -> [8,8]
+	-- Test: *2 "dd" -> [200,200]
 	-- Test: *~ 5 -> -5
 	-- Test: *5 ~ -> 10
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
@@ -383,8 +382,8 @@ rawOps = [
 	-- Test: % 7 ~ -> 1
 	op("%", [12], [num, AutoDefault num 2], "mod" ~> VInt),
 	-- Desc: chr/ord
-	-- Example: ch 4 ch 'e' -> 'd',5
-	extendOp [",",","] genericReason ("ch", [13,13], [autoTodo num], "id" ~> xorChr.(VChr:)),
+	-- Example: ch 100 ch 'e' -> 'd',101
+	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: chunksOf
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
@@ -442,7 +441,7 @@ rawOps = [
 	-- Example: hm~ "5a" 100 -> 62
 	-- Test: hex hm~ "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
 	-- Test: hm~ "d" 256 -> 173
-	-- Test: hm~ :4~ 256 -> 173
+	-- Test: hm~ :100~ 256 -> 173
 	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, int {-ParseArg "int" intParser-}], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
 	-- Desc: data salted hashmod
 	-- untested example: hm "5" 100 1 -> 62
@@ -545,14 +544,6 @@ rawOps = [
 	-- Test tuple: consun z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
 	-- Test tuple empty: consun z ,0"a" $ @ -> [],0,' '
 	op("consun", [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
-	
-	-- Desc: to ascii
-	-- Example: toascii 'd' -> 100
-	op("toascii", [], [char], "fromIntegral.ord.myChr" ~> VInt),
-	-- Desc: from ascii
-	-- Example: fromascii 100 -> 'd'
-	op("fromascii", [], [int], "myOrd.chr.fromIntegral" ~> VChr),
-	
 	-- Desc: signum
 	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
 	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),

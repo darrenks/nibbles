@@ -17,9 +17,13 @@ def removeLeadingTabs(s)
 	s.gsub(/^\t/,'')
 end
 
+def show s
+	s.inspect.gsub('\\#','#')
+end
+
 def convertTests(md)
 	md.gsub!(/\$(Hidden)?Output ?(".*?")?\n((\t.*?\n)+)/m) {
-		addTest("Raw", getProg($`), $2 || "", removeLeadingTabs($3).inspect)
+		addTest("Raw", getProg($`), $2 || "", show(removeLeadingTabs($3)))
 		if $1 # Hidden
 			''
 		else

@@ -26,11 +26,11 @@ FYI strings don't use ascii, since it seems bad that the first 32 ascii characte
 *	space
 *	.
 *	,
-*	-
+*	/
+*	\`
 *	a
-*	z
+*	@
 *	A
-*	Z
 *	0
 
 Binary chars will require 5 nibbles.
@@ -70,6 +70,12 @@ Example (w/ empty input):
 	+ *2$ ;$
 $Output
 	1200
+
+Also `@` becomes the list of printable ascii characters in a more useful order.
+
+	p@
+$Output
+	" abcdefghijklmnopqrstuvwxyz.,!?_\nABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
 
 ## Implicit Ops
 

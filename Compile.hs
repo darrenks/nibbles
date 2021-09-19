@@ -27,7 +27,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
 	mainLets =
 		[ ("firstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")
-		, ("firstLine", vstr, "fromMaybe [] $ at strLines 0")
+		, ("firstLine", vstr, "fromMaybe printables $ at strLines 0")
 		, ("ints", VList [VInt], "intList")
 		, ("secondInt", VInt, "fromMaybe 1000 $ at intList 1")
 		, ("secondLine", vstr, "fromMaybe [] $ at strLines 1")

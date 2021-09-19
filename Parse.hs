@@ -113,7 +113,9 @@ strToNib (s:rest) =
 	let nib1 = strToNib [s++" "]
 	in init nib1 ++ [10,0] ++ strToNib rest
 
-specialChars = "\n -.,azAZ0"
+specialChars = "\n /.,`a@A0"
+-- This would be good with custom ascii table
+--specialChars = "\n -.,azAZ0"
 specialChars127n = '\127':tail specialChars
 swap127 '\n' = '\127'
 swap127 '\127' = '\n'
