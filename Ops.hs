@@ -161,12 +161,11 @@ rawOps = [
 	-- Test empty: %"" "a" -> []
 	-- Test empty div: %"abc" "" -> ["a","b","c"]
 	-- Test chr split: %"a b" ' ' -> ["a","b"]
-	op("%", [8], [str, orC str char], (\[a1,a2]->
+	-- Test auto (words): %"a\nb c.d"~ -> ["a","b","c.d"]
+	op("%", [8], [str, OrAuto "words" $ orC str char], \[a1,a2]->
+		(if a2==OptionYes then "\\a->map sToA $ words (aToS a)" else
 		let (ap2, apf) = promoteList [a2]
-		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 .a1),
-	-- Desc: words
-	-- Example: %"a\nb c.d"~ -> ["a","b","c.d"]
-	op("%", [8], [str, auto], "\\a->map sToA $ words (aToS a)" ~> vList1 .a1),
+		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 a1),
 	
 	-- words steals the auto value from int, but justify doesn't need it
 	
@@ -465,7 +464,7 @@ rawOps = [
  	-- Desc: tbd
  	-- Example: 0 -> 0
  	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
-	-- Desc: if nonnull (lazy)
+	-- Desc: if nonnull (lazy) todo delete
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0
 	-- Test: ?,:5 5 $ 0 -> [5,5]
@@ -473,7 +472,7 @@ rawOps = [
 	lowPriorityOp(["?",","], [15,13], [list, Fn False OptionalArg $ \a1 -> (1,a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		),
-	-- Desc: if/else
+	-- Desc: if/else todo delet fn arg
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +1 0 1 "F" -> "1"
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4

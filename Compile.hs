@@ -220,6 +220,12 @@ tryArg (OptionalFn f) prevTs _ memoArgs = do
 	else
 		return $ Left (head $ exprsByOffset $ Thunk code context, [impl])
 
+tryArg (OrAuto _ nonAutoSpec) prevTs nibs memoArgs = do
+	matched <- match tildaOp
+	if matched 
+	then return $ Left $ (tail memoArgs, [noArgsUsed { implType=OptionYes }])
+	else tryArg nonAutoSpec prevTs nibs memoArgs
+
 
 tryArg (AutoNot fn) prevTs _ _ = do
 	matched <- match tildaOp
