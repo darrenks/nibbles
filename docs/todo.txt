@@ -1,9 +1,28 @@
+extension collision tests
+library/code links from quickref
+
+fix coerce tuple with : and if/else
+	generally think about tuple in stuff like the set ops/etc.
+
+combine fns to clean up ops table (scan/fold, l1)
+	can have multiple reps for same thing (i.e. string has shorter rep for join)
+	
+want non wrapped subscript auto option
+
+cleaner compile.hs using a template file for the main
+	use ops table with BOF and EOF for implicit ops, args, and auto map?
+
+automap could be a bit smarter
+	automap only only 2nd value if using 1st and 2nd
+	not totally sensical if automapping on lines, but also using ints, i.e.
+		echo asdf\\n123 | nibbles "p$ "\n" p@
+
 better checking for commutative, taking into account what the code would be if swapping order with lets
 
 debug features to add:
 	gather rest of program
 	show context values
-	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation)
+	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation, debruijn names)
 	see parse tree
 	better op not found error message (show arg types) (hard because memoize of arg types is lazy)
 	could support parenthesis that do nothing but cause error if parse isn't as expected

@@ -121,9 +121,6 @@ rawOps = [
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
 	op([":"], [7], [fn noArgs, auto], "\\v->v():[]" ~> VList .ret.a1),
-	--- Desc: abs
-	--- Example: ab *~5 -> 5
-	-- op("ab", [7], [autoTodo num, binOnlyAuto], "abs" ~> a1),
 	-- Desc: append
 	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -267,6 +264,7 @@ rawOps = [
 	-- Test: *~ 5 -> -5
 	-- Test: *5 ~ -> 10
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
+	-- Todo combine these 4 into 1 with autos?
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
 	-- Test tuple: sc,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
@@ -327,10 +325,6 @@ rawOps = [
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
-	-- Desc: divmod
-	-- Example: /~7 2 $ -> 3,1
-	-- Test: /7 ~ -> 3
-	op(["/","~"], [11,0], [AutoData num, AutoDefault num 2], "divMod" ~> [VInt, VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
@@ -340,7 +334,11 @@ rawOps = [
 	-- Test: / *~2 *~7 -> 0
 	-- Test: / 2 *~7 -> -1
 	-- Test: / 7 ~ -> 3
-	op("/", [11], [num, AutoDefault num 2], "div" ~> VInt),
+	-- Test divmod: /~7 2 $ -> 3,1
+	-- Test divmod auto: /7 ~ -> 3
+	op("/", [11], [AutoOption "divmod", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
+		then "div" ~> [VInt]
+		else "divMod" ~> [VInt, VInt]),
 	-- Desc: init
 	-- Example: <~,5 -> [1,2,3,4]
 	op(["<","~"], [11,0], [list], "init" ~> a1),
@@ -366,10 +364,6 @@ rawOps = [
 	-- Test: >~,3 -> [2,3]
 	-- todo test/make negative
 	op(">", [12], [AutoDefault num 1, list], "drop.fromIntegral" ~> a2),
-	-- Desc: moddiv
-	-- Example : %~7 2 $ -> 1,3
-	-- Test: %~7 ~ -> 1
-	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).divMod" ~> [VInt,VInt]),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
@@ -379,7 +373,11 @@ rawOps = [
 	-- Test: % *~2 *~7 -> -2
 	-- Test: % 2 *~7 -> -5
 	-- Test: % 7 ~ -> 1
-	op("%", [12], [num, AutoDefault num 2], "mod" ~> VInt),
+	-- Test moddiv : %~7 2 $ -> 1,3
+	-- Test moddiv auto: %~7 ~ -> 1
+	op("%", [12], [AutoOption "moddiv", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
+	then "mod" ~> [VInt]
+	else "(swap.).divMod" ~> [VInt, VInt]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
@@ -397,14 +395,11 @@ rawOps = [
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "length" ~> VInt),
-	-- Desc: range from 0 ...
-	-- Example: ,~3 -> [0,1,2]
-	-- Test: <3,~~ -> [0,1,2]
-	op([",","~"], [13, 0], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
-	op(",", [13], [num], "\\x->[1..x]" ~> vList1 .a1),
+	-- Test: <3,~ -> [1,2,3]
+	op(",", [13], [AutoDefault num (2^128)], "\\x->[1..x]" ~> vList1 .a1),
 	-- Desc: exponentiation
 	-- todo test/make negative
 	-- Example: ^2 8 -> 256
@@ -425,6 +420,14 @@ rawOps = [
 	-- Desc: inits
 	-- Example: is,3 -> [[],[1],[1,2],[1,2,3]]
 	extendOp ["=","~"] genericReason ("is", [14,0], [list], "inits"~>VList),
+	
+-- conflicts with exponentiation
+--		-- Test nowrap: =~5"asdf" -> ' '
+-- 	op("=", [], [AutoOption "nowrap", int, list], \[o1,a1,a2]->(if o1==OptionYes
+-- 		then "\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i)"
+-- 		else "\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)") ~> elemT a2),
+
+	
 	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
@@ -624,6 +627,21 @@ rawOps = [
 	-- Desc: subsequences
 	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
 	op("subs",[],[list],"subsequences"~>vList1.a1),
+	
+	-- Desc: abs
+	-- Example: Ab *~5 -> 5
+	op("Ab", [], [autoTodo num], "abs" ~> a1),
+
+	-- Desc: range from 0 ... (maybe don't need this?
+	-- Example: RR 3 -> [0,1,2]
+	-- Test: <3 RR ~ -> [0,1,2]
+	op(["RR"], [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
+	
+	-- Desc: find indices (todo make elemIndices if fn is const)
+	-- Example: FI "a b" a$ -> [1,3]
+	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map (+1) $ findIndices f l" ~> vList1 VInt),
+
+
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"

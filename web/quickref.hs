@@ -79,11 +79,14 @@ main=do
 		renameIntLit " " = "0-9"
 		renameIntLit l = l
 
+toSubtable strs = do
+	table ! class_ "subtable" $ tr $ mapM_ (td . toHtml) strs
+
 toQuickRef isSimple ((types,_)) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
-		toHtml $ unwords $ map (replaceComplexType isSimple) typeStrs]++
+		toSubtable $ map (replaceComplexType isSimple) typeStrs]++
 		if not isSimple then [
-	td $ H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toHtml (unwords autos)] else []
+	td $ H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toSubtable autos] else []
 	where
 		autos = getAutos types
 		replaceComplexType True "vec" = "num"
