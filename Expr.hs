@@ -59,6 +59,7 @@ data ArgSpec
 	| AutoOption String {- desc -}
 	| OptionalFn ([VT] -> (Int, [VT])) -- returns a fn if its args are used, otherwise an impl with type ItWasAConstant
 	| ZipMode
+	| CharClassMode
 
 type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
 

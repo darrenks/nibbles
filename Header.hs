@@ -2,7 +2,7 @@ module Header where
 
 import Data.Function.Memoize -- needs cabal install --lib memoize
 import Data.List
-import Data.Char (chr,ord,isAlpha,isDigit,isSpace,toLower)
+import Data.Char
 import Numeric (showHex)
 import Data.Maybe (fromMaybe,catMaybes,isJust)
 import Data.Tuple (swap)

@@ -258,6 +258,10 @@ tryArg (AutoData tspec) prevTypes nibs memoArgs = do
 		return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
 	else tryArg tspec prevTypes nibs memoArgs
 
+tryArg CharClassMode _ _ memoArgs = do
+	impl <- parse1Nibble "char class mode" $ zip [0..] charClasses
+	return $ Left (error"memoized args cannot be used after char class mode (but could be)", [impl])
+
 tryArg ZipMode prevTypes _ memoArgs = do
 	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips prevTypes)
 	return $ Left (error"memoized args cannot be used after zip mode (but could be)", [impl])
@@ -294,6 +298,24 @@ specialZips a@[a1,a2] = let
 		map (\c->(c,createZipFromBinOp c a)) "+*-/%^][!=?"
 		-- two more possible
 
+charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
+charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs)))
+	[('a',"isAlpha") -- todo regular alpha (is letter)
+	,('A',"not.isAlpha")
+	,('n',"isAlphaNum")
+	,('N',"not.isAlphaNum")
+	,('s',"isSpace")
+	,('S',"not.isSpace")
+	,('l',"isLower")
+	,('L',"not.isLower")
+	,('u',"isUpper")
+	,('U',"not.isUpper")
+	,('p',"isPrint") -- 95 - no newline
+	,('P',"not.isPrint") -- aka isControl
+	,('d',"isDigit")
+	,('D',"not.isDigit")
+	,('$',"\\c->isPunctuation c || isSymbol c")
+	,('!',"\\c->not $ isPunctuation c || isSymbol c")]
 
 -- get the args (possibly fail), ok to modify parse state and fail
 getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe ([Impl]))

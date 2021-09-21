@@ -251,10 +251,12 @@ rawOps = [
 	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	-- Test auto not: &,5~%$2 -> [2,4]
 	op("&", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
-	-- Desc: is alpha?
-	-- Example: a'z' -> 1
-	-- Test: a' ' -> 0
-	op("a", [10], [char], "bToI.isAlpha.myChr" ~> VInt),
+	-- Desc: char class?
+	-- Example: \'z'a -> 1
+	-- Test: \' 'a -> 0
+	-- Test: \'a'$ \'_'$ -> 0,1
+	-- Test: \'a'! \'_'! -> 1,0
+	op("\\", [10], [char, CharClassMode], "\\a f->bToI $ f $ myChr a" ~> VInt),
 	-- Desc: min
 	-- Example: [4 5 -> 4
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
@@ -272,7 +274,7 @@ rawOps = [
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- Test empty: sc,0+@$ -> []
-	-- Test tuple: sc z ,3 "a.c" +_$ +a@;$ -> [(1,'a'),(3,'a'),(6,'b')]
+	-- Test tuple: sc z ,3 "a.c" +_$ +\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
 	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +@$ -> 7
@@ -308,11 +310,11 @@ rawOps = [
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
 	-- so that you may have access to the final non matching sequence.
-	-- Example: gw "abc\nde  f" a$ -> [("abc",""),("de","\n"),("f","  ")]
-	-- Test leading non match: gw " a" a$ -> [("a"," ")]
-	-- Test trailing non match: gw "a " a$ -> [("a",""),(""," ")]
-	-- Test outer non match: gw " a " a$ -> [("a"," "),(""," ")]
-	-- Test not: gw " a" ~a$ -> [(" ",""),("","a")]
+	-- Example: gw "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
+	-- Test leading non match: gw " a" \$a -> [("a"," ")]
+	-- Test trailing non match: gw "a " \$a -> [("a",""),(""," ")]
+	-- Test outer non match: gw " a " \$a -> [("a"," "),(""," ")]
+	-- Test not: gw " a" ~\$a -> [(" ",""),("","a")]
 	op("gw", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
@@ -383,7 +385,7 @@ rawOps = [
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: chunksOf
 	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
-	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ a/$$ -> 4
+	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ \/$$a -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
 	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "chunksOf.fromIntegral" ~> vList1 .a2),
@@ -633,7 +635,7 @@ rawOps = [
 	op(["RR"], [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	
 	-- Desc: find indices (todo make elemIndices if fn is const)
-	-- Example: FI "a b" a$ -> [1,3]
+	-- Example: FI "a b" \$a -> [1,3]
 	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map (+1) $ findIndices f l" ~> vList1 VInt),
 
 	-- Desc: zipWith (todo ops don't handle tuples well)

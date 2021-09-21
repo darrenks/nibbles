@@ -157,11 +157,14 @@ isExtOpt (types,_) = any (\t -> case t of
 	Auto _ -> True
 	Cond desc _ -> elem '>' desc
 	otherwise -> False) types
-isOpSimple (isPriority, lits, nib, op) =
+isOpSimple (isPriority, lits, nib, op@(types,_)) =
 	(not (isExtension (lit, nib, op) || null nib)
 	||elem lit whitelist)
 		&& not (elem lit blacklist)
+		&& not (any isSpecialMode types)
 	where
 		lit = concat lits
 		whitelist = ["ct","p"]
-		blacklist = ["tbd", "z"]
+		blacklist = ["tbd"]
+		isSpecialMode (CharClassMode) = True
+		isSpecialMode _ = False
