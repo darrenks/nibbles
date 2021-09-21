@@ -103,14 +103,6 @@ vList1 x = VList [x]
 
 dup a = [a,a]
 
-xorChr [VInt, VChr] = VChr
-xorChr [VChr, VInt] = VChr
-xorChr _ = VInt
-
-orChr [_, VChr] = VChr
-orChr [VChr, _] = VChr
-orChr _ = VInt
-
 byType :: (VT -> Bool) -> MatchTestData -> Bool
 byType ft = ft . last . mtdTypes
 

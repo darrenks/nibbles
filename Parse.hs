@@ -19,7 +19,8 @@ module Parse(
 	litDigit,
 	empty,
 	fromByte,
-	toByte) where
+	toByte,
+	parse1Nibble) where
 
 import Expr
 import Types
@@ -267,3 +268,9 @@ padSafeDat = reverse . map (\e ->
 	if e == uselessOp then 0
 	else if e == 0 then uselessOp
 	else e)
+
+parse1Nibble :: String -> [(Int, (Char, ParseState a))] -> State ParseData a
+parse1Nibble name [] = parseError $ "symbol not found in " ++ name
+parse1Nibble name ((nib,(lit,impl)):rest) = do
+	match <- match ([nib],[[lit]])
+	if match then impl else parse1Nibble name rest

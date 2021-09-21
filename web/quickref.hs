@@ -106,6 +106,7 @@ typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
 typeToStr (OptionalFn _) = Just $ "fn?"
+typeToStr (ZipMode) = Just "zipop"
 
 prettyType VInt = "int"
 prettyType (VList [VChr]) = "str"

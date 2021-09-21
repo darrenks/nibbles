@@ -19,10 +19,14 @@ table, th, td {
 	text-align: center;
 }
 
+table.subtable {
+	width: 100%;
+}
+
 table.subtable, table.subtable th, table.subtable td  {
 	table-layout: auto;
-	width: 100%;
 	border: 0px;
 	margin: 0px;
 	padding: 0px 3px;
+	text-align: center;
 }

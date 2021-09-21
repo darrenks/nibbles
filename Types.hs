@@ -4,7 +4,7 @@ import Data.List(intercalate)
 import Data.Maybe
 
 data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType
-	| OptionYes | OptionNo | ItWasAConstant -- only for code gen, not real types
+	| OptionYes | OptionNo | ItWasAConstant  -- only for code gen, not real types
 	-- | VMaybe VT | Nothing -- (other ideas)
 	deriving (Show, Eq)
 
@@ -40,3 +40,11 @@ toHsType (ItWasAConstant) = Nothing
 toHsType e = error $ "cant toHsType " ++ show e
 -- won't work since sometimes its curried and others not?
 --toHsType (VFn a b) = "((" ++ (intercalate "->" $ map toHsType a) ++ ")->"++(toTuple $ map toHsType b)++ ")"
+
+xorChr [VInt, VChr] = VChr
+xorChr [VChr, VInt] = VChr
+xorChr _ = VInt
+
+orChr [_, VChr] = VChr
+orChr [VChr, _] = VChr
+orChr _ = VInt

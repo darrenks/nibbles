@@ -18,7 +18,10 @@ module Polylib(
 	unzipTuple,
 	rotateTuple,
 	fillAccums,
-	defaultValue) where
+	defaultValue,
+	fullVectorize,
+	baseElem,
+	cidim) where
 
 import Types
 import Data.List
@@ -100,12 +103,24 @@ vectorize op rtf [t1, VList t2] =
 		(rts, rops) = unzip $ map (\t->vectorize op rtf [t1,t]) t2
 vectorize op rtf [t1, t2] = (rtf [t1, t2], "("++op++")")
 
+fullVectorize :: Int -> Int -> (String, Int)
+-- Int's are the number of extra dimensions than needed (0 = exact)
+fullVectorize lhsDim rhsDim = let
+	extra = max lhsDim rhsDim
+	lhsRepeat = cycleN "repeat" "a" (extra - lhsDim)
+	rhsRepeat = cycleN "repeat" "b" (extra - rhsDim)
+	cycleN s init n = " " ++ (if n < 0 then init
+		else iterate (\inner->"(" ++ s ++ inner ++ ")") (" "++init) !! n)
+	in
+		("(\\op a b->"++cycleN "zipWith" "op" extra ++ lhsRepeat ++ rhsRepeat ++")", extra)
+
 isBaseElemChr VChr = True
 isBaseElemChr (VList [e]) = isBaseElemChr e
 isBaseElemChr _ = False
 
 coerce2 :: [VT] -> [VT] -> [VT]
 coerce2 [VChr] [VChr] = [VChr]
+-- todo I don't like this vvv make it be a str instead, but promoteList logic in append is wrong then
 coerce2 [a] [b] | isNum a && isNum b = [VInt]
 coerce2 [a] [VList [VChr]]
 	| VChr == a || (not $ isBaseElemChr a) = [vstr]
@@ -146,8 +161,8 @@ defaultValue = toTuple . map defaultValue1
 baseElem (VList e) = baseElem $ head e
 baseElem t = t
 
-cidim [VInt] = 1
-cidim [VChr] = 1
+cidim [VInt] = 0
+cidim [VChr] = 0
 cidim [VList a] = 1+cidim a
 cidim (t:_) = cidim [t]
 
@@ -162,6 +177,7 @@ csdim [VChr] = 0
 csdim [VList a] = 1+csdim a
 csdim (t:_) = csdim [t]
 
+-- todo consider only applying on first to guarantee it works
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
 appTuple :: [String] -> String
 appTuple ops = tupleLambda (length ops) $ \varNames -> (toTuple $ zipWith (++) ops varNames)

@@ -8,7 +8,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple)
+import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,         promoteList,coerce)
 import Ops
 import Types
 import Expr
@@ -257,6 +257,43 @@ tryArg (AutoData tspec) prevTypes nibs memoArgs = do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
 	else tryArg tspec prevTypes nibs memoArgs
+
+tryArg ZipMode prevTypes _ memoArgs = do
+	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips prevTypes)
+	return $ Left (error"memoized args cannot be used after zip mode (but could be)", [impl])
+
+createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
+createSpecialFn :: (([VT], String)) -> ParseState Impl
+createSpecialFn (ts,hs) = createImplMonad (VFn undefined ts) (hsParen $ hsAtom hs)
+
+createZipFromBinOp :: Char -> [VT] -> ParseState Impl
+createZipFromBinOp c a@[a1,a2] =
+	let (t,hs,(lhsNeed,rhsNeed))=binOp c $ map baseElem a
+	    lhsDim = cidim [a1]
+	    rhsDim = cidim [a2]
+	    (vec,extra) = fullVectorize (lhsDim-lhsNeed-1) (rhsDim-rhsNeed-1)
+	    vt = iterate (VList.(:[])) (t) !! extra
+	in createImplMonad (VFn undefined [vt]) (hsParen $ hsAtom $ vec ++ "(" ++ hs ++ ")")
+
+-- todo option for a zip3?
+-- also allow remap of ! "abc" 2 = to be a flipped version of an op? since that is pointless as is (just use non vec version
+
+specialZips :: (?isSimple::Bool) => [VT] -> [(Char, ParseState Impl)]
+specialZips a@[a1,a2] = let 
+		[l1,l2] = map (length.elemT) a
+		flatten = flattenTuples l1 l2
+		flatT = concatMap elemT a
+	in
+		[('~',getLambdaValue 1 flatT UnusedArg >>= return . (app1Hs $ "(\\f a b->f $ "++flatten++"(a,b))") . fst)
+		,(':', let -- todo combine with append op, but first need to make anyT not a fn
+			(ap,apFn) = promoteList (elemT a1)
+			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (elemT a2)
+		in
+			createSpecialFn (coercedType, "\\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"))
+		,(',',createSpecialFn (flatT, "\\a b->"++flatten++" $ (a,b)"))] ++ 
+		map (\c->(c,createZipFromBinOp c a)) "+*-/%^][!=?"
+		-- two more possible
+
 
 -- get the args (possibly fail), ok to modify parse state and fail
 getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe ([Impl]))

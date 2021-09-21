@@ -353,11 +353,11 @@ rawOps = [
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
-	op(".", [12], [list, Fn True UnusedArg $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
-	-- Desc: zip2 (incomplete)
-	-- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
+	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
+	--- Desc: zip2 (incomplete)
+	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
 	--- todo, coerce dim length can do the vectorizing for us??
-	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
+-- 	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
@@ -554,10 +554,6 @@ rawOps = [
 	-- Example: eq 1 2 eq 1 1 -> 0,1
 	op("eq",[],[anyT, autoTodo {- truthy? -} anyT],"(bToI.).(==)" ~> VInt),
 		
-	-- Desc: intersperse (todo if arg is larger dims, then make it like zip (with repeat?)
-	-- Example: intersperse ,3 2 -> [1,2,2,2,3]
-	op("intersperse",[],[listToBeReferenced,elemOfA1],"flip intersperse" ~> a1),
-	
 	-- Desc: split list (todo promote to list when needed)
 	-- Example: split ,5 :3~ -> [[1,2],[4,5]]
 	-- Test end splits: split "abca" "a" -> ["","bc",""]
@@ -594,8 +590,7 @@ rawOps = [
 	-- Example: `- "aabd" "abc" -> "ad"
 	binarySetOp "`-" "a-b",
 	
-	-- todo vectorize these?
-	-- Desc: bit union
+	-- Desc: bit union todo fully vectorize these
 	-- Example: `| 6 3 -> 7
 	-- Test chr: `| ~ 'b' -> 'c'
 	op("`|",[],[AutoDefault num 1,AutoDefault num 2],".|."~>orChr),
@@ -613,9 +608,9 @@ rawOps = [
 	--- Desc: character class
 	-- AaSs etc
 	
-	-- Desc: strip (todo might only need for str)
-	-- Example: Strip " bcd\n" -> "bcd"
-	op("Strip",[],[list],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
+	-- Desc: strip
+	-- Example: Strip " bcd\n\n" -> "bcd"
+	op("Strip",[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 		
 	-- Desc: nary cartesian product
@@ -641,7 +636,20 @@ rawOps = [
 	-- Example: FI "a b" a$ -> [1,3]
 	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map (+1) $ findIndices f l" ~> vList1 VInt),
 
-
+	-- Desc: zipWith (todo ops don't handle tuples well)
+	-- Example: ! ,3"abc" + -> "bdf"
+	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
+	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
+	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
+	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
+	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
+	-- Test vec: ! "abc" .,3,3 + -> ["bcd","cde","def"]
+	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bc","bc"],["cd","cd"]]
+	-- Test anti vec: ! "abc""def" ,3 + -> ["bcd","fgh"]
+	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
+	-- Test subscript: ! "abc"\,3 = -> "abc"
+	-- Test antivec subscript: ! "abc".,3,3 = -> ["aaa","bbb","ccc"]
+	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->zipWith f a b" ~> VList (ret rt)),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
@@ -699,6 +707,29 @@ addHigherValueDeBruijnOps ops = concat [op(
 	| unary <- [1..10]
 	, symb <- [(1,"$"),(2,"@"),(3,"_")]
 	] ++ map convertNullNib ops
+
+-- todo replace code in ops table
+binOp :: Char -> [VT] -> (VT, String, (Int, Int))
+-- binOp ':' [a1,a2] = let (ct,f1,f2)=coerce [a1] [a2] in
+-- 	(head ct, "\\a b->["++f1++" a,"++f2++" b]", (0,0))
+binOp '+' a = (xorChr a, "+", (0,0))
+binOp '*' a = (VInt, "*", (0,0))
+binOp '-' a = (xorChr a, "-", (0,0))
+binOp '/' a = (VInt, "div", (0,0))
+binOp '%' a = (VInt, "mod", (0,0))
+binOp '^' a = (xorChr a, "^", (0,0))
+binOp ']' a = (orChr a, "max", (0,0))
+binOp '[' a = (orChr a, "min", (0,0))
+binOp '!' a = (VInt, "(abs.).(-)", (0,0))
+
+-- don't need these since they will auto vec already
+-- binOp '|' a = (orChr a, ".|.", (0,0))
+-- binOp '&' a = (xorChr a, ".&.", (0,0))
+-- binOp 'x' a = (xorChr a, "xor", (0,0))
+
+-- todo handle tuples...
+binOp '=' [a1,a2] = (a1, "\\a i->if null a then "++defaultValue [a1]++"else lazyAtMod a (fromIntegral i - 1)", (1,0))
+binOp '?' [a1,a2] = (VInt, "\\a e->1+(fromMaybe (-1) $ elemIndex e a)", (1,0))
 
 allOps = addHigherValueDeBruijnOps $ concat rawOps
 simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
