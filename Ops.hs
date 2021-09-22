@@ -93,10 +93,10 @@ rawOps = [
 	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
 	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
+	-- Test not cond: ;~ 5 ~$ 1 0 -> 1
 	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[InvalidType]))],
 	\[a1,a2]->
-		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if "
-		++truthy [head $ ret a2]++" a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
+		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -435,7 +435,7 @@ rawOps = [
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
 	op("=", [14], [int, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
-	-- Desc: zip
+	-- Desc: zip (todo delete and replace now...)
 	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+@$ -> [2,4,6]
 	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
@@ -638,7 +638,7 @@ rawOps = [
 	-- Example: FI "a b" \$a -> [1,3]
 	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map (+1) $ findIndices f l" ~> vList1 VInt),
 
-	-- Desc: zipWith (todo ops don't handle tuples well)
+	-- Desc: zipWith (todo ops don't handle tuples well) todo test vectorize on ~ with scalar
 	-- Example: ! ,3"abc" + -> "bdf"
 	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]

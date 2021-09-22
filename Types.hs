@@ -37,6 +37,7 @@ toHsType (VList ts) =
 	else Nothing
 toHsType (VFn a b) = Nothing
 toHsType (ItWasAConstant) = Nothing
+toHsType (InvalidType) = Nothing
 toHsType e = error $ "cant toHsType " ++ show e
 -- won't work since sometimes its curried and others not?
 --toHsType (VFn a b) = "((" ++ (intercalate "->" $ map toHsType a) ++ ")->"++(toTuple $ map toHsType b)++ ")"

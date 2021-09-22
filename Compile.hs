@@ -340,7 +340,11 @@ getLambdaValue numRets argType argUsedness = do
 		if numRets == 0 then do
 			let nonRecImpls = init $ argImpls newArg
 			modify $ \s -> s { pdContext=Arg nonRecImpls LambdaArg : tail (pdContext s) }
-			a <- getValuesMemo 1
+			match <- match tildaOp
+			aaa <- getValuesMemo 1
+			let aa = head aaa
+			let truthyF = truthy [implType aa]
+			let a = app1Hs ((if match then "not$" else "")++truthyF) aa { implType = InvalidType }
 			bonus <- parseCountTuple
 			b <- getValuesMemo (1+bonus)
 			let from = map implType nonRecImpls
@@ -350,7 +354,7 @@ getLambdaValue numRets argType argUsedness = do
 			let recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
 			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
 			c <- getNArgs toType
-			return $ a++[makePairs argType b]++[makePairs argType c]
+			return $ [a]++[makePairs argType b]++[makePairs argType c]
 		else do
 			bonus <- parseCountTuple
 			getValuesMemo (bonus + numRets)
