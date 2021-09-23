@@ -51,10 +51,14 @@ litDigit = ""
 
 tildaOp = ([0],["~"])
 
-parseInt (Nib (0:s) cp) = (-1-n,rest) where
-	(n,rest) = parseNibInt s 0 (cp+1)
-parseInt (Nib s cp) = (n, rest) where
-	(n,rest) = parseNibInt s 0 cp
+parseInt (Nib (0:s) cp) = case parseNibInt s 0 (cp+1) of
+	(6,rest) -> (-10,rest)
+	(9,rest) -> (-7,rest)
+	(n,rest) -> (-1-n,rest)
+parseInt (Nib s cp) = case parseNibInt s 0 cp of
+	(7,rest) -> (10,rest)
+	(10,rest) -> (7,rest)
+	(n,rest) -> (n,rest)
 parseInt (Lit f ('0':s) cp) = (0, sLit f s (cp+1))
 parseInt (Lit f ('-':s) cp) = let (n, rest) = parseInt $ Lit f s (cp+1) in
 	(-n, rest)
@@ -70,8 +74,13 @@ parseNibInt(f:s) a cp
 	where c=a*8+toInteger f`mod`8
 
 intToNib :: Integer -> [Int]
-intToNib n | n<0 = 0:intToNib (-1 - n)
-intToNib n = init digits ++ [last digits + 8]
+intToNib 7 = [1,10] -- 7 is represented by 10
+intToNib 10 = [15] -- 10 is represented by 7
+intToNib (-7) = [0,1,9]
+intToNib (-10) = [0,14]
+intToNib n | n<0 = 0:intToNibH (-1 - n)
+intToNib n = intToNibH n
+intToNibH n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 parseStr :: Code -> ([String], Code)

@@ -27,14 +27,16 @@ rawOps = [
 	-- Example (size 2): 3 -> 3
 	-- Test (size 2): 0 -> 0
 	-- Test (size 2): 1 -> 1
-	-- Test (size 2): 7 -> 7
+	-- Test (size 3): 7 -> 7
 	-- Test (size 3): 8 -> 8
-	-- Test (size 3): 10 -> 10
+	-- Test (size 2): 10 -> 10
 	-- Test (size 3): 20 -> 20
 	-- Test leading zero is separate: :05 -> [0,5]
 	-- Test negative (size 3): -1 -> -1
 	-- Test negative (size 3): -8 -> -8
 	-- Test negative (size 4): -9 -> -9
+	-- Test negative (size 4): -7 -> -7
+	-- Test negative (size 3): -10 -> -10
 	op(litDigit, [1], [ParseArg "int" intParser], ()),
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
