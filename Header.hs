@@ -41,7 +41,7 @@ onToBy :: Eq a => (t -> a) -> t -> t -> Bool
 onToBy f x y = f x == f y
 
 -- Check these types so we don't accidentally not catch type errors in tests which rely on show
-confirmInt :: Integral a => a -> a
+confirmInt :: Integer -> Integer
 confirmInt = id
 confirmList :: [a] -> [a]
 confirmList = id
@@ -120,3 +120,8 @@ iterateWhileUniqH been f i =
 	if Set.member i been then []
 	else i : iterateWhileUniqH (Set.insert i been) f (f i)
 
+subsequencesN :: Integral i => i -> [a] -> [[a]]
+subsequencesN _ []     = [[]]
+subsequencesN 0 _      = [[]]
+subsequencesN n xs | n >= genericLength xs = [xs]
+subsequencesN n (x:xs) = (map (x:) $ subsequencesN (n-1) xs) ++ subsequencesN n xs

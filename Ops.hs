@@ -396,7 +396,7 @@ rawOps = [
 	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->chunksOf (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> vList1 . a2),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
-	op(",", [13], [list], "length" ~> VInt),
+	op(",", [13], [list], "genericLength" ~> VInt),
 	-- Desc: range from 1 to
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
@@ -447,7 +447,12 @@ rawOps = [
 	-- Test: hm~ "d" 256 -> 173
 	-- Test: hm~ :100~ 256 -> 173
 	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, int {-ParseArg "int" intParser-}], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
-	-- Desc: data salted hashmod
+	--- Desc: find salt
+-- 	op ("findSalt", [], [list, option for saying max nibble size, fn that checks if result is right given input, output if constant it means a list of exact required answers]
+	-- or it could be given a list of lists of all accepted values
+	-- if didn't use md5, but instead something else it could be more efficient than brute force search
+	
+	-- Desc: data salted hashmod (todo find salt fn)
 	-- untested example: hm "5" 100 1 -> 62
 	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
 		modify $ \s -> s { pdDataUsed = True }
@@ -501,12 +506,12 @@ rawOps = [
 	-- Desc: index by
 	-- Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
-	op("?", [15], [list, auto, AutoNot $ fn (elemT.a1)], "\\l f->1+(fromMaybe (-1) $ findIndex f l)" ~> VInt),
+	op("?", [15], [list, auto, AutoNot $ fn (elemT.a1)], "\\l f->fromIntegral$1+(fromMaybe (-1) $ findIndex f l)" ~> VInt),
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
 	-- Test tuple: ? z ,3 "abc" 2 -> 2
-	op("?", [15], [listToBeReferenced, elemOfA1], \[a1,a2]->"\\a e->1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
+	op("?", [15], [listToBeReferenced, elemOfA1], \[a1,a2]->"\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
 	-- Desc: diff
 	-- Example: -"abcd" "bd" -> "ac"
 	-- Test non existant elements: -"abc" "de" -> "abc"
@@ -604,6 +609,7 @@ rawOps = [
 	op("`^",[],[AutoDefault num 1,AutoDefault num 2],"xor"~>xorChr),
 	
 	-- Desc: or (todo coerce/etc, only need this op for lists though)
+	-- actually would be useful for ints as well (like after elem or conversion)
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	op("or",[],[autoTodo anyT,anyT],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
 	
@@ -624,6 +630,9 @@ rawOps = [
 	-- Desc: subsequences
 	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
 	op("subs",[],[list],"subsequences"~>vList1.a1),
+	-- Desc: subsequences length n todo auto means allow repeat? todo option for allow eye matrix, and all subsequences?
+	--- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	op("subN",[],[AutoDefault int 2, list],"subsequencesN"~>vList1.a2),
 	
 	-- Desc: abs
 	-- Example: Ab *~5 -> 5
@@ -636,7 +645,7 @@ rawOps = [
 	
 	-- Desc: find indices (todo make elemIndices if fn is const)
 	-- Example: FI "a b" \$a -> [1,3]
-	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map (+1) $ findIndices f l" ~> vList1 VInt),
+	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
 
 	-- Desc: zipWith (todo ops don't handle tuples well) todo test vectorize on ~ with scalar
 	-- Example: ! ,3"abc" + -> "bdf"
@@ -731,7 +740,7 @@ binOp '!' a = (VInt, "(abs.).(-)", (0,0))
 
 -- todo handle tuples...
 binOp '=' [a1,a2] = (a1, "\\a i->if null a then "++defaultValue [a1]++"else lazyAtMod a (fromIntegral i - 1)", (1,0))
-binOp '?' [a1,a2] = (VInt, "\\a e->1+(fromMaybe (-1) $ elemIndex e a)", (1,0))
+binOp '?' [a1,a2] = (VInt, "\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e a)", (1,0))
 
 allOps = addHigherValueDeBruijnOps $ concat rawOps
 simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
