@@ -3,6 +3,8 @@ multi rets like iq (with no single alt) should mark rets optional
 values_at (zip =) should be O(n) by converting to array
 index of zipped also, by converting to a hashmap first
 
+move away from md5 so that there can be a more efficient way to find salt
+
 extension collision tests
 library/code links from quickref
 

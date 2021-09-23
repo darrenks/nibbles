@@ -446,22 +446,27 @@ rawOps = [
 	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
 	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
 	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT)),
-	-- Desc: hash (md5) mod
-	-- Example: hm~ "5a" 100 -> 62
-	-- Test: hex hm~ "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
-	-- Test: hm~ "d" 256 -> 173
-	-- Test: hm~ :100~ 256 -> 173
-	extendOp ["?","~"] genericReason ("hm", [15,0], [auto, anyT, int {-ParseArg "int" intParser-}], (\[a1,a2]->"\\a b->(fromIntegral$hlist$"++flatten a1++"$a)`mod`(if b==0 then 2^128 else b)") ~> a2),
-	--- Desc: find salt
--- 	op ("findSalt", [], [list, option for saying max nibble size, fn that checks if result is right given input, output if constant it means a list of exact required answers]
-	-- or it could be given a list of lists of all accepted values
-	-- if didn't use md5, but instead something else it could be more efficient than brute force search
 	
-	-- Desc: data salted hashmod (todo find salt fn)
-	-- untested example: hm "5" 100 1 -> 62
-	extendOp ["?","~"] genericReason ("hm", [15,0], [anyT, ParseArg "int" intParser], (\[a1,a2]->do
-		modify $ \s -> s { pdDataUsed = True }
-		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 dat)`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
+	-- Desc: find salt by
+	-- Example: findSaltBy "Fizz""Buzz" 100 ~ -+$195 -> 1258
+	op ("findSaltBy", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->\
+		\fromMaybe (-1) $ find (\\salt->goalChecker (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs)) [0..stopat] "~>VInt),
+	-- Desc: find salt
+	-- there is an option to provide lists of acceptables for each input
+	-- Example: findSalt "Fizz""Buzz" 6 ~ :3 5 -> 68
+	-- Test: findSalt "Fizz""Buzz" 60 ~ :5 :,3~ -> 51
+	op ("findSalt", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->\
+		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
+	
+	-- Desc: hashmod (md5)
+	-- untested example: ."Fizz""Buzz" hm $ 6   68 -> [3,5]
+	-- RawTest: p."Fizz""Buzz" hm $ 6   68 -> "[3,5]\n"
+	-- RawTest: p:hm ~"5a" 100 hm "5" 100 97 -> "[62,62]\n"
+	-- Test: hex hm "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
+	extendOp ["?","~"] genericReason ("hm", [15,0], [AutoOption "nosalt", anyT, ParseArg "int" intParser], (\[o,a1,a2]->do
+		let salt = o/=OptionYes
+		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
+		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 	-- Desc: to hex
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
