@@ -641,12 +641,18 @@ rawOps = [
 	-- Desc: permutations
 	-- Example: perm "abc" -> ["abc","bac","cba","bca","cab","acb"]
 	op("perm",[],[list],"permutations"~>vList1.a1),
-	-- Desc: subsequences
-	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
-	op("subs",[],[list],"subsequences"~>vList1.a1),
-	-- Desc: subsequences length n todo auto means allow repeat? todo option for allow eye matrix, and all subsequences?
+	-- Desc: subsequences length
+	-- 0 means all
+	-- - allow repeat
+	-- auto means 2
 	-- Example: subN 2 "abc" -> ["ab","ac","bc"]
-	op("subN",[],[AutoDefault int 2, list],"subsequencesN"~>vList1.a2),
+	-- Test: subN ~ "abc" -> ["ab","ac","bc"]
+	-- Test: subN 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	-- Test: subN -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
+	op("subN",[],[AutoDefault int 2, list],"\\n a->\
+		\if n>0 then subsequencesN n a \
+		\else if n==0 then subsequences a \
+		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	
 	-- Desc: abs diff
 	-- Example: Ab 5 3 Ab 3 5 -> 2,2

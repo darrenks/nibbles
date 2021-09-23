@@ -127,3 +127,8 @@ subsequencesN _ []     = [[]]
 subsequencesN 0 _      = [[]]
 subsequencesN n xs | n >= genericLength xs = [xs]
 subsequencesN n (x:xs) = (map (x:) $ subsequencesN (n-1) xs) ++ subsequencesN n xs
+
+repeatedSubsequencesN :: Integral i => i -> [a] -> [[a]]
+repeatedSubsequencesN _ []     = []
+repeatedSubsequencesN 1 xs      = map (:[]) xs
+repeatedSubsequencesN n (x:xs) = (map (x:) $ repeatedSubsequencesN (n-1) (x:xs)) ++ repeatedSubsequencesN n xs
