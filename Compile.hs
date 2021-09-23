@@ -270,14 +270,15 @@ createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 createSpecialFn :: (([VT], String)) -> ParseState Impl
 createSpecialFn (ts,hs) = createImplMonad (VFn undefined ts) (hsParen $ hsAtom hs)
 
-createZipFromBinOp :: Char -> [VT] -> ParseState Impl
-createZipFromBinOp c a@[a1,a2] =
-	let (t,hs,(lhsNeed,rhsNeed))=binOp c $ map baseElem a
-	    lhsDim = cidim [a1]
+createZipFromBinOp :: Char -> [VT] -> Int -> ParseState Impl
+createZipFromBinOp c a@[a1,a2] lhsNeed =
+	let lhsDim = cidim [a1]
 	    rhsDim = cidim [a2]
-	    (vec,extra) = fullVectorize (lhsDim-lhsNeed-1) (rhsDim-rhsNeed-1)
-	    vt = iterate (VList.(:[])) (t) !! extra
-	in createImplMonad (VFn undefined [vt]) (hsParen $ hsAtom $ vec ++ "(" ++ hs ++ ")")
+	    rhsNeed = 0
+	    (t,hs)=binOp c [head $ iterate ((:[]).VList) [baseElem a1] !! lhsNeed,baseElem a2]
+	    (vec,extra) = fullVectorize (lhsDim-lhsNeed) (rhsDim-rhsNeed)
+	    vt = iterate ((:[]).VList) t !! extra
+	in createImplMonad (VFn undefined vt) (hsParen $ hsAtom $ vec ++ "(" ++ hs ++ ")")
 
 -- todo option for a zip3?
 -- also allow remap of ! "abc" 2 = to be a flipped version of an op? since that is pointless as is (just use non vec version
@@ -288,14 +289,15 @@ specialZips a@[a1,a2] = let
 		flatten = flattenTuples l1 l2
 		flatT = concatMap elemT a
 	in
-		[('~',getLambdaValue 1 flatT UnusedArg >>= return . (app1Hs $ "(\\f a b->f $ "++flatten++"(a,b))") . fst)
+		[('~',getLambdaValue 1 flatT UnusedArg >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
 		,(':', let -- todo combine with append op, but first need to make anyT not a fn
 			(ap,apFn) = promoteList (elemT a1)
 			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (elemT a2)
 		in
-			createSpecialFn (coercedType, "\\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"))
-		,(',',createSpecialFn (flatT, "\\a b->"++flatten++" $ (a,b)"))] ++ 
-		map (\c->(c,createZipFromBinOp c a)) "+*-/%^][!=?"
+			createSpecialFn ([VList coercedType], "zipWith $ \\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"))
+		,(',',createSpecialFn ([VList flatT], "zipWith $ \\a b->"++flatten++" $ (a,b)"))] ++ 
+		map (\c->(c,createZipFromBinOp c a 0)) "+*-/%^][!" ++
+		map (\c->(c,createZipFromBinOp c a 1)) "=?"
 		-- two more possible
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]

@@ -631,7 +631,7 @@ rawOps = [
 	-- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
 	op("subs",[],[list],"subsequences"~>vList1.a1),
 	-- Desc: subsequences length n todo auto means allow repeat? todo option for allow eye matrix, and all subsequences?
-	--- Example: subs "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	-- Example: subN 2 "abc" -> ["ab","ac","bc"]
 	op("subN",[],[AutoDefault int 2, list],"subsequencesN"~>vList1.a2),
 	
 	-- Desc: abs
@@ -654,13 +654,13 @@ rawOps = [
 	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
 	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
 	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
-	-- Test vec: ! "abc" .,3,3 + -> ["bcd","cde","def"]
-	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bc","bc"],["cd","cd"]]
-	-- Test anti vec: ! "abc""def" ,3 + -> ["bcd","fgh"]
+	-- Test vec: ! "abc" .,3,3 + -> ["bdf","bdf","bdf"]
+	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bd","bd"],["bd","bd"]]
+	-- Test anti vec: ! "abc""def" ,3 + -> ["bdf","egi"]
+	-- Test subscript: ! "abc"\,3 = -> "cba"
 	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
-	-- Test subscript: ! "abc"\,3 = -> "abc"
-	-- Test antivec subscript: ! "abc".,3,3 = -> ["aaa","bbb","ccc"]
-	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->zipWith f a b" ~> VList (ret rt)),
+	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
+	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
@@ -720,18 +720,18 @@ addHigherValueDeBruijnOps ops = concat [op(
 	] ++ map convertNullNib ops
 
 -- todo replace code in ops table
-binOp :: Char -> [VT] -> (VT, String, (Int, Int))
+binOp :: Char -> [VT] -> ([VT], String)
 -- binOp ':' [a1,a2] = let (ct,f1,f2)=coerce [a1] [a2] in
 -- 	(head ct, "\\a b->["++f1++" a,"++f2++" b]", (0,0))
-binOp '+' a = (xorChr a, "+", (0,0))
-binOp '*' a = (VInt, "*", (0,0))
-binOp '-' a = (xorChr a, "-", (0,0))
-binOp '/' a = (VInt, "div", (0,0))
-binOp '%' a = (VInt, "mod", (0,0))
-binOp '^' a = (xorChr a, "^", (0,0))
-binOp ']' a = (orChr a, "max", (0,0))
-binOp '[' a = (orChr a, "min", (0,0))
-binOp '!' a = (VInt, "(abs.).(-)", (0,0))
+binOp '+' a = ([xorChr a], "+")
+binOp '*' a = ([VInt], "*")
+binOp '-' a = ([xorChr a], "-")
+binOp '/' a = ([VInt], "div")
+binOp '%' a = ([VInt], "mod")
+binOp '^' a = ([xorChr a], "^")
+binOp ']' a = ([orChr a], "max")
+binOp '[' a = ([orChr a], "min")
+binOp '!' a = ([VInt], "(abs.).(-)")
 
 -- don't need these since they will auto vec already
 -- binOp '|' a = (orChr a, ".|.", (0,0))
@@ -739,8 +739,8 @@ binOp '!' a = (VInt, "(abs.).(-)", (0,0))
 -- binOp 'x' a = (xorChr a, "xor", (0,0))
 
 -- todo handle tuples...
-binOp '=' [a1,a2] = (a1, "\\a i->if null a then "++defaultValue [a1]++"else lazyAtMod a (fromIntegral i - 1)", (1,0))
-binOp '?' [a1,a2] = (VInt, "\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e a)", (1,0))
+binOp '=' [a1,a2] = (elemT a1, "\\a i->if null a then "++defaultValue (elemT a1)++"else lazyAtMod a (fromIntegral i - 1)")
+binOp '?' [a1,a2] = ([VInt], "\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e a)")
 
 allOps = addHigherValueDeBruijnOps $ concat rawOps
 simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
