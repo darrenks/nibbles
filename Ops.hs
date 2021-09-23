@@ -648,9 +648,9 @@ rawOps = [
 	-- Example: subN 2 "abc" -> ["ab","ac","bc"]
 	op("subN",[],[AutoDefault int 2, list],"subsequencesN"~>vList1.a2),
 	
-	-- Desc: abs
-	-- Example: Ab *~5 -> 5
-	op("Ab", [], [autoTodo num], "abs" ~> a1),
+	-- Desc: abs diff
+	-- Example: Ab 5 3 Ab 3 5 -> 2,2
+	op("Ab", [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
 
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: RR 3 -> [0,1,2]

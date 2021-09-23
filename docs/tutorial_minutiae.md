@@ -265,11 +265,22 @@ $Output
 
 Data can be handy for recreating large strings.
 
-	+'a'tb26~6061555238104639959213973
+	tb~-41 905456382897869687253
 $Output
-	fizzbuzzhelloworld
+	Hello, world!
 
-Which is 6 nibbles shorter than just using quotes. Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique! And of course we would have to use a larger radix to create non-alpha symbols, but it can still be shorter for long enough strings.
+Which is 2 nibbles shorter than just using quotes. Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
+
+The negative in the radix means to use the list of printable characters rather than straight up base conversion. These values can be found by doing
+
+	ghci header.hs
+	> 1 + (maximum $ catMaybes $ map (flip elemIndex printables) $ sToA "Hello, world!")
+
+Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
+
+	fb "Hello, world!" -41
+$Output
+	905456382897869687253
 
 FYI data will always be shorter if you are getting it from the auto value of a fn, but for use with `$` it will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 
