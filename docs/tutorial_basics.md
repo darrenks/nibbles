@@ -51,11 +51,11 @@ Write a program that computes `(1+2)*(3-4)`
 
 $Solution
 
-	*-3 4+2 1
+	*- 3 4+2 1
 $HiddenOutput
 	-3
 
-You may be distraught about those spaces, but they don't affect binary size.
+You may be distraught about those spaces, but they don't affect binary size. The first space is to stop `-3` from being interpreted as negative 3. 
 
 $EndSolution
 

@@ -51,22 +51,26 @@ litDigit = ""
 
 tildaOp = ([0],["~"])
 
-parseInt (Nib (0:rest) cp) = (10, Nib rest (cp+1))
+parseInt (Nib (0:s) cp) = (-1-n,rest) where
+	(n,rest) = parseNibInt s 0 (cp+1)
 parseInt (Nib s cp) = (n, rest) where
 	(n,rest) = parseNibInt s 0 cp
-	parseNibInt [] _ _ = error "unterminated number" -- todo make last digit base 16, but this is non trivial due to padding odd nibble lengths into bytes
-	parseNibInt(f:s) a cp
-		| f>=8 = (c,Nib s (cp+1))
-		| otherwise = parseNibInt s c (cp+1)
-		where c=a*8+toInteger f`mod`8
 parseInt (Lit f ('0':s) cp) = (0, sLit f s (cp+1))
+parseInt (Lit f ('-':s) cp) = let (n, rest) = parseInt $ Lit f s (cp+1) in
+	(-n, rest)
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	_ -> error $ "unparsable int: " ++ s
 
+parseNibInt [] _ _ = error "unterminated number" -- todo make last digit base 16, but this is non trivial due to padding odd nibble lengths into bytes
+parseNibInt(f:s) a cp
+	| f>=8 = (c,Nib s (cp+1))
+	| otherwise = parseNibInt s c (cp+1)
+	where c=a*8+toInteger f`mod`8
+
 intToNib :: Integer -> [Int]
-intToNib 10 = [0]
+intToNib n | n<0 = 0:intToNib (-1 - n)
 intToNib n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
@@ -179,7 +183,11 @@ onlyCheckMatch lit@(Lit _ _ _) (_, []) = Just lit
 onlyCheckMatch lit@(Lit _ _ _) (_, needle:s) = match1Lit lit needle >>= flip onlyCheckMatch (undefined, s)
 match1Lit lit@(Lit f s cp) needle
 	| null s = Nothing
-	| needle == "" = if isDigit (head s) then Just lit else Nothing
+	| needle == litDigit =
+		case s of
+			(c:_) | isDigit c -> Just lit
+			('-':c:_) | isDigit c -> Just lit
+			otherwise -> Nothing
 	| needle == "\"" && '"' == head s = Just lit
 	| needle == "\'" && '\'' == head s = Just lit
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)

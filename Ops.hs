@@ -29,10 +29,13 @@ rawOps = [
 	-- Test (size 2): 1 -> 1
 	-- Test (size 2): 7 -> 7
 	-- Test (size 3): 8 -> 8
-	-- Test (size 2): 10 -> 10
+	-- Test (size 3): 10 -> 10
 	-- Test (size 3): 20 -> 20
 	-- Test leading zero is separate: :05 -> [0,5]
-	op(litDigit, [1], [ParseArg "int" intParser], ()), 
+	-- Test negative (size 3): -1 -> -1
+	-- Test negative (size 3): -8 -> -8
+	-- Test negative (size 4): -9 -> -9
+	op(litDigit, [1], [ParseArg "int" intParser], ()),
 	-- Desc: string
 	-- Example (size 6): "hi\n" -> "hi\n"
 	-- Test space (size 2): " " -> " "
@@ -223,11 +226,11 @@ rawOps = [
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		),
 	-- Desc: subtract
-	-- Example: -5 3 -> 2
+	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
 	-- Test: -'d'1 -> 'c'
 	-- Test: -~2 -> -1
-	-- Test: -2~ -> 1
+	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 	-- Desc: square
 	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
@@ -522,11 +525,11 @@ rawOps = [
 	-- diff could work with non matching tuples too, aka diff by?
 	
 	-- Desc: take drop while
-	-- Example: tw ,5 -3$ $ -> [1,2],[3,4,5]
+	-- Example: tw ,5 - 3$ $ -> [1,2],[3,4,5]
 	-- Test not: tw ,5 ~-$3 $ -> [1,2,3],[4,5]
 	op("tw", [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: drop take while
-	-- Example: dw ,5 -3$ $ -> [3,4,5],[1,2]
+	-- Example: dw ,5 - 3$ $ -> [3,4,5],[1,2]
 	-- Test not: dw ,5 ~-$3 $ -> [4,5],[1,2,3]
 	op("dw", [], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: take drop, auto = uncons
