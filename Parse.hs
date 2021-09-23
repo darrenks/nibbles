@@ -3,6 +3,7 @@
 -- todo use monad for parseInt, etc
 -- convention is parse consumes up until next non ignorable code
 module Parse(
+	staticIntParser,
 	intParser,
 	strParser,
 	chrParser,
@@ -249,11 +250,16 @@ consumeWhitespace (Lit f (c:s) cp)
 
 intParser :: ParseState (VT, String)
 intParser = do
+	(_, hs) <- staticIntParser
+	return (VInt, hs)
+
+staticIntParser :: ParseState (VT, String)
+staticIntParser = do
 	(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
 	genLit <- gets pdLit
 	appendRep (intToNib n," "++show n) -- only need to prepend " " if last was digit, but that would be expensive to check with dlist data structure
-	return (VInt, flatHs $ i n)
+	return (StaticInt n, flatHs $ i n)
 
 strParser :: ParseState (VT,String)
 strParser = do

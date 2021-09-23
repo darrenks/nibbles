@@ -23,6 +23,8 @@ space = myOrd ' '
 
 printables = sToA $ ' ':['a'..'z']++".,!?_\n"++['A'..'Z']++['0'..'9']
 	++"-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
+unprintables = filter (\c->not$elem c printables) $ sToA ['\0'..'\127']
+
 myChr :: Integral i => i -> Char
 myChr i = chr $ fromIntegral i
 myOrd :: Char -> Integer

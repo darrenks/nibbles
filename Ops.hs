@@ -466,16 +466,25 @@ rawOps = [
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
 	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+ 	-- Desc: to base from data
+ 	-- untested example: tb ~ 2   10 -> [1,0,1,0]
+ 	-- RawTest: p tb ~ 2 10 -> "[1,0,1,0]\n"
+ 	-- RawTest: tb ~ -5 1934 -> "c bad\n"
+ 	-- RawTest: tb ~ -150 19178 -> "\DEL\128\n"
+ 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [auto, ParseArg "int" staticIntParser], \[StaticInt v1]->do
+		modify $ \s -> s { pdDataUsed = True }
+		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt)),
  	-- Desc: to base
- 	-- Example: tb 2 10 -> [1,0,1,0]
- 	-- Test: tb 2 0 -> []
- 	-- Test: tb ~ 10 -> [1,0,1,0]
- 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [AutoDefault num 2, AutoData num], "toBase"~>vList1 .a1),
+ 	-- Example: tb 10 2 -> [1,0,1,0]
+ 	-- Test: tb 0 2 -> []
+ 	-- Test: tb 89 ~ -> [8,9]
+ 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
  	-- Desc: from base
- 	-- Example: fb 2 :1 :0 :1 0 -> 10
- 	-- Test: fb 2 <0,3 -> 0
- 	-- Test: fb ~ :1 :0 :1 0 -> 10
- 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [AutoDefault num 2, list {-todo 1d-}], "fromBase"~>a1),
+ 	-- Example: fb :1 :0 :1 0 2 -> 10
+ 	-- Test: fb <0,3 2 -> 0
+ 	-- Test: fb :8 9 ~ -> 89
+ 	-- Test: fb "fizzbuzz" -27 -> 66635848070
+ 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
  	-- Desc: tbd
  	-- Example: 0 -> 0
  	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
