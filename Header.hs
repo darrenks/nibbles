@@ -118,11 +118,11 @@ appendUntilNull a f = case f a of
 	[] -> []
 	r -> a++r++appendUntilNull (r++a) f
 
-iterateWhileUniq :: Ord a => (a -> a) -> a -> ([a], [a])
+iterateWhileUniq :: Ord a => (a -> a) -> a -> [a]
 iterateWhileUniq f i =
 	let uniqPart = iterateWhileUniqH Set.empty f i
 	    Just repeatedIndex = elemIndex (f (last uniqPart)) uniqPart
-	in (uniqPart, drop repeatedIndex uniqPart)
+	in (uniqPart) --, drop repeatedIndex uniqPart)
 iterateWhileUniqH been f i =
 	if Set.member i been then []
 	else i : iterateWhileUniqH (Set.insert i been) f (f i)

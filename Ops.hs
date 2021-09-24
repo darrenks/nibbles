@@ -115,13 +115,12 @@ rawOps = [
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
 	-- Desc: iterate while uniq
-	-- Example: iq 10 %+1$3 $ -> [10,2,0,1],[2,0,1]
-	-- Test swap: iq 10 ~%+1$3 $ -> [2,0,1],[10,2,0,1]
-	-- Test tuple: iq ~1 2 @$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
-	-- Test swap tuple: iq ~1 2 ~@$ $ -> [(1,2),(2,1)],[(1,2),(2,1)]
+	-- Example: iq 10 %+1$3 -> [10,2,0,1]
+	-- Test never stop: <5 iq 10 ~1 -> [10,1,1,1,1]
+	-- Test tuple: iq ~1 2 @$ -> [(1,2),(2,1)]
 	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "swap", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
-		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "swap$" else "")++"iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
+	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
 	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,2,3,4]
 	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
