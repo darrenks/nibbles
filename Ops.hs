@@ -123,8 +123,9 @@ rawOps = [
 	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "swap", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "swap$" else "")++"iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: aun ,4 >1^$ - 5,$ -> [2,3,4,1,2,3,4]
-	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], "appendUntilNull" ~> a1),
+	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,2,3,4]
+	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
+	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], \[a1,a2]->"\\a f->appendUntilNull a ("++coerceTo [a1] (ret a2)++".f)" ~> a1),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
