@@ -113,6 +113,11 @@ parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
 		digits = genericTake base $ ['0'..'9']++['a'..'z']
 		digitIndices = map (flip elemIndex digits) str
 
+appendUntilNull :: [a] -> ([a] -> [a]) -> [a]
+appendUntilNull a f = case f a of
+	[] -> a
+	r -> appendUntilNull (r++a) f
+
 iterateWhileUniq :: Ord a => (a -> a) -> a -> ([a], [a])
 iterateWhileUniq f i =
 	let uniqPart = iterateWhileUniqH Set.empty f i
@@ -132,3 +137,10 @@ repeatedSubsequencesN :: Integral i => i -> [a] -> [[a]]
 repeatedSubsequencesN _ []     = []
 repeatedSubsequencesN 1 xs      = map (:[]) xs
 repeatedSubsequencesN n (x:xs) = (map (x:) $ repeatedSubsequencesN (n-1) (x:xs)) ++ repeatedSubsequencesN n xs
+
+nthRoot :: Integer -> Integer -> Integer
+nthRoot n 0 = 0
+nthRoot n x = nthRootGuess n x x
+nthRootGuess n guess x = case ((x `div` guess^(n-1)) + guess*(n-1)) `div` n of
+	r | r>=guess -> guess
+	  | otherwise -> nthRootGuess n r x

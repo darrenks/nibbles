@@ -122,6 +122,9 @@ rawOps = [
 	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
 	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "swap", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "swap$" else "")++"iterateWhileUniq ("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> [VList (ret a1), VList (ret a1)]),
+	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
+	-- Example: aun ,4 >1^$ - 5,$ -> [2,3,4,1,2,3,4]
+	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], "appendUntilNull" ~> a1),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -234,10 +237,6 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
-	-- Desc: square
-	-- Example: sqr ,9 -> [[1,2,3],[4,5,6],[7,8,9]]
-	-- Test: sqr ,11 -> [[1,2,3,4],[5,6,7,8],[9,10,11]]
-	extendOp ["%","0"] genericReason ("sqr", [9,1,8], [list], "\\a->chunksOf (ceiling $ sqrt $ fromIntegral $ length a) a" ~> vList1 .a1),
 	-- Desc: step
 	-- Example: %2,5 -> [1,3,5]
 	-- Test: % *~2,5 -> [5,3,1]
@@ -412,10 +411,10 @@ rawOps = [
 	-- Example: ^2 8 -> 256
 	-- Test: ^~ 1 -> 10
 	-- Test: ^8 ~ -> 64
-	-- Test: ^2 *~3 -> 0
 	-- Test: ^0 0 -> 1
-	-- todo handle 0**-3 (maybe should be infinity?)
-	op("^", [14], [AutoDefault int 10, AutoDefault num 2], "\\a b->if b<0 then 0 else a^b" ~> a1),
+	-- Test negative is nth root: ^200 -2 -> 14
+	-- Test: ^81 -4  ^80 -4 -> 3,2
+	op("^", [14], [AutoDefault int 10, AutoDefault num 2], "\\a b->if b<0 then nthRoot (-b) a else a^b" ~> a1),
 	-- Desc: replicate
 	-- Example: ^"ab"3 -> "ababab"
 	-- Test: ^"ab" *~3 -> ""
