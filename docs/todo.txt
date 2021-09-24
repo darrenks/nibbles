@@ -1,4 +1,6 @@
-multi rets like iq (with no single alt) should mark rets optional
+handle tuples in special zips
+
+multi rets like "take drop while" (with no single alt) should mark rets optional
 
 values_at (zip =) should be O(n) by converting to array
 index of zipped also, by converting to a hashmap first

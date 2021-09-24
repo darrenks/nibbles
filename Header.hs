@@ -114,9 +114,10 @@ parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
 		digitIndices = map (flip elemIndex digits) str
 
 appendUntilNull :: [a] -> ([a] -> [a]) -> [a]
-appendUntilNull a f = case f a of
+appendUntilNull a f = a ++ appendUntilNullH a f
+appendUntilNullH a f = case f a of
 	[] -> []
-	r -> a++r++appendUntilNull (r++a) f
+	r -> r ++ appendUntilNullH (a++r) f
 
 iterateWhileUniq :: Ord a => (a -> a) -> a -> [a]
 iterateWhileUniq f i =

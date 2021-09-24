@@ -124,7 +124,10 @@ rawOps = [
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
 	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,2,3,4]
 	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
-	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], \[a1,a2]->"\\a f->appendUntilNull a ("++coerceTo [a1] (ret a2)++".f)" ~> a1),
+	-- Test coerce first: <4 aun 2 1 -> [2,1,1,1]
+	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], \[a1,a2]->
+		let (a1ListT,a1ListF)=promoteList [a1] in
+			"\\a f->appendUntilNull ("++a1ListF++"a) ("++coerceTo [a1ListT] (ret a2)++".f)" ~> a1ListT),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -256,11 +259,11 @@ rawOps = [
 	-- Test auto not: &,5~%$2 -> [2,4]
 	op("&", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
 	-- Desc: char class?
-	-- Example: \'z'a -> 1
-	-- Test: \' 'a -> 0
-	-- Test: \'a'$ \'_'$ -> 0,1
-	-- Test: \'a'! \'_'! -> 1,0
-	op("\\", [10], [char, CharClassMode], "\\a f->bToI $ f $ myChr a" ~> VInt),
+	-- Example: \'z'a -> "z"
+	-- Test: \' 'a -> ""
+	-- Test: \'a'$ \'_'$ -> "","_"
+	-- Test: \'a'! \'_'! -> "a",""
+	op("\\", [10], [char, CharClassMode], "\\a f->if f $ myChr a then [a] else []" ~> vstr),
 	-- Desc: min
 	-- Example: [4 5 -> 4
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
@@ -278,7 +281,7 @@ rawOps = [
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- Test empty: sc,0+@$ -> []
-	-- Test tuple: sc z ,3 "a.c" +_$ +\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
+	-- Test tuple: sc z ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
 	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 	-- Desc: foldr
 	-- Example: /,3 ~ 1 +@$ -> 7
@@ -685,6 +688,16 @@ rawOps = [
 	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
 	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
 	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
+	
+	-- Desc: to uppercase
+	-- Example: TU 'a' -> 'A'
+	-- Test: ."Hi there!"TU$ -> "HI THERE!"
+	op("TU", [], [char], "myOrd.toUpper.myChr"~>a1),
+	-- Desc: to lowercase
+	-- Example: TL 'A' -> 'a'
+	-- Test: ."Hi there!"TL$ -> "hi there!"
+	op("TL", [], [char], "myOrd.toLower.myChr"~>a1),
+	
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
