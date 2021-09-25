@@ -400,7 +400,9 @@ rawOps = [
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
 	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
-	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->chunksOf (ceiling $ fromIntegral (length b) / fromIntegral a) b" ~> vList1 . a2),
+	-- Test: nc 4 ,10 -> [[1,2,3],[4,5],[6,7,8],[9,10]]
+	-- Test: nc -4 ,10 -> [[1,2],[3,4,5],[6,7],[8,9,10]]
+	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "genericLength" ~> VInt),
