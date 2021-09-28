@@ -412,7 +412,6 @@ rawOps = [
 	-- Test: <3,~ -> [1,2,3]
 	op(",", [13], [AutoDefault num (2^128)], "\\x->[1..x]" ~> vList1 .a1),
 	-- Desc: exponentiation
-	-- todo test/make negative
 	-- Example: ^2 8 -> 256
 	-- Test: ^~ 1 -> 10
 	-- Test: ^8 ~ -> 64
@@ -497,11 +496,10 @@ rawOps = [
  	-- Desc: tbd
  	-- Example: 0 -> 0
  	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
-	-- Desc: if nonnull (lazy) todo delete
+	-- Desc: if nonnull (lazy) todo alias to regular if/else
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0
 	-- Test: ?,:5 5 $ 0 -> [5,5]
-	-- todo, the arg passed in should be marked optional used
 	lowPriorityOp(["?",","], [15,13], [list, Fn False OptionalArg $ \a1 -> (1,a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
 		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
 		),
@@ -581,6 +579,7 @@ rawOps = [
 	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
 	
 	-- Desc: == (todo coerce or restrict)
+	-- todo consider returning list of the value or empty rather than 1 0
 	-- Example: eq 1 2 eq 1 1 -> 0,1
 	op("eq",[],[anyT, autoTodo {- truthy? -} anyT],"(bToI.).(==)" ~> VInt),
 		
@@ -635,10 +634,6 @@ rawOps = [
 	-- actually would be useful for ints as well (like after elem or conversion)
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	op("or",[],[autoTodo anyT,anyT],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
-	
-	--- Desc: character class
-	-- AaSs etc
-	
 	-- Desc: strip
 	-- Example: Strip " bcd\n\n" -> "bcd"
 	op("Strip",[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in

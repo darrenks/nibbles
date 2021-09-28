@@ -1,3 +1,7 @@
+consider making - do something special in more fns
+
+consider making ~~ or an unused arg in ~ mean that this tuple is now a nextState,nextValue pair (and need options to set initial state and what to do with result state)
+
 handle tuples in special zips
 
 multi rets like "take drop while" (with no single alt) should mark rets optional
