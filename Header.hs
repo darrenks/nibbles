@@ -12,6 +12,7 @@ import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
 import qualified Data.Set as Set
+import System.Environment
 
 -- for Hash
 import qualified Data.ByteString.Lazy as B8

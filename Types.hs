@@ -31,15 +31,18 @@ toHsType VInt = Just "Integer"
 toHsType VChr = toHsType VInt
 -- toHsType InvalidType = "a"
 toHsType (VList ts) =
-	let elems = map toHsType ts in
-	if all isJust elems then
-		Just $ "[" ++ (toTuple $ catMaybes elems) ++ "]"
-	else Nothing
+	toHsTypes ts >>= \s -> Just $ "["++s++"]"
 toHsType (VFn a b) = Nothing
 toHsType (ItWasAConstant) = Nothing
 toHsType (InvalidType) = Nothing
 toHsType (StaticInt _) = Nothing
 toHsType e = error $ "cant toHsType " ++ show e
+toHsTypes ts =
+	let elems = map toHsType ts in
+	if all isJust elems then
+		Just $ toTuple $ catMaybes elems
+	else Nothing
+
 -- won't work since sometimes its curried and others not?
 --toHsType (VFn a b) = "((" ++ (intercalate "->" $ map toHsType a) ++ ")->"++(toTuple $ map toHsType b)++ ")"
 

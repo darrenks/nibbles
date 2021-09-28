@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-} -- for loading header.hs
 {-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
 
-import Data.List(isPrefixOf)
+import Data.List(isPrefixOf,partition)
 import System.Environment
 import System.IO
 import GHC.IO.Encoding
@@ -18,11 +18,12 @@ import Polylib
 import Expr
 import Parse (toByte, fromByte)
 import Hs(flatHs)
+import ParseArgs
 
 usage = "\
-\Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename]\n\
+\Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]*\n\
 \\n\
-\Nibbles - a minimalistic-functional code golf language.\n\
+\Nibbles - a functional code golf language for mortals.\n\
 \\n\
 \Modes:\n\
 \  default = compile the nibbles program to out.hs and run it\n\
@@ -49,8 +50,13 @@ main=do
 	defaultEncoding <- getLocaleEncoding
 	setLocaleEncoding char8 -- (only for file reading/writing)
 	args <- getArgs
-	let (contentsIO, basename, parseMode) = case filter (not.isOpt) args of
-		[] -> (getContents, "a", FromLit)
+	let (progArgs, nonProgArgs) = partition isNibblesArg args
+	let (opts,fileArgs) = partition isOpt nonProgArgs
+	let (contentsIO, basename, parseMode) = case fileArgs of
+		[] -> (do
+			when (not$null progArgs) (hPutStrLn stderr "Warning: args are being treated as input args and nibbles code is being read from stdin")
+			getContents
+			, "a", FromLit)
 		[f] -> (readFile f, base, case ext of
 			".nbb" -> FromBytes
 			".nbl" -> FromLit
@@ -59,7 +65,8 @@ main=do
 		e -> errorWithoutStackTrace $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
 	contents <- contentsIO
 	let ?isSimple = isSimple args
-	let compileFn = compile finish ""
+	let (cargs, reader) = toLetArgs progArgs
+	let compileFn = compile finish "" cargs
 	let (impl, bRaw, lit, litWarnings)  = compileFn $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
@@ -83,10 +90,10 @@ main=do
 						hPutStrLn stderr lit
 					hPutStrLn stderr $ reverse $ reverse $ "size = " ++ (show $ length bRaw) ++ " nibbles"
 				return nibBytes
- 			fullHs <- toFullHs impl maybeNibBytes
+ 			fullHs <- toFullHs impl maybeNibBytes reader
  			writeFile "out.hs" fullHs
  			setLocaleEncoding defaultEncoding
- 			when (ops /= ["-hs"]) $ runHs "out.hs"
+ 			when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
 		["-c"] -> do
 			errored <- litErrorHandle "Error" binOnlyOps litWarnings
 			when errored $ errorWithoutStackTrace "aborting"
@@ -111,22 +118,25 @@ toBytes = map toByte . chunksOf 2
 isOtherOption = flip elem ["-simple"]
 isSimple = elem "-simple"
 
-toFullHs impl nibBytes = do
+toFullHs impl nibBytes reader = do
  	let header = unlines $ tail $ lines headerRaw -- remove "module Header"
  	return $ header ++ "\n\
 	\progSource = "++show nibBytes++"\n\
- 	\main=interact ((\\input->let output=aToS$"++ flatHs (implCode impl) ++ "\n\
- 	\ -- don't print a newline to a quine! \n\
- 	\ in if output == progSource\n\
+ 	\main=do\n\
+ 	\ args <- getArgs \n\
+	\ "++reader++"\n\
+ 	\ interact ((\\input->let output=aToS$"++ flatHs (implCode impl) ++ "\n\
+ 	\  -- don't print a newline to a quine! \n\
+ 	\  in if output == progSource\n\
  	\    then output else finishLn output).sToA)"
 
-runHs filename = do
+runHs filename args = do
 	-- Compile with -O for full laziness rather than using runhaskell
 	(_, _, _, p) <- createProcess (proc "ghc" ["-O", "-Wno-tabs", filename]){ std_out = CreatePipe }
 	ex <- waitForProcess p
 	case ex of
 		ExitSuccess -> do
-			(_, Just hout, _, _) <- createProcess (proc "out" []){ std_out = CreatePipe }
+			(_, Just hout, _, _) <- createProcess (proc "out" args){ std_out = CreatePipe }
 			hGetContents hout >>= putStr
 		ExitFailure _ -> do
 			error "failed to compile hs (likely an internal nibbles bug, please report it!)"

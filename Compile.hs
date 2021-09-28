@@ -20,12 +20,13 @@ import SmartList
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
-compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> Code -> (Impl, [Int], String, [String])
-compile finishFn separator input = evalState doCompile $ blankRep (consumeWhitespace input) args where
+compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> [(String, VT, String)] -> Code -> (Impl, [Int], String, [String])
+compile finishFn separator cArgs input = evalState doCompile $ blankRep (consumeWhitespace input) args where
+	
 	args =
 		[ Arg (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
 			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
-	mainLets =
+	mainLets = cArgs ++
 		[ ("firstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")
 		, ("firstLine", vstr, "fromMaybe printables $ at strLines 0")
 		, ("ints", VList [VInt], "intList")
@@ -50,7 +51,7 @@ compile finishFn separator input = evalState doCompile $ blankRep (consumeWhites
 		dataUsed <- gets pdDataUsed
 
 		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
-			getInputsUsedness context
+			drop (length cArgs) $ getInputsUsedness context
 		
 		let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
 

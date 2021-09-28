@@ -173,13 +173,13 @@ $EndSolution
 ## Input
 All programs actually start off with args available for use.
 
-- `$` is the first integer in the input (`int`)
-- `@` is the first line of input (`str`)
-- `_` is the first line as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
-- `;$` is the second integer in the input (`int`)
-- `;@` is the second line of input (`str`)
-- `;_` is the entire input (`str`)
-- `;;$` is the entire input as a list of list of ints (`[[int]]`)
+- `$` is the first integer in STDIN (`int`)
+- `@` is the first line of STDIN (`str`)
+- `_` is the first line of STDIN as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
+- `;$` is the second integer in STDIN (`int`)
+- `;@` is the second line of STDIN (`str`)
+- `;_` is the entire STDIN (`str`)
+- `;;$` is the entire STDIN as a list of list of ints (`[[int]]`)
 
 For example, if the input is a list of integers we could find the sum as so:
 
@@ -190,6 +190,18 @@ $Gives
 	6
 
 Keep in mind that these are DeBruijn indices too! So after you start using functions they will shift. It can be hard to keep track of what DeBruijn index corresponds to what, so you can always use `ct` anywhere to see **c**ontext **t**ypes.
+
+## Arg Input
+
+You may also pass inputs to your program as command line args and they will be parsed as if they are Haskell values (tuples, lists, strings, chars, numbers are ok). These will take up the lower DeBruijn indices than the regular input variables if present. For example:
+
+	> echo 5 | nibbles filename.nbl 6 [(7,'c'),(8,'d')]
+
+Will assign `6` to `$`, `[(7,'c'),(8,'d')]` to `@` and `5` to `_`.
+
+A caveat is that if you wish to use args, you must pass these args when generating the Haskell code that executes your program. This is because arg types must be known when parsing nibbles code! You don't have to worry about that if you just run your programs through nibbles instead of to out.hs first.
+
+This is super handy if the problem allows it as you won't need to do any parsing even for complex input types.
 
 ### Exercise
 Input a number n, then repeat the second line n times.
