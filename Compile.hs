@@ -437,11 +437,14 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 				tryRest
 
 convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
-convertOp memoizedArgList (ats,impl) preOpCode = do
+convertOp memoizedArgList (ats,behavior) preOpCode = do
 	maybeArgs <- getArgs ats memoizedArgList
-	case maybeArgs of
-		Nothing -> return Nothing
-		Just args -> do
+	case (maybeArgs, behavior) of
+		(Nothing,_) -> return Nothing
+		(Just args, LitWarn msg) -> do
+			parseLitWarning msg
+			return Nothing
+		(Just args, CodeGen impl) -> do
 			afterArgsCode <- gets pdCode
 		
 			-- Temporarily put the code pointer back for useful op error messages

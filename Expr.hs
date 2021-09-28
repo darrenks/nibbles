@@ -61,7 +61,8 @@ data ArgSpec
 	| ZipMode
 	| CharClassMode
 
-type Operation = ([ArgSpec], [VT]->ParseState ([VT], Impl))
+data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
+type Operation = ([ArgSpec], OpBehavior)
 
 dToList = DList.toList
 

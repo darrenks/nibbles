@@ -8,27 +8,25 @@ import Polylib
 import Parse
 import Hs
 
-makeOp :: (OpImpl impl, ToLitSpec lit) => Bool -> (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-makeOp priority (lit, nib, t, impl) = [(priority, toLitSpec lit, nib, (t, toImpl impl))]
+makeOp :: (ToLitSpec lit) => Bool -> (lit, [Int], [ArgSpec], OpBehavior) -> [(Bool, [String], [Int], Operation)]
+makeOp priority (lit, nib, t, behavior) = [(priority, toLitSpec lit, nib, (t, behavior))]
 
 op :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-op = makeOp True
+op (lit,nib,args,impl) = makeOp True (lit,nib,args,CodeGen $ toImpl impl)
 lowPriorityOp :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-lowPriorityOp = makeOp False
+lowPriorityOp (lit,nib,args,impl) = makeOp False (lit,nib,args,CodeGen $ toImpl impl)
 
 genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = parseLitWarning $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
+litExtError invalidLit lit reason = LitWarn $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 makeExtendOp priority invalidLit reason (lit, nib, t, impl) =
-	makeOp priority (invalidLit, [], t, \ts -> do
-		litExtError invalidLit lit reason
-		toImpl impl ts
-		) ++ op (lit, nib, t, impl)
+	makeOp priority (invalidLit, [], t, litExtError invalidLit lit reason) 
+		++ op (lit, nib, t, impl)
 extendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 extendOp = makeExtendOp True
 lowPriorityExtendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]

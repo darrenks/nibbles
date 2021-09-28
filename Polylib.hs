@@ -21,7 +21,8 @@ module Polylib(
 	defaultValue,
 	fullVectorize,
 	baseElem,
-	cidim) where
+	cidim,
+	tupleLambda) where
 
 import Types
 import Data.List
