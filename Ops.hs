@@ -150,6 +150,8 @@ rawOps = [
 	-- Desc: max
 	-- Example: ]4 5 -> 5
 	-- Test: ]~ *~4 -> 0
+
+	-- todo if change, update it's lit warning catchall at end
 	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, andC num sndArgLarger], "max"~>orChr),
 	-- Desc: add
 	-- Example: +2 1 -> 3
@@ -267,6 +269,8 @@ rawOps = [
 	op("\\", [10], [char, CharClassMode], "\\a f->if f $ myChr a then [a] else []" ~> vstr),
 	-- Desc: min
 	-- Example: [4 5 -> 4
+	
+	-- todo if change, update it's lit warning catchall at end
 	extendOp ["*"] commutativeReason ("[", [10], [int, andC num sndArgLarger], "min"~>orChr),
 	-- Desc: multiply
 	-- Example: *7 6 -> 42
@@ -726,6 +730,11 @@ rawOps = [
 	-- Desc: error
 	-- Example: error p +2 1 -> error "3"
 	op("error", [], [str], "errorWithoutStackTrace.aToS" ~> vstr),
+	
+	-- catch alls to do what they intended while giving warning
+	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, num], "max"~>orChr),
+	extendOp ["*"] commutativeReason ("[", [10], [int, num], "min"~>orChr),
+
 
 	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr),
 	op("testCoerceToInt", [], [anyT], testCoerceTo [VInt]),
