@@ -107,6 +107,7 @@ typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
 typeToStr (OptionalFn _) = Just $ "fn?"
 typeToStr (ZipMode) = Just "zipop"
+typeToStr (FoldMode) = Just "foldop"
 typeToStr (CharClassMode) = Just "chClass"
 
 prettyType VInt = "int"

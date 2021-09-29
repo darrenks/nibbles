@@ -43,6 +43,11 @@ bToI b = if b then 1 else 0
 onToBy :: Eq a => (t -> a) -> t -> t -> Bool
 onToBy f x y = f x == f y
 
+-- onToOrderBy :: Ord a => (t -> a) -> t -> t -> Ordering
+-- onToOrderBy f x y = compare (f x) (f y)
+-- onToSelectBy :: Ord a => (t -> a) -> t -> t -> Ordering
+onToSelectBy op f x y = if op (f x) (f y) then x else y
+
 -- Check these types so we don't accidentally not catch type errors in tests which rely on show
 confirmInt :: Integer -> Integer
 confirmInt = id

@@ -263,6 +263,7 @@ rawOps = [
 	-- Test: \' 'a -> ""
 	-- Test: \'a'$ \'_'$ -> "","_"
 	-- Test: \'a'! \'_'! -> "a",""
+	-- Test: \'a'A \'a'n \'a'N \'a's \'a'S \'a'l \'a'L \'a'u \'a'U \'a'p \'a'P \'a'd \'a'D \'a'$ \'a'! -> "","a","","","a","a","","","a","a","","","a","","a"
 	op("\\", [10], [char, CharClassMode], "\\a f->if f $ myChr a then [a] else []" ~> vstr),
 	-- Desc: min
 	-- Example: [4 5 -> 4
@@ -684,7 +685,24 @@ rawOps = [
 	-- Test subscript: ! "abc"\,3 = -> "cba"
 	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
 	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
+	-- Test: !,2 2+ !,2 2* !,2 2- !,2 2/ !,2 2% !,2 2^ !,2 2] !,2 2[ !,2 2! -> [3,4],[2,4],[-1,0],[0,1],[1,0],[1,4],[2,2],[1,2],[1,0]
+	-- Test: !"abc" "ccb"? -> [3,3,2]
 	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
+	
+	-- Desc: special folds (todo vec)
+	-- Example: `! "asdf" ] -> 's'
+	-- Test: `! "" * -> 1
+	-- Test: `!,3] `!,3[ `!,3+ `!,3* `!,3- `!,3% `!,3^ -> 3,1,6,6,2,1,1
+	-- Test commutative order: `! :9 :6 2 / -> 3
+	-- Test by: `! "asdf" >$ -> 's'
+	-- Test by empty: `! ,0 <$ -> 340282366920938463463374607431768211456
+	op("`!", [], [list, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
+	
+	-- Desc: special scans
+	-- Example: `~ ,4 + -> [1,3,6,10]
+	-- Test: `~ ,0 + -> []
+	-- Test commutative order: `~ \:9 :6 2 / -> [2,3,3]
+	op("`~", [], [list, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: to uppercase
 	-- Example: TU 'a' -> 'A'

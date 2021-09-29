@@ -199,6 +199,8 @@ You may also pass inputs to your program as command line args and they will be p
 
 Will assign `6` to `$`, `[(7,'c'),(8,'d')]` to `@` and `5` to `_`.
 
+Note that (with z shell and likely others) you would need to `\` backquote all `( )` `"` `'` symbols (not shown in this example for clarity).
+
 A caveat is that if you wish to use args, you must pass these args when generating the Haskell code that executes your program. This is because arg types must be known when parsing nibbles code! You don't have to worry about that if you just run your programs through nibbles instead of to out.hs first.
 
 This is super handy if the problem allows it as you won't need to do any parsing even for complex input types.

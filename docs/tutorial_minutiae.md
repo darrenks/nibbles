@@ -276,6 +276,12 @@ The negative in the radix means to use the list of printable characters rather t
 	ghci header.hs
 	> 1 + (maximum $ catMaybes $ map (flip elemIndex printables) $ sToA "Hello, world!")
 
+or if you prefer nibbles:
+
+	`!!@"Hello, world!"?]
+$Output
+	41
+
 Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
 
 	fb "Hello, world!" -41

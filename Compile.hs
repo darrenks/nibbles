@@ -267,6 +267,10 @@ tryArg ZipMode prevTypes _ memoArgs = do
 	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips prevTypes)
 	return $ Left (error"memoized args cannot be used after zip mode (but could be)", [impl])
 
+tryArg FoldMode prevTypes _ memoArgs = do
+	impl <- parse1Nibble "fold mode" $ zip [0..] (specialFolds prevTypes)
+	return $ Left (error"memoized args cannot be used after fold mode (but could be)", [impl])
+
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 createSpecialFn :: (([VT], String)) -> ParseState Impl
 createSpecialFn (ts,hs) = createImplMonad (VFn undefined ts) (hsParen $ hsAtom hs)
@@ -300,6 +304,30 @@ specialZips a@[a1,a2] = let
 		map (\c->(c,createZipFromBinOp c a 0)) "+*-/%^][!" ++
 		map (\c->(c,createZipFromBinOp c a 1)) "=?"
 		-- two more possible
+
+createFoldFromBinOp :: (Char,Integer) -> VT -> ParseState Impl
+-- todo handle tuples
+createFoldFromBinOp (c,initValue) (VList [t]) =
+	let (vt,hs)=binOp c [t,t]
+	in createImplMonad (VFn undefined vt) (hsParen $ hsAtom $ "\\(foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (" ++ hs ++ ") a")
+
+-- todo vectorize
+specialFolds :: (?isSimple::Bool) => [VT] -> [(Char, ParseState Impl)]
+specialFolds [a1] =
+	(map (\deets->(fst deets,createFoldFromBinOp deets a1)) 
+		[(']',-2^128)
+		,('[',2^128)
+		,('+',0) -- todo consider making this/etc go to scan since shorter way already
+		,('*',1)
+		,('-',0)
+		,('/',1)
+		,('%',1)
+		,('^',1)])++
+		[('>', takeAnotherOrderBy ">" (-2^128))
+		,('<', takeAnotherOrderBy "<" (2^128))
+		] where
+	takeAnotherOrderBy fName initValue = do
+		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
 charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs)))
