@@ -132,7 +132,7 @@ rawOps = [
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
 	op([":"], [7], [fn noArgs, auto], "\\v->v():[]" ~> VList .ret.a1),
-	-- Desc: append
+	-- Desc: append (todo consider ~ prepend default)
 	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
@@ -358,8 +358,8 @@ rawOps = [
 	op(["<","~"], [11,0], [list], "init" ~> a1),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
-	-- todo test/make negative
-	op("<", [11], [num, list], "take.fromIntegral" ~> a2),
+	-- Test negative: <-2 ,5 -> [1,2,3]
+	op("<", [11], [num, list], "\\n a->genericTake (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	extendOp [",","."] genericReason ("tbd", [13,12], [list], undefinedImpl),
@@ -376,8 +376,8 @@ rawOps = [
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
 	-- Test: >~,3 -> [2,3]
-	-- todo test/make negative
-	op(">", [12], [AutoDefault num 1, list], "drop.fromIntegral" ~> a2),
+	-- Test negative: >-2 ,5 -> [4,5]
+	op(">", [12], [AutoDefault num 1, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
@@ -400,7 +400,10 @@ rawOps = [
 	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ \/$$a -> 4
 	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
-	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "chunksOf.fromIntegral" ~> vList1 .a2),
+	-- Test negative: rs -2 ,5 -> [[1],[2,3],[4,5]]
+	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "\\n a->if n<0 \
+	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
+	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks
 	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
 	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
@@ -411,7 +414,7 @@ rawOps = [
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "genericLength" ~> VInt),
-	-- Desc: range from 1 to
+	-- Desc: range from 1 to (todo what negatives do?)
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
 	-- Test: <3,~ -> [1,2,3]
@@ -523,6 +526,7 @@ rawOps = [
 	-- Desc: from base str (todo choose lit name)
 	-- todo also consider returning the stuff after the parsed number...
 	-- todo try to get auto value 10 (can use it since index by does
+	-- note negative base does nothing useful
 	-- Example: ``"1f" 16 -> 31
 	-- Test negative: ``"-1f" 16 -> -31
 	-- test uppercase: ``"1F" 16 -> 31
@@ -548,23 +552,31 @@ rawOps = [
 	-- diff could work with non matching tuples too, aka diff by?
 	
 	-- Desc: take drop while
-	-- Example: tw ,5 - 3$ $ -> [1,2],[3,4,5]
-	-- Test not: tw ,5 ~-$3 $ -> [1,2,3],[4,5]
-	op("tw", [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Example: td ,5 ~ - 3$ $ -> [1,2],[3,4,5]
+	-- Test not: td ,5 ~ ~-$3 $ -> [1,2,3],[4,5]
+	op("td", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: take while
+	-- Example: tw ,5 ~ - 3$ -> [1,2]
+	-- Test not: tw ,5 ~ ~-$3 -> [1,2,3]
+	op("tw", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: drop take while
-	-- Example: dw ,5 - 3$ $ -> [3,4,5],[1,2]
-	-- Test not: dw ,5 ~-$3 $ -> [4,5],[1,2,3]
-	op("dw", [], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
-	-- Desc: take drop, auto = uncons
+	-- Example: dt ,5 ~ - 3$ $ -> [3,4,5],[1,2]
+	-- Test not: dt ,5 ~ ~-$3 $ -> [4,5],[1,2,3]
+	op("dt", [], [list, auto, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: drop while
+	-- Example: dw ,5 ~ - 3$ -> [3,4,5]
+	-- Test not: dw ,5 ~ ~-$3 -> [4,5]
+	op("dw", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
+	-- Desc: take drop
 	-- Example: td ,5 2 $ -> [1,2],[3,4,5]
-	-- Test negative: td ,3 *~2 $ -> [],[1,2,3]
-	op("td", [], [list, int], "flip genericSplitAt" ~> \[a1,_]->[a1::VT,a1]),
+	-- Test negative: td ,3 *~2 $ -> [1],[2,3]
+	op("td", [], [list, int], "\\a n->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
 	
 	
-	-- Desc: drop take, auto = consun
+	-- Desc: drop take
 	-- Example: dt ,5 2 $ -> [3,4,5],[1,2]
-	-- Test negative: dt ,3 *~2 $ -> [1,2,3],[]
-	op("dt", [], [list, int], "(swap.).flip genericSplitAt" ~> \[a1,_]->[a1::VT,a1]),
+	-- Test negative: dt ,3 *~2 $ -> [2,3],[1]
+	op("dt", [], [list, int], "\\a n->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
 
 	-- Desc: un cons
 	-- Example: uncons ,3 $ -> 1,[2,3]
@@ -716,6 +728,10 @@ rawOps = [
 	-- Example: TL 'A' -> 'a'
 	-- Test: ."Hi there!"TL$ -> "hi there!"
 	op("TL", [], [char], "myOrd.toLower.myChr"~>a1),
+	
+	-- Desc: list of 2 lists
+	-- Example: L2 ,2 ,1 -> [[1,2],[1]]
+	op("L2", [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	
 	
 	-- Desc: debug arg type

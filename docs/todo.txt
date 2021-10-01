@@ -1,3 +1,8 @@
+enhanced range creation, by overloading ops like take, drop, reverse, step, etc. nice defaults to consider, 0-n-1, 1-n, -n-n, step 1. need to be able to specify 3 of (from,to,step,count).
+	ideally don't need vectorized + and * to facilitate this
+
+some way to change automap / implicit map to a filter (follow with & ?) or maybe remove empties from list to_s?
+
 consider making - do something special in more fns
 
 consider making ~~ or an unused arg in ~ mean that this tuple is now a nextState,nextValue pair (and need options to set initial state and what to do with result state)
