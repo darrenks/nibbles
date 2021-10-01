@@ -114,7 +114,7 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate while uniq
+	-- Desc: iterate while uniq (todo this might collide with singleton/pair)
 	-- Example: iq 10 %+1$3 -> [10,2,0,1]
 	-- Test never stop: <5 iq 10 ~1 -> [10,1,1,1,1]
 	-- Test tuple: iq ~1 2 @$ -> [(1,2),(2,1)]
@@ -164,7 +164,7 @@ rawOps = [
 	-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
 	-- Test: +3 ~ -> 4
 	-- Test: +3 3 -> 6
-	extendOp ["]"] commutativeReason ("+", [8], [num, AutoDefault vec 1], vectorize "+" xorChr),
+	extendOp ["]"] commutativeReason ("+", [8], [AutoDefault num 1, AutoDefault vec 1], vectorize "+" xorChr),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c" " " -> ["a","b","c"]
 	-- Test empties: %" a  b " " " -> ["a","b"]
@@ -350,9 +350,10 @@ rawOps = [
 	-- Test: / 7 ~ -> 3
 	-- Test divmod: /~7 2 $ -> 3,1
 	-- Test divmod auto: /7 ~ -> 3
+	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
 	op("/", [11], [AutoOption "divmod", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
-		then "div" ~> [VInt]
-		else "divMod" ~> [VInt, VInt]),
+		then "safeDiv" ~> [VInt]
+		else "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: init
 	-- Example: <~,5 -> [1,2,3,4]
 	op(["<","~"], [11,0], [list], "init" ~> a1),
@@ -387,11 +388,12 @@ rawOps = [
 	-- Test: % *~2 *~7 -> -2
 	-- Test: % 2 *~7 -> -5
 	-- Test: % 7 ~ -> 1
+	-- Test mod 0: %7 0 -> 0
 	-- Test moddiv : %~7 2 $ -> 1,3
 	-- Test moddiv auto: %~7 ~ -> 1
 	op("%", [12], [AutoOption "moddiv", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
-	then "mod" ~> [VInt]
-	else "(swap.).divMod" ~> [VInt, VInt]),
+	then "safeMod" ~> [VInt]
+	else "(swap.).safeDivMod" ~> [VInt, VInt]),
 	-- Desc: chr/ord
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
@@ -410,6 +412,7 @@ rawOps = [
 	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
 	-- Test: nc 4 ,10 -> [[1,2,3],[4,5],[6,7,8],[9,10]]
 	-- Test: nc -4 ,10 -> [[1,2],[3,4,5],[6,7],[8,9,10]]
+	-- Test empty: nc -4 "" -> []
 	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
@@ -803,8 +806,8 @@ binOp :: Char -> [VT] -> ([VT], String)
 binOp '+' a = ([xorChr a], "+")
 binOp '*' a = ([VInt], "*")
 binOp '-' a = ([xorChr a], "-")
-binOp '/' a = ([VInt], "div")
-binOp '%' a = ([VInt], "mod")
+binOp '/' a = ([VInt], "safeDiv")
+binOp '%' a = ([VInt], "safeMod")
 binOp '^' a = ([xorChr a], "^")
 binOp ']' a = ([orChr a], "max")
 binOp '[' a = ([orChr a], "min")

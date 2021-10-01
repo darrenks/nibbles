@@ -3,6 +3,11 @@ enhanced range creation, by overloading ops like take, drop, reverse, step, etc.
 
 some way to change automap / implicit map to a filter (follow with & ?) or maybe remove empties from list to_s?
 
+improve auto map (like the case of $ and @ on separate lines
+	generally consider all common cases
+	alg idea: if not consume all input: auto map on any inputs that read last line.
+	no default 100/1000/etc.
+
 consider making - do something special in more fns
 
 consider making ~~ or an unused arg in ~ mean that this tuple is now a nextState,nextValue pair (and need options to set initial state and what to do with result state)

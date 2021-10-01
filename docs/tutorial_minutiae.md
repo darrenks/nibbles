@@ -292,7 +292,7 @@ FYI data will always be shorter if you are getting it from the auto value of a f
 
 ## Infinity
 
-There is no concept of infinity yet, but it would be nice if there was. TODO create it.
+There is no concept of infinity yet, but it would be nice if there was. TODO create it. For now some things use the value of 2^128 in place of infinity.
 
 ## Quine newline suppression.
 

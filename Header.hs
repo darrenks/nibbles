@@ -48,6 +48,15 @@ onToBy f x y = f x == f y
 -- onToSelectBy :: Ord a => (t -> a) -> t -> t -> Ordering
 onToSelectBy op f x y = if op (f x) (f y) then x else y
 
+safeDiv :: Integer -> Integer -> Integer
+safeDiv a 0 = signum a*(2^128)
+safeDiv a b = a `div` b
+safeMod :: Integer -> Integer -> Integer
+safeMod a 0 = 0
+safeMod a b = a `mod` b
+safeDivMod :: Integer -> Integer -> (Integer,Integer)
+safeDivMod a b = (safeDiv a b, safeMod a b)
+
 -- Check these types so we don't accidentally not catch type errors in tests which rely on show
 confirmInt :: Integer -> Integer
 confirmInt = id
