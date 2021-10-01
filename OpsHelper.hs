@@ -110,8 +110,6 @@ int = Cond "int" $ exactType VInt
 char = Cond "chr" $ exactType VChr
 str = Cond "str" $ exactType vstr
 
-noArgs = const []
-
 fn f = fnx $ \ts->(1, f ts)
 fn2 f = fnx $ \ts->(2, f ts)
 fnx = Fn False UnusedArg
@@ -120,7 +118,7 @@ num = Cond "num" $ byType isNum
 vec = Cond "vec" $ byType $ const True
 list = Cond "[*]" $ byType isList
 listToBeReferenced = Cond "[a]" $ byType isList
-anyT = Cond "any" $ byType $ const True
+any1 = Cond "any" $ byType $ const True
 auto = Auto False
 binOnlyAuto = Auto True
 

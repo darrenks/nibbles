@@ -83,7 +83,7 @@ rawOps = [
 	-- Test (coerce arg): ;;2+1$ $"4" -> 3,5
 	-- Test (coerce pair): ;;~1 2 +@$  $"5"2 -> 3,7
 	-- Test deps: .,2;;2+@$ -> [3,4]
-	op([";",";"], [6,6], [fn noArgs, fn $ ret.a1],
+	op([";",";"], [6,6], [AnyS, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
@@ -99,7 +99,7 @@ rawOps = [
 	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
 	-- Test not cond: ;~ 5 ~$ 1 0 -> 1
-	op([";","~"], [6,0], [fn noArgs, fnx (\[a1]->(0, ret a1++[InvalidType]))],
+	op([";","~"], [6,0], [AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
 	\[a1,a2]->
 		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
 	-- Desc: let
@@ -113,25 +113,25 @@ rawOps = [
 	-- Test: ++;2 ;1 @ -> 5
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
-	op(";", [6], [anyT], "\\x->(x,x)" ~> dup.a1),
+	op(";", [6], [any1], "\\x->(x,x)" ~> dup.a1),
 	-- Desc: iterate while uniq (todo this might collide with singleton/pair)
 	-- Example: iq 10 %+1$3 -> [10,2,0,1]
 	-- Test never stop: <5 iq 10 ~1 -> [10,1,1,1,1]
 	-- Test tuple: iq ~1 2 @$ -> [(1,2),(2,1)]
 	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	extendOp [":",":"] associativeReason ("iq", [7,7], [fn noArgs, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+	extendOp [":",":"] associativeReason ("iq", [7,7], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
 	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,2,3,4]
 	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
 	-- Test coerce first: <4 aun 2 1 -> [2,1,1,1]
-	op(["aun"], [], [autoTodo anyT, autoTodo $ fn id], \[a1,a2]->
+	op(["aun"], [], [autoTodo any1, autoTodo $ fn id], \[a1,a2]->
 		let (a1ListT,a1ListF)=promoteList [a1] in
 			"\\a f->appendUntilNull ("++a1ListF++"a) ("++coerceTo [a1ListT] (ret a2)++".f)" ~> a1ListT),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
-	op([":"], [7], [fn noArgs, auto], "\\v->v():[]" ~> VList .ret.a1),
+	op([":"], [7], [AnyS, auto], "\\v->v():[]" ~> VList .ret.a1),
 	-- Desc: append (todo consider ~ prepend default)
 	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
@@ -140,7 +140,7 @@ rawOps = [
 	-- Test tuple ~ happy path: :~1'a' z,3"abc" -> [(1,'a'),(1,'a'),(2,'b'),(3,'c')]
 	--- todo make work Test: ~1'a' 2'b' -> [(1,'a'),(2,'b')]
 	-- Test promoting to list: :1 2 -> [1,2]
-	op(":", [7], [fn noArgs, fn noArgs], \[a,b]->
+	op(":", [7], [AnyS, AnyS], \[a,b]->
 		let
 			(ap,apFn) = promoteList (ret a)
 			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
@@ -282,7 +282,7 @@ rawOps = [
 	-- Desc: scanl
 	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
 	-- Test tuple: sc,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
+	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- Test empty: sc,0+@$ -> []
@@ -293,7 +293,7 @@ rawOps = [
 	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
 	-- Test(accum has tuple): / ,3 ~ ~0 "" +@$ :$_ $ -> 6,"123"
 	-- Test coerce: / ,3 ~ 0 "5" -> 5
-	op("/", [10], [list, auto, fn noArgs, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a" ~> ret a2)),
+	op("/", [10], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a" ~> ret a2)),
 	-- Desc: foldr1
 	-- Example: /,3+@$ -> 6
 	-- Test coerce: /,3"5" -> 5
@@ -477,7 +477,7 @@ rawOps = [
 	-- RawTest: p."Fizz""Buzz" hm $ 6   68 -> "[3,5]\n"
 	-- RawTest: p:hm ~"5a" 100 hm "5" 100 97 -> "[62,62]\n"
 	-- Test: hex hm "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
-	extendOp ["?","~"] genericReason ("hm", [15,0], [AutoOption "nosalt", anyT, ParseArg "int" intParser], (\[o,a1,a2]->do
+	extendOp ["?","~"] genericReason ("hm", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
 		let salt = o/=OptionYes
 		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
@@ -601,7 +601,7 @@ rawOps = [
 	-- Desc: == (todo coerce or restrict)
 	-- todo consider returning list of the value or empty rather than 1 0
 	-- Example: eq 1 2 eq 1 1 -> 0,1
-	op("eq",[],[anyT, autoTodo {- truthy? -} anyT],"(bToI.).(==)" ~> VInt),
+	op("eq",[],[any1, autoTodo {- truthy? -} any1],"(bToI.).(==)" ~> VInt),
 		
 	-- Desc: split list (todo promote to list when needed)
 	-- Example: split ,5 :3~ -> [[1,2],[4,5]]
@@ -653,7 +653,7 @@ rawOps = [
 	-- Desc: or (todo coerce/etc, only need this op for lists though)
 	-- actually would be useful for ints as well (like after elem or conversion)
 	-- Example: or"" "b" or "a" "c" -> "b","a"
-	op("or",[],[autoTodo anyT,anyT],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
+	op("or",[],[autoTodo any1,any1],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
 	-- Desc: strip
 	-- Example: Strip " bcd\n\n" -> "bcd"
 	op("Strip",[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
@@ -706,7 +706,7 @@ rawOps = [
 	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
 	-- Test: !,2 2+ !,2 2* !,2 2- !,2 2/ !,2 2% !,2 2^ !,2 2] !,2 2[ !,2 2! -> [3,4],[2,4],[-1,0],[0,1],[1,0],[1,4],[2,2],[1,2],[1,0]
 	-- Test: !"abc" "ccb"? -> [3,3,2]
-	op("!", [], [list, anyT, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
+	op("!", [], [list, any1, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	
 	-- Desc: special folds (todo vec)
 	-- Example: `! "asdf" ] -> 's'
@@ -739,10 +739,10 @@ rawOps = [
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
-	op("pt", [], [anyT], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
+	op("pt", [], [any1], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
-	op("p", [], [anyT], inspect.a1 ~> vstr),
+	op("p", [], [any1], inspect.a1 ~> vstr),
 	-- Desc: debug context types
 	-- Example: ;5 ct -> error "$ LetArg VInt ..."
 	op("ct", [], [], gets pdContext >>= parseError . debugContext :: ParseState Impl),
@@ -755,15 +755,15 @@ rawOps = [
 	extendOp ["*"] commutativeReason ("[", [10], [int, num], "min"~>orChr),
 
 
-	op("testCoerce2", [], [anyT, anyT], testCoerce2 ~> vstr),
-	op("testCoerceToInt", [], [anyT], testCoerceTo [VInt]),
-	op("testCoerceToChr", [], [anyT], testCoerceTo [VChr]),
-	op("testCoerceToListInt", [], [anyT], testCoerceTo [VList [VInt]]),
-	op("testCoerceToStr", [], [anyT], testCoerceTo [vstr]),
-	op("testCoerceToListListInt", [], [anyT], testCoerceTo [VList [VList [VInt]]]),
-	op("testCoerceToListStr", [], [anyT], testCoerceTo [VList [vstr]]),
-	op("testCoerceToX", [], [fn noArgs, fn noArgs], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
-	op("testFinish", [], [anyT], flip finish False . a1 ~> vstr)]
+	op("testCoerce2", [], [any1, any1], testCoerce2 ~> vstr),
+	op("testCoerceToInt", [], [any1], testCoerceTo [VInt]),
+	op("testCoerceToChr", [], [any1], testCoerceTo [VChr]),
+	op("testCoerceToListInt", [], [any1], testCoerceTo [VList [VInt]]),
+	op("testCoerceToStr", [], [any1], testCoerceTo [vstr]),
+	op("testCoerceToListListInt", [], [any1], testCoerceTo [VList [VList [VInt]]]),
+	op("testCoerceToListStr", [], [any1], testCoerceTo [VList [vstr]]),
+	op("testCoerceToX", [], [AnyS, AnyS], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
+	op("testFinish", [], [any1], flip finish False . a1 ~> vstr)]
 
 foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
@@ -776,7 +776,7 @@ mapFn = (\[a1,a2]->"(\\a f->map f a)")
 -- coerces/etc.
 -- code must be defined using -
 binarySetOp name code =
-	op(name, [], [list,AutoOption "uniq",OptionalFn (\[a1,_]->(1,elemT a1)),anyT], \[a1,o1,optionalFn,a2]-> let
+	op(name, [], [list,AutoOption "uniq",OptionalFn (\[a1,_]->(1,elemT a1)),any1], \[a1,o1,optionalFn,a2]-> let
 		(coercedType, coerceFnA, coerceFnB) = coerce [a1] bt
 		replaceMinus = concatMap (\c->if c=='-' then "`minus`" else [c])
 		maybeNub = if o1==OptionYes then "(nubBy (onToBy snd))" else "id"

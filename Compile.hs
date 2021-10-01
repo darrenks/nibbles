@@ -201,6 +201,9 @@ tryArg (Auto binOnly) _ _ memoArgs = do
 	matched <- match (fst tildaOp, lit)
 	return $ if matched then Left (tail memoArgs, []) else Right Nothing
 
+tryArg AnyS prevTs _ _ =
+	tryArg (Fn False UnusedArg (const (1,[]))) prevTs undefined undefined
+
 -- todo create another one called UnusedLeftOver which acts more like a normal Cond
 tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
@@ -446,7 +449,7 @@ getValueH [] _ = parseError "Parse Error: no matching op"
 getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
 	code <- gets pdCode
 	let tryRest = getValueH otherOps memoArgOffsets
-	-- Low priority extensions don't match if their snd nibble is in an extensions (and thus would be renamed).
+	-- Low priority extensions don't match if their snd nibble is in an extension (and thus would be renamed).
 	let reconstructedLit = dToList $ pdLit $ snd $ head $ head memoArgOffsets
 	origState <- get
 	match <- match (nib,lit)

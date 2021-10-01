@@ -61,6 +61,7 @@ data ArgSpec
 	| ZipMode
 	| FoldMode
 	| CharClassMode
+	| AnyS -- basically a const fn, but shown as any*
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
 type Operation = ([ArgSpec], OpBehavior)
