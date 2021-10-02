@@ -1,9 +1,7 @@
 # Install
 
 ### Install Haskell
-Follow instructions at [https://www.haskell.org/platform/](https://www.haskell.org/platform/)
-
-You will need **GHC 8.10.4** and **cabal 3.4.0.0** (or greater).
+You will need **GHC 8.10.7** and **cabal 3.6.0.0** (or greater). I recommend using [ghcup](https://www.haskell.org/ghcup/) to get them.
 
 ### Install some libs
 

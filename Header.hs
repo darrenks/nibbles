@@ -110,7 +110,9 @@ toBase :: (Integral a, Integral b) => b -> Integer -> [a]
 toBase b n = reverse $ map (fromIntegral.flip mod b) $ takeWhile (>0) $ iterate (flip div b) (fromIntegral n)
 
 hlist :: Integral i => [i] -> Integer
-hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256) (map (\e->fromIntegral$ord$myChr e) a)
+hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256)
+	 -- (map (\e->fromIntegral$ord$myChr e) a)
+	 (map fromIntegral a)
 
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult

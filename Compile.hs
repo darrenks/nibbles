@@ -35,9 +35,9 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 		, ("allInput", vstr, "input")
 		, ("intListList", VList [VList [VInt]], "intMatrix")
 		]
-	letArgs = map (\(name, vt, _) -> noArgsUsed {
-		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=OptionalArg
-		}) mainLets
+	letArgs = zipWith (\(name, vt, _) ind -> noArgsUsed {
+		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=if ind>length cArgs then OptionalArg else UnusedArg
+		}) mainLets [1..]
 	letDefs = map (\(_, _, hsDef) -> hsDef) mainLets
 
 	doCompile = do
@@ -65,7 +65,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 			else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
 			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
 			else ""
-		let finalImpl = app1Hs ("let intMatrix=filter (not.null) (map (asInts.sToA) (lines $ aToS input));\
+		let finalImpl = app1Hs ("let intMatrix=filter (not . null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\
 			\intList=concat intMatrix;\
 			\datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
@@ -96,37 +96,36 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 				dat <- parseDataExpr
 				return (Just dat,finishedPrev)
 			else do
-			result <- case implType prev of
-				VInt | not ?isSimple -> do
-					(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
-					if last argsUsed then do
-						return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
-					else if argsUsed == [True,False] then do
-						return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
-					else do
-						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
+				result <- case implType prev of
+					VInt | not ?isSimple -> do
+						(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
+						if last argsUsed then do
+							return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
+						else if argsUsed == [True,False] then do
+							return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
+						else do
+							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
+							afterCode <- gets pdCode
+							return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
+					VList e | not ?isSimple && e /= [VChr] -> do
+						(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
+						if or $ drop (length e) argsUsed then do
+							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
+						else if or $ take (length e) argsUsed then do
+							return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
+						else if ret (implType impl1) == [vstr] then do
+							let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
+							let (rt,f) = Polylib.join (VList e)
+							return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
+						else do
+							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
+							afterCode <- gets pdCode
+							return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
+					otherwise -> do
+						impl1 <- get1Value
 						afterCode <- gets pdCode
-						return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
-				VList e | not ?isSimple && e /= [VChr] -> do
-					(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
-					if or $ drop (length e) argsUsed then do
-						convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
-					else if or $ take (length e) argsUsed then do
-						return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
-					else if ret (implType impl1) == [vstr] then do
-						let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
-						let (rt,f) = join (VList e)
-						return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
-					else do
-						rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
-						afterCode <- gets pdCode
-						return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
-				otherwise -> do
-					impl1 <- get1Value
-					afterCode <- gets pdCode
-					return $ join2 finishedPrev (finishIt impl1 (empty afterCode))
-			
-			mainCombiner result
+						return $ join2 finishedPrev (finishIt impl1 (empty afterCode))			
+				mainCombiner result
 	
 	testCombiner prev = do
 		code <- gets pdCode
@@ -275,6 +274,7 @@ tryArg FoldMode prevTypes _ memoArgs = do
 	return $ Left (error"memoized args cannot be used after fold mode (but could be)", [impl])
 
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
+
 createSpecialFn :: (([VT], String)) -> ParseState Impl
 createSpecialFn (ts,hs) = createImplMonad (VFn undefined ts) (hsParen $ hsAtom hs)
 

@@ -211,7 +211,7 @@ rawOps = [
 	-- Test tuple: *" "z,3"abc" -> ["1 a","2 b","3 c"]
 	-- Test lopsided tuple: *" "z^:,2~2"ab" -> [("1 2",'a'),("1 2",'b')]
 	-- Test: *" "z^:,2~ 2^:,2~2 -> [("1 2","1 2"),("1 2","1 2")]
-	op("*", [8], [str, list], join.a2),
+	op("*", [8], [str, list], Polylib.join.a2),
 	-- Desc: product
 	-- Example: pd,4 -> 24
 	-- Test: pd,0 -> 1
@@ -394,7 +394,7 @@ rawOps = [
 	op("%", [12], [AutoOption "moddiv", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
 	then "safeMod" ~> [VInt]
 	else "(swap.).safeDivMod" ~> [VInt, VInt]),
-	-- Desc: chr/ord
+	-- Desc: chr/ord todo make ord 1 nibble
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: chunksOf
@@ -490,9 +490,9 @@ rawOps = [
  	-- RawTest: p tb ~ 2 10 -> "[1,0,1,0]\n"
  	-- RawTest: tb ~ -5 1934 -> "c bad\n"
  	-- RawTest: tb ~ -150 19178 -> "\DEL\128\n"
- 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [auto, ParseArg "int" staticIntParser], \[StaticInt v1]->do
+ 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
 		modify $ \s -> s { pdDataUsed = True }
-		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt)),
+		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt))::[VT]->ParseState (VT, String))),
  	-- Desc: to base
  	-- Example: tb 10 2 -> [1,0,1,0]
  	-- Test: tb 0 2 -> []

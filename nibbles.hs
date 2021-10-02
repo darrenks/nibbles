@@ -70,14 +70,13 @@ main=do
 	let (impl, bRaw, lit, litWarnings)  = compileFn $ case parseMode of
 		FromLit -> Lit contents contents 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
-	let binOnlyOps = any (==16) bRaw
 	let paddedNibs = padToEvenNibbles bRaw
 	let nibBytes = toBytes paddedNibs
 	
 	case filter isOpt args of
 		-- if no c/e/v option specified then assume it means run
 		ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
-			errored <- litErrorHandle "Warning" binOnlyOps litWarnings
+			errored <- litErrorHandle "Warning" bRaw litWarnings
 			maybeNibBytes <- if errored then return []
 			else do
 				when (parseMode == FromLit) $ do
@@ -95,7 +94,7 @@ main=do
  			setLocaleEncoding defaultEncoding
  			when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
 		["-c"] -> do
-			errored <- litErrorHandle "Error" binOnlyOps litWarnings
+			errored <- litErrorHandle "Error" bRaw litWarnings
 			when errored $ errorWithoutStackTrace "aborting"
 			let outname = (basename ++ ".nbb")
 			hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
@@ -103,10 +102,16 @@ main=do
 		["-e"] -> putStrLn lit
 		["-v"] -> putStrLn "nibbles alpha (unstable)"
 		e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
-	
-litErrorHandle msgPrefix binOnlyOps litWarnings = do
+
+estimateBinLength [] = 0
+-- next op causes an error to avoid accidentally trying to convert lit only ops to bin
+estimateBinLength (16:_:s) = 2 + estimateBinLength s
+estimateBinLength (_:s) = 1 + estimateBinLength s
+
+litErrorHandle msgPrefix bRaw litWarnings = do
+	let binOnlyOps = any (==16) bRaw
 	if binOnlyOps && null litWarnings then do
-		hPutStrLn stderr $ msgPrefix ++ ": you are using literal only ops"
+		hPutStrLn stderr $ msgPrefix ++ ": you are using literal only ops, estimated size: " ++ show (estimateBinLength bRaw)
 		return True
 	else if not (null litWarnings) then do
 		mapM_ (\msg -> hPutStrLn stderr $ msgPrefix++": " ++msg) litWarnings

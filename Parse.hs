@@ -214,6 +214,7 @@ match (nib,lit) = do
 			return True
 		Nothing -> return False
 
+generateErrorMsg :: String -> ParseState String
 generateErrorMsg msg = do
 	s <- gets pdCode
 	return $ msg ++ "\n" ++ case s of
