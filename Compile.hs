@@ -278,11 +278,10 @@ createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 createSpecialFn :: (([VT], String)) -> ParseState Impl
 createSpecialFn (ts,hs) = createImplMonad (VFn undefined ts) (hsParen $ hsAtom hs)
 
-createZipFromBinOp :: Char -> [VT] -> Int -> ParseState Impl
-createZipFromBinOp c a@[a1,a2] lhsNeed =
+createZipFromBinOp :: Char -> [VT] -> Int -> Int -> ParseState Impl
+createZipFromBinOp c a@[a1,a2] lhsNeed rhsNeed =
 	let lhsDim = cidim [a1]
 	    rhsDim = cidim [a2]
-	    rhsNeed = 0
 	    (t,hs)=binOp c [head $ iterate ((:[]).VList) [baseElem a1] !! lhsNeed,baseElem a2]
 	    (vec,extra) = fullVectorize (lhsDim-lhsNeed) (rhsDim-rhsNeed)
 	    vt = iterate ((:[]).VList) t !! extra
@@ -304,8 +303,8 @@ specialZips a@[a1,a2] = let
 		in
 			createSpecialFn ([VList coercedType], "zipWith $ \\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"))
 		,(',',createSpecialFn ([VList flatT], "zipWith $ \\a b->"++flatten++" $ (a,b)"))] ++ 
-		map (\c->(c,createZipFromBinOp c a 0)) "+*-/%^][!" ++
-		map (\c->(c,createZipFromBinOp c a 1)) "=?"
+		map (\c->(c,createZipFromBinOp c a 0 0)) "+*-/%^][!" ++
+		map (\c->(c,createZipFromBinOp c a 1 0)) "=?"
 		-- two more possible
 
 createFoldFromBinOp :: (Char,Integer) -> VT -> ParseState Impl
