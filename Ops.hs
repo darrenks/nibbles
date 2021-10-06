@@ -692,9 +692,12 @@ rawOps = [
 	-- Example: ! ,3"abc" + -> "bdf"
 	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
+	-- Test tuple const: ! "abc" 1 , -> [('a',1),('b',1),('c',1)]
 	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
 	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
 	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
+	-- Test append cons: ! ,3 4 : -> [[1,4],[2,4],[3,4]]
+	-- Test append cons coerce: ! "abc" 3 : -> ["a3","b3","c3"]
 	-- Test vec: ! "abc" .,3,3 + -> ["bdf","bdf","bdf"]
 	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bd","bd"],["bd","bd"]]
 	-- Test anti vec: ! "abc""def" ,3 + -> ["bdf","egi"]
@@ -776,6 +779,9 @@ ifImpl [a1,a2,a3] =
 	else let (coercedType, coerceFn) = coerceEither (ret a2) (ret a3)
 		in "\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1]++") c (a c) (b())" ~> coercedType
 
+zipImpl :: [VT] -> (VT, String)
+zipImpl [a1,a2] = "zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))" ~> VList (elemT a1++elemT a2)
+
 -- todo handle mismatch tuple better (by)
 -- allows ~ to make it a true set up (duplicates removed)
 -- allows option 2nd arg fn that makes it a "on" op
@@ -818,6 +824,12 @@ binOp '^' a = ([xorChr a], "^")
 binOp ']' a = ([orChr a], "max")
 binOp '[' a = ([orChr a], "min")
 binOp '!' a = ([VInt], "(abs.).(-)")
+
+binOp ':' [a,b] = let
+		(ap,apFn) = promoteList (ret a)
+		(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
+	in
+		"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 
 -- don't need these since they will auto vec already
 -- binOp '|' a = (orChr a, ".|.", (0,0))

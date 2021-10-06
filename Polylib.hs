@@ -11,6 +11,7 @@ module Polylib(
 	curryN,
 	flattenTuples,
 	promoteList,
+	promoteListRepeat,
 	appTuple,
 	firstOf,
 	flatten,
@@ -203,6 +204,10 @@ coerceEither leftType rightType =
 promoteList :: [VT] -> (VT, String)
 promoteList [VList t] = (VList t, " id ")
 promoteList t = (VList t, "(:[])")
+
+promoteListRepeat :: [VT] -> (VT, String)
+promoteListRepeat [VList t] = (VList t, " id ")
+promoteListRepeat t = (VList t, " repeat ")
 
 flatten :: VT -> String
 flatten (VList [a]) = "concat." ++ flatten a

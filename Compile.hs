@@ -8,7 +8,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,         promoteList,coerce)
+import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,   promoteListRepeat,promoteList,coerce)
 import Ops
 import Types
 import Expr
@@ -291,18 +291,18 @@ createZipFromBinOp c a@[a1,a2] lhsNeed rhsNeed =
 -- also allow remap of ! "abc" 2 = to be a flipped version of an op? since that is pointless as is (just use non vec version
 
 specialZips :: (?isSimple::Bool) => [VT] -> [(Char, ParseState Impl)]
-specialZips a@[a1,a2] = let 
-		[l1,l2] = map (length.elemT) a
+specialZips a@[a1,a2] = let
+		(a2p,ap2Fn) = promoteListRepeat [a2]
+		[l1,l2] = map (length.elemT) [a1,a2p]
 		flatten = flattenTuples l1 l2
-		flatT = concatMap elemT a
+		flatT = concatMap elemT [a1,a2p]
+		(a1p,ap1Fn) = promoteList (elemT a1)
+		(coercedType, coerceFnA, coerceFnB) = coerce [a1p] (elemT a2p)
 	in
 		[('~',getLambdaValue 1 flatT UnusedArg >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
-		,(':', let -- todo combine with append op, but first need to make anyT not a fn
-			(ap,apFn) = promoteList (elemT a1)
-			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (elemT a2)
-		in
-			createSpecialFn ([VList coercedType], "zipWith $ \\a b->("++coerceFnA++"$"++apFn++"a)++"++coerceFnB++"b"))
-		,(',',createSpecialFn ([VList flatT], "zipWith $ \\a b->"++flatten++" $ (a,b)"))] ++ 
+		,(':', createSpecialFn ([VList coercedType], "\\a1 b1->zipWith (\\a b->("++coerceFnA++"$ "++ap1Fn++"a)++"++coerceFnB++"b) a1 ("++ap2Fn++"b1)"))
+		,(',',createSpecialFn ([VList flatT], "\\a1 b1->zipWith (\\a b->"++flatten++" $ (a,b)) a1 ("++ap2Fn++"b1)"))
+		] ++ -- ,('z',toImpl $ zipImpl a)] ++ 
 		map (\c->(c,createZipFromBinOp c a 0 0)) "+*-/%^][!" ++
 		map (\c->(c,createZipFromBinOp c a 1 0)) "=?"
 		-- two more possible
