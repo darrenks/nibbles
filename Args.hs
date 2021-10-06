@@ -63,6 +63,7 @@ argImplicit = do
 	then parseError "Expecting more expressions at EOF"
 	else do
 		context <- gets pdContext
+		modify $ \s -> s { pdImplicitArgUsed = True }
 		argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
 
 flattenArg (Arg impls (LambdaArg)) = impls

@@ -38,6 +38,7 @@ data ParseData = ParseData { pdCode :: Code
                            , pdNib :: SmartList Int
                            , pdLit :: DList.DList Char
                            , pdDataUsed :: Bool -- (used directly, not through $)
+                           , pdImplicitArgUsed :: Bool -- to disable commutative extensions
                            , pdLitWarnings :: [String] }
 type ParseState = State ParseData
 
@@ -88,7 +89,7 @@ appendRepA (nib,lit) = appendRep (nib,concat lit)
 
 blankRep :: Code -> [Arg] -> ParseData
 blankRep code context =
-	ParseData code context (newSmartList []) (DList.fromList "") False []
+	ParseData code context (newSmartList []) (DList.fromList "") False False []
 
 getNib :: ParseData -> [Int]
 getNib = smartToList . pdNib

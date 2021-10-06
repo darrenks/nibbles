@@ -85,7 +85,7 @@ If your program produces multiple values instead of 1, Nibbles will insert impli
 $Output
 	53
 
-But if the first value is a non-string list then it will attempt to do a foldr1 over the list.
+But if the first value is a non-string list then it will attempt to do a foldl1 over the list.
 
 	,5 +@$
 $Output

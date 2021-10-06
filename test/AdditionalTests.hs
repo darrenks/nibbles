@@ -112,7 +112,7 @@
 -- RawTest "1 2 3": *2$ -> "2\n4\n6\n"
 
 ----- Test implicit ops with tuples:
--- RawTest: z,3"abc" ~$;$ "" $ -> "1c\n"
+-- RawTest: z,3"abc" ~$;$ "" $ -> "3a\n"
 -- RawTest: z,3"abc" $ -> "1\n2\n3\n"
 -- RawTest: ,3 ~$"c" -> "1 c\n2 c\n3 c\n"
 -- RawTest: z,3"abc" "-" -> "1-a\n2-b\n3-c\n"

@@ -4,6 +4,7 @@ module Compile(compile,padToEvenNibbles) where
 
 import Data.List(inits,intercalate)
 import Control.Monad (msum)
+import Data.List.Split(splitOn)
 import Data.Maybe
 import State
 import qualified Data.Set as Set
@@ -96,11 +97,12 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 				dat <- parseDataExpr
 				return (Just dat,finishedPrev)
 			else do
+				let changeFoldrToFoldl = intercalate "(foldl1.flip)" . splitOn "foldr1"
 				result <- case implType prev of
 					VInt | not ?isSimple -> do
 						(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
 						if last argsUsed then do
-							return $ (applyImpl (app1Hs ("("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
+							return $ (applyImpl (app1Hs (changeFoldrToFoldl $ "("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
 						else if argsUsed == [True,False] then do
 							return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 						else do
@@ -110,7 +112,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 					VList e | not ?isSimple && e /= [VChr] -> do
 						(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
 						if or $ drop (length e) argsUsed then do
-							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
+							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
 						else if or $ take (length e) argsUsed then do
 							return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
 						else if ret (implType impl1) == [vstr] then do
@@ -155,13 +157,14 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 
 -- todo fn name is a lie, also updates context
 -- add the current rep to the partialFinalState
+-- arg is the snd thing (monad state is the first)
 putAddRep :: ParseData -> ParseState ()
-putAddRep (ParseData code context nib lit dataUsed warnings) = do
+putAddRep (ParseData code context nib lit dataUsed implicitArgUsed warnings) = do
 	appendRepH (nib,lit)
 	dataUsed1 <- gets pdDataUsed
 	context1 <- gets pdContext
 	warnings1 <- gets pdLitWarnings
-	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1 }
+	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1, pdImplicitArgUsed=implicitArgUsed }
 
 unionUsed :: [Arg] -> [Arg] -> [Arg]
 unionUsed lhs rhs =
@@ -361,7 +364,9 @@ getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 		Right _ -> return Nothing
 		Left (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
-		nibs = (prevNibs++[pdNib $ snd $ head memoArgs])
+		afterState = snd $ head memoArgs
+		theseNibs = pdNib $ afterState
+		nibs = (prevNibs++if pdImplicitArgUsed afterState then [newSmartList []] else [theseNibs])
 		prevArgTypes = map implType prevArgs
 
 getLambdaValue numRets argType argUsedness = do
