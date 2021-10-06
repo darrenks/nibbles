@@ -114,7 +114,7 @@ One unexpected thing to warn you about is the true and false clauses of a `?` ha
 
 $Solution
 
-	? - ;+_ 100 "large" @
+	? - ;+_ 100 "large" $
 $HiddenOutput "1 2 3"
 	6
 $HiddenOutput "50 51"

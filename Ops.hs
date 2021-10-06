@@ -511,21 +511,18 @@ rawOps = [
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0
 	-- Test: ?,:5 5 $ 0 -> [5,5]
-	lowPriorityOp(["?",","], [15,13], [list, Fn False OptionalArg $ \a1 -> (1,a1), fnx (\[a1,a2]->(length$ret a2,[]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
-		"\\c a b->"++ coerceFn ++ "$ iff (not (null c)) (a c) (b())" ~> coercedType
-		),
+	lowPriorityOp(["?",","], [15,13], list:ifBodyArgs, ifImpl),
 	-- Desc: if/else todo delet fn arg
 	-- Example: ? +0 0 "T" "F" -> "F"
 	-- Test coerce: ? +1 0 1 "F" -> "1"
 	-- Test mult rets: ? +0 0 ~1 2 3 4 $ -> 3,4
 	-- Test using cond value: ? +1 0 $ 5 -> 1
 	-- Test cond value doesn't clobber implicit: ;5 ? +1 0 -> 5,5
+	-- Test false clause default: ? +0 0 "hi" ~ -> ""
 	-- todo auto value "nothing" which coerces usefully
 	-- todo match number of rets in false clause (similarly to what should be done for :)
 	-- todo make clauses 1 fn, that way they could share let statements
-	op("?", [15], [num, Fn False OptionalArg $ \a1 -> (1,a1), Fn False OptionalArg (\[a1,a2]->(length$ret a2,[a1]))], \ts -> let (coercedType, coerceFn) = coerceEither (ret$ts!!1) (ret$ts!!2) in
-		"\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1 ts]++") c (a c) (b c)" ~> coercedType
-		),
+	op("?", [15], num:ifBodyArgs, ifImpl),
 	-- Desc: from base str (todo choose lit name)
 	-- todo also consider returning the stuff after the parsed number...
 	-- todo try to get auto value 10 (can use it since index by does
@@ -769,6 +766,15 @@ foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
+
+ifBodyArgs = 
+	[ Fn False OptionalArg $ \a1 -> (1,a1)
+	, OrAuto "default" $ fnx (\[a1,a2]->(length$ret a2,[]))]
+ifImpl [a1,a2,a3] = 
+	if a3==OptionYes -- default
+	then "\\c a->if "++truthy [a1]++" c then a c else "++defaultValue (ret a2) ~> ret a2
+	else let (coercedType, coerceFn) = coerceEither (ret a2) (ret a3)
+		in "\\c a b->"++coerceFn ++ "$ (iff."++truthy [a1]++") c (a c) (b())" ~> coercedType
 
 -- todo handle mismatch tuple better (by)
 -- allows ~ to make it a true set up (duplicates removed)
