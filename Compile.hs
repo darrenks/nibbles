@@ -115,10 +115,11 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
 						else if or $ take (length e) argsUsed then do
 							return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
-						else if ret (implType impl1) == [vstr] then do
-							let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
-							let (rt,f) = Polylib.join (VList e)
-							return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
+						-- this is moderately annoying
+-- 						else if ret (implType impl1) == [vstr] then do
+-- 							let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
+-- 							let (rt,f) = Polylib.join (VList e)
+-- 							return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
 						else do
 							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
 							afterCode <- gets pdCode

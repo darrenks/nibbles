@@ -118,13 +118,7 @@ $Output
 	3
 	8
 
-Unless that second value is a string, then it will assume you wanted to join on that string.
-
-	,3 ", "
-$Output
-	1, 2, 3
-
-These rules (except the join one) also apply if the first value is an integer, except that it does a "range from 1 to n" to generate a list first.
+These rules also apply if the first value is an integer, except that it does a "range from 1 to n" to generate a list first.
 
 	3+
 $Output

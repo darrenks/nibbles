@@ -8,6 +8,12 @@ improve auto map (like the case of $ and @ on separate lines
 	alg idea: if not consume all input: auto map on any inputs that read last line.
 	no default 100/1000/etc.
 
+add an implicit arg and concat op if there is a "required" unused arg (like they did a drop take instead of a drop). Need a new class of usableness though
+
+consider making implicit fold, be a fold with an initial identity value so it could work with + or *.
+
+remove the extra separator added to lists when auto printing? is this actually useful or annoying? http://golf.shinh.org/p.rb?Separator td_?`~_+ /+_~"|" $
+
 consider making - do something special in more fns
 
 consider making ~~ or an unused arg in ~ mean that this tuple is now a nextState,nextValue pair (and need options to set initial state and what to do with result state)

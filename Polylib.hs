@@ -73,6 +73,7 @@ finish :: VT -> Bool -> String
 finish (VList tt) isLast
 	| d >= 3 = joinC "[]"
 	| d == 2 = joinC "firstSep"
+	-- consider not adding space after thing? grand scheme?
 	| d == 1 = (if isLast then id else compose1 "(++secondSep)") $ joinC "secondSep" -- todo might not want that newline for empty list? like unlines
 	where
 		d = sdim tt

@@ -122,10 +122,11 @@ rawOps = [
 	extendOp [":",":"] associativeReason ("iq", [7,7], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,2,3,4]
+	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,3,2,1]
 	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
 	-- Test coerce first: <4 aun 2 1 -> [2,1,1,1]
-	op(["aun"], [], [autoTodo any1, autoTodo $ fn id], \[a1,a2]->
+	-- Test fibonnaci: <5 aun 1 +<2 $ -> [1,1,2,3,5]
+	op(["aun"], [], [autoTodo any1, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]->
 		let (a1ListT,a1ListF)=promoteList [a1] in
 			"\\a f->appendUntilNull ("++a1ListF++"a) ("++coerceTo [a1ListT] (ret a2)++".f)" ~> a1ListT),
 	-- Desc: singleton
@@ -305,7 +306,7 @@ rawOps = [
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl),
-	-- Desc: transpose
+	-- Desc: transpose (maybe this should even be 1 nib... very common for 2d lists and list of tuples).
 	-- Example: tr "hi""yo" -> ["hy","io"]
 	-- Test mismatch dims: tr "hi""y" -> ["hy","i"]
 	-- Test mismatch dims: tr "h""yo" -> ["hy","o"]
@@ -318,7 +319,7 @@ rawOps = [
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
 	
-	-- Desc: grouped partition
+	-- Desc: grouped partition (todo rename to splitBy)
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
 	-- so that you may have access to the final non matching sequence.
@@ -708,7 +709,7 @@ rawOps = [
 	-- Test: !"abc" "ccb"? -> [3,3,2]
 	op("!", [], [list, any1, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	
-	-- Desc: special folds (todo vec)
+	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args)
 	-- Example: `! "asdf" ] -> 's'
 	-- Test: `! "" * -> 1
 	-- Test: `!,3] `!,3[ `!,3+ `!,3* `!,3- `!,3% `!,3^ -> 3,1,6,6,2,1,1
