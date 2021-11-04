@@ -331,7 +331,7 @@ rawOps = [
 	op("gw", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
-	-- Desc: groupOn
+	-- Desc: groupBy
 	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: gp ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
@@ -606,10 +606,10 @@ rawOps = [
 	-- Test end splits: split "abca" "a" -> ["","bc",""]
 	op("split",[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
 	
-	-- Desc: groupAllOn
-	-- Example: groupAllOn "cabcb" $ -> ["a","bb","cc"]
-	-- Test: groupAllOn "cabcb" ~$ -> ["cc","a","bb"]
-	op("groupAllOn",[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
+	-- Desc: groupAllBy
+	-- Example: groupAllBy "cabcb" $ -> ["a","bb","cc"]
+	-- Test: groupAllBy "cabcb" ~$ -> ["cc","a","bb"]
+	op("groupAllBy",[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
 		\map (map (\\(e,_,_)->e)) $"++
 		(if o==OptionYes then "sortOn (\\((_,_,ind):_)->ind) $" else "")++
 		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
