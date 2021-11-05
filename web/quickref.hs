@@ -95,22 +95,6 @@ toQuickRef isSimple ((types,_)) = [
 		typeStrs = catMaybes $ map typeToStr types
 		sort_type = if null types then "" else rootType $ Data.List.head typeStrs
 
-typeToStr (Cond desc _) = Just desc
-typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
-typeToStr (AutoOption _) = Nothing
-typeToStr (AutoNot (Fn _ _ _)) = Nothing
-typeToStr (OrAuto _ a) = typeToStr a
-typeToStr (Fn True _ _) = Just "fn"
-typeToStr (Fn False _ _) = Just "fn" -- later... |C"
-typeToStr (AutoDefault t _) = typeToStr t
-typeToStr (AutoData t) = typeToStr t
-typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
-typeToStr (OptionalFn _) = Just $ "fn?"
-typeToStr (ZipMode) = Just "zipop"
-typeToStr (FoldMode) = Just "foldop"
-typeToStr (CharClassMode) = Just "chClass"
-typeToStr AnyS = Just "any*"
-
 prettyType VInt = "int"
 prettyType (VList [VChr]) = "str"
 prettyType VChr = "chr"

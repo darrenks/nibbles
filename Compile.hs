@@ -174,15 +174,18 @@ unionUsed lhs rhs =
 	where unionUsed1 lhs rhs =
 		rhs { implUsed = if implUsed rhs==UsedArg then implUsed rhs else implUsed lhs }
 
+data ArgAttemptResult =
+	Success
+		[(Impl, ParseData)] -- the memoized args after parsing arg
+		[Impl] -- the arg implementation (or empty)
+	| FailConstFn Impl -- a constant resulting from unused args of a fn
+	| FailTypeMismatch String -- reason for failure (aka "arg 2 is int")
+
 tryArg :: (?isSimple::Bool) => ArgSpec ->
 		[VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
 		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
-		-> ParseState (
-			Either
-				([(Impl, ParseData)], -- the memoized args after parsing arg
-             [Impl]) -- the arg implementation (or empty)
-            (Maybe Impl)) -- a constant resulting from unused args of a fn
+		-> ParseState ArgAttemptResult
 tryArg (Cond desc c) prevTypes nibs memoArgs = do
 	let (impl,nextState) = head memoArgs
 	state <- get
@@ -192,17 +195,17 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 		&& c (MatchTestData (prevTypes++[implType impl]) nibs state)
 	then do
 		putAddRep nextState
-		return $ Left (tail memoArgs, [impl])
-	else return $ Right Nothing
+		return $ Success (tail memoArgs) [impl]
+	else return $ FailTypeMismatch $ "arg " ++ show (length prevTypes+1) ++ " is " ++ show (implType impl)
 
 tryArg (ParseArg _ parser) _ _ _ = do
 	(t,code) <- parser
-	return $ Left (error"todo memo args", [noArgsUsed { implType=t, implCode=hsAtom code }])
+	return $ Success (error"todo memo args") [noArgsUsed { implType=t, implCode=hsAtom code }]
 
 tryArg (Auto binOnly) _ _ memoArgs = do
 	let lit = if binOnly then [] else snd tildaOp
 	matched <- match (fst tildaOp, lit)
-	return $ if matched then Left (tail memoArgs, []) else Right Nothing
+	return $ if matched then Success (tail memoArgs) [] else FailTypeMismatch "arg isn't ~"
 
 tryArg AnyS prevTs _ _ =
 	tryArg (Fn False UnusedArg (const (1,[]))) prevTs undefined undefined
@@ -213,9 +216,9 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	-- todo make fn0 cleaner here?
 	(impl,used) <- getLambdaValue nRets argT argUsedness
 	if reqArgUse && not (or used) then
-		return $ Right $ Just impl
+		return $ FailConstFn impl
 	else
-		return $ Left (error"memoized args cannot be used after fn", [impl])
+		return $ Success (error"memoized args cannot be used after fn") [impl]
 
 tryArg (OptionalFn f) prevTs _ memoArgs = do
 	let (nRets, argT) = f prevTs
@@ -223,14 +226,14 @@ tryArg (OptionalFn f) prevTs _ memoArgs = do
 	code <- gets pdCode
 	context <- gets pdContext
 	if not (or used) then
-		return $ Left ((impl, blankRep code context):error "cannot used memo args after the one after optional fn", [noArgsUsed { implType=ItWasAConstant}])
+		return $ Success ((impl, blankRep code context):error "cannot used memo args after the one after optional fn") [noArgsUsed { implType=ItWasAConstant}]
 	else
-		return $ Left (head $ exprsByOffset $ Thunk code context, [impl])
+		return $ Success (head $ exprsByOffset $ Thunk code context) [impl]
 
 tryArg (OrAuto _ nonAutoSpec) prevTs nibs memoArgs = do
 	matched <- match tildaOp
 	if matched 
-	then return $ Left $ (tail memoArgs, [noArgsUsed { implType=OptionYes }])
+	then return $ Success (tail memoArgs) [noArgsUsed { implType=OptionYes }]
 	else tryArg nonAutoSpec prevTs nibs memoArgs
 
 
@@ -238,23 +241,23 @@ tryArg (AutoNot fn) prevTs _ _ = do
 	matched <- match tildaOp
 	afterArg <- tryArg fn prevTs (error"impossible 43") (error"impossible 44")
 	return $ case afterArg of
-		Left (memo,[impl]) -> 
+		Success memo [impl] -> 
 			let
 				truthyImpl = app1Hs ((truthy $ ret $ implType impl)++".") impl
 				modifiedImpl = if matched then app1Hs "not." truthyImpl else truthyImpl
-			in Left (memo,[modifiedImpl])
-		Right _ -> error "can't use not of const fn yet"
+			in Success memo [modifiedImpl]
+		FailConstFn _ -> error "can't use not of const fn yet"
 
 tryArg (AutoOption desc) prevTs nibs memoArgs = do
 	matched <- match tildaOp
-	return $ Left $ if matched
-		then (tail memoArgs, [noArgsUsed { implType=OptionYes }])
-		else (     memoArgs, [noArgsUsed { implType=OptionNo }])
+	return $ if matched
+		then Success (tail memoArgs) [noArgsUsed { implType=OptionYes }]
+		else Success       memoArgs  [noArgsUsed { implType=OptionNo }]
 
 tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
-	then return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=i v }])
+	then return $ Success (tail memoArgs) [noArgsUsed { implType=VInt, implCode=i v }]
 	else tryArg tspec prevTypes nibs memoArgs
 
 tryArg (AutoData tspec) prevTypes nibs memoArgs = do
@@ -262,20 +265,20 @@ tryArg (AutoData tspec) prevTypes nibs memoArgs = do
 	if matched
 	then do
 		modify $ \s -> s { pdDataUsed = True }
-		return $ Left (tail memoArgs, [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }])
+		return $ Success (tail memoArgs) [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }]
 	else tryArg tspec prevTypes nibs memoArgs
 
 tryArg CharClassMode _ _ memoArgs = do
 	impl <- parse1Nibble "char class mode" $ zip [0..] charClasses
-	return $ Left (error"memoized args cannot be used after char class mode (but could be)", [impl])
+	return $ Success (error"memoized args cannot be used after char class mode (but could be)") [impl]
 
 tryArg ZipMode prevTypes _ memoArgs = do
 	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips prevTypes)
-	return $ Left (error"memoized args cannot be used after zip mode (but could be)", [impl])
+	return $ Success (error"memoized args cannot be used after zip mode (but could be)") [impl]
 
 tryArg FoldMode prevTypes _ memoArgs = do
 	impl <- parse1Nibble "fold mode" $ zip [0..] (specialFolds prevTypes)
-	return $ Left (error"memoized args cannot be used after fold mode (but could be)", [impl])
+	return $ Success (error"memoized args cannot be used after fold mode (but could be)") [impl]
 
 createImplMonad t hs = return $ noArgsUsed { implType=t, implCode=hs }
 
@@ -354,16 +357,17 @@ charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $
 	,('$',"\\c->isPunctuation c || isSymbol c")
 	,('!',"\\c->not $ isPunctuation c || isSymbol c")]
 
--- get the args (possibly fail), ok to modify parse state and fail
-getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe ([Impl]))
+-- get the args (possibly fail with string reason), ok to modify parse state and fail
+getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
 getArgs = getArgsH [] []
-getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Maybe [Impl])
-getArgsH prevArgs _ [] _ = return $ Just prevArgs
+getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
+getArgsH prevArgs _ [] _ = return $ Left prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 	arg <- tryArg spec prevArgTypes nibs memoArgs
 	case arg of
-		Right _ -> return Nothing
-		Left (nextMemoizedArgs, impl) -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
+		FailConstFn _ -> return $ Right "lambda fn does not use its argument but is required to"
+		FailTypeMismatch reason -> return $ Right reason
+		Success nextMemoizedArgs impl -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
 		afterState = snd $ head memoArgs
 		theseNibs = pdNib $ afterState
@@ -443,45 +447,57 @@ exprsByOffset (Thunk code context) =
 	getValues (Thunk code context) rest : rest where
 		rest = exprsByOffset (Thunk (nextOffset code) context)
 
+data FailedMatch = FailedMatch {
+	opName :: String,
+	matchFailureReason :: String,
+	expectedTypes :: [String]
+}
+
 getValue :: (?isSimple::Bool) => [[(Impl, ParseData)]] -> ParseState Impl
 getValue memoArgOffsets = do
 	let ops = if ?isSimple then simpleOps else allOps
 	code <- gets pdCode
 	if empty code
 	then argImplicit
-	else getValueH ops memoArgOffsets
-getValueH [] _ = parseError "Parse Error: no matching op"
-getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets = do
+	else getValueH ops memoArgOffsets []
+getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ attempts
+	where attempts = flip concatMap failedMatches $
+		\(FailedMatch opName matchFailureReason expectedTypes) ->
+			"\nnot "++opName++" "++unwords expectedTypes++", "++matchFailureReason
+getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
 	code <- gets pdCode
-	let tryRest = getValueH otherOps memoArgOffsets
+	let tryRest newFailedMatches = getValueH otherOps memoArgOffsets newFailedMatches
 	-- Low priority extensions don't match if their snd nibble is in an extension (and thus would be renamed).
 	let reconstructedLit = dToList $ pdLit $ snd $ head $ head memoArgOffsets
 	origState <- get
 	match <- match (nib,lit)
-	if not match then tryRest
+	if not match then tryRest failedMatches
 	else if not isPriority && isBinary code && concat lit !! 1 /= head reconstructedLit
 	then do
 		put origState
-		tryRest
+		tryRest failedMatches
 	else do
 		afterOpCode <- gets pdCode
 		let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
 		attempt <- convertOp valList op code
 		case attempt of
-			Just impl -> return impl
-			Nothing -> do
+			Left impl -> return impl
+			Right reason -> do
 				put origState
-				tryRest
+				let opName = concat lit
+				    expectedTypes = catMaybes $ map typeToStr $ fst op
+				tryRest $ (FailedMatch opName reason expectedTypes) : failedMatches
 
-convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Maybe Impl)
+-- returns impl or arg types that caused no match
+convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Either Impl String)
 convertOp memoizedArgList (ats,behavior) preOpCode = do
 	maybeArgs <- getArgs ats memoizedArgList
 	case (maybeArgs, behavior) of
-		(Nothing,_) -> return Nothing
-		(Just args, LitWarn msg) -> do
+		(Right reason,_) -> return $ Right reason
+		(Left args, LitWarn msg) -> do
 			parseLitWarning msg
-			return Nothing
-		(Just args, CodeGen impl) -> do
+			return $ Right "not sure what the reason is (todo)"
+		(Left args, CodeGen impl) -> do
 			afterArgsCode <- gets pdCode
 		
 			-- Temporarily put the code pointer back for useful op error messages
@@ -496,7 +512,7 @@ convertOp memoizedArgList (ats,behavior) preOpCode = do
 			-- todo, might need to do swapping elsewhere if the first arg could have been a tuple too, this assumes it was 1 that is why rotating is a true swap
 			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
 			result <- applyFirstClassFn unpairedFirst
-			return $ Just result
+			return $ Left result
 
 -- todo memoize the parse
 -- todo could put in getValue if wanted to support real first class functions

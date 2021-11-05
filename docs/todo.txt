@@ -53,7 +53,6 @@ debug features to add:
 	show context values
 	verbose literate mode (and/or print tree) (with arg names, types, desc, indentation, debruijn names)
 	see parse tree
-	better op not found error message (show arg types) (hard because memoize of arg types is lazy)
 	could support parenthesis that do nothing but cause error if parse isn't as expected
 	could support naming vars to not need DeBruijn indices in lit
 
