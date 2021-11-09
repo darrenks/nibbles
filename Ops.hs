@@ -687,9 +687,19 @@ rawOps = [
 	-- Test: <3 `, ~ -> [0,1,2]
 	op(["`",","], [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	
-	-- Desc: find indices (todo make elemIndices if fn is const)
-	-- Example: FI "a b" \$a -> [1,3]
-	op("FI", [], [list, AutoNot $ fn (elemT.a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
+	-- Desc: find indices by
+	-- Example: `? "a b" \$a -> [1,3]
+	op("`?", [], [list, AutoNot $ Fn True UnusedArg $ \[a1]->(1,elemT a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
+	
+	-- Desc: find indices
+	-- Example: `? "a b" ' ' -> [2]
+	-- Test coerce: `? "a b" " " -> [2]
+	-- Test not: `? "a b" ~' ' -> [1,3]
+	op("`?", [{-can use same opcode as find indices by-}], [list, AutoOption "not", Fn False UnusedArg $ \[a1,o]->(1,elemT a1)], \[a1,o,a2]->("\\a needleFn->let needle = ("++coerceTo (elemT a1) (ret a2)++"$needleFn()) in \
+			\map (\\i->fromIntegral i+1) $ " ++
+				if o==OptionNo then "elemIndices needle a"
+				else "findIndices (\\e->e /= needle) a"
+		) ~> vList1 VInt),
 
 	-- Desc: zipWith (todo ops don't handle tuples well) todo test vectorize on ~ with scalar
 	-- Example: ! ,3"abc" + -> "bdf"

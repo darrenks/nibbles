@@ -246,7 +246,7 @@ tryArg (AutoNot fn) prevTs _ _ = do
 				truthyImpl = app1Hs ((truthy $ ret $ implType impl)++".") impl
 				modifiedImpl = if matched then app1Hs "not." truthyImpl else truthyImpl
 			in Success memo [modifiedImpl]
-		FailConstFn _ -> error "can't use not of const fn yet"
+		FailConstFn impl -> FailConstFn impl
 
 tryArg (AutoOption desc) prevTs nibs memoArgs = do
 	matched <- match tildaOp
