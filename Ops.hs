@@ -657,32 +657,32 @@ rawOps = [
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 		
 	-- Desc: nary cartesian product
-	-- Example: cart rs 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
-	op("cart",[],[listOf list],"sequence"~>a1),
-	-- Desc: permutations
-	-- Example: perm "abc" -> ["abc","bac","cba","bca","cab","acb"]
-	op("perm",[],[list],"permutations"~>vList1.a1),
-	-- Desc: subsequences length
+	-- Example: `* rs 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
+	op(["`","*"],[],[listOf list],"sequence"~>a1),
+	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
+	-- Example: `P "abc" -> ["abc","bac","cba","bca","cab","acb"]
+	op(["`","P"],[],[list],"permutations"~>vList1.a1),
+	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat
 	-- auto means 2
-	-- Example: subN 2 "abc" -> ["ab","ac","bc"]
-	-- Test: subN ~ "abc" -> ["ab","ac","bc"]
-	-- Test: subN 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
-	-- Test: subN -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
-	op("subN",[],[AutoDefault int 2, list],"\\n a->\
+	-- Example: `_ 2 "abc" -> ["ab","ac","bc"]
+	-- Test: `_ ~ "abc" -> ["ab","ac","bc"]
+	-- Test: `_ 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	-- Test: `_ -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
+	op(["`","_"],[],[AutoDefault int 2, list],"\\n a->\
 		\if n>0 then subsequencesN n a \
 		\else if n==0 then subsequences a \
 		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	
 	-- Desc: abs diff
-	-- Example: Ab 5 3 Ab 3 5 -> 2,2
-	op("Ab", [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
+	-- Example: != 5 3 != 3 5 -> 2,2
+	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
 
 	-- Desc: range from 0 ... (maybe don't need this?
-	-- Example: RR 3 -> [0,1,2]
-	-- Test: <3 RR ~ -> [0,1,2]
-	op(["RR"], [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
+	-- Example: `, 3 -> [0,1,2]
+	-- Test: <3 `, ~ -> [0,1,2]
+	op(["`",","], [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	
 	-- Desc: find indices (todo make elemIndices if fn is const)
 	-- Example: FI "a b" \$a -> [1,3]
@@ -724,17 +724,17 @@ rawOps = [
 	op("`~", [], [list, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: to uppercase
-	-- Example: TU 'a' -> 'A'
-	-- Test: ."Hi there!"TU$ -> "HI THERE!"
-	op("TU", [], [char], "myOrd.toUpper.myChr"~>a1),
+	-- Example: `> 'a' -> 'A'
+	-- Test: ."Hi there!"`>$ -> "HI THERE!"
+	op(["`",">"], [], [char], "myOrd.toUpper.myChr"~>a1),
 	-- Desc: to lowercase
-	-- Example: TL 'A' -> 'a'
-	-- Test: ."Hi there!"TL$ -> "hi there!"
-	op("TL", [], [char], "myOrd.toLower.myChr"~>a1),
+	-- Example: `< 'A' -> 'a'
+	-- Test: ."Hi there!"`<$ -> "hi there!"
+	op(["`","<"], [], [char], "myOrd.toLower.myChr"~>a1),
 	
 	-- Desc: list of 2 lists
-	-- Example: L2 ,2 ,1 -> [[1,2],[1]]
-	op("L2", [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
+	-- Example: `: ,2 ,1 -> [[1,2],[1]]
+	op(["`",":"], [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	
 	
 	-- Desc: debug arg type
