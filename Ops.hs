@@ -148,10 +148,18 @@ rawOps = [
 		in
 			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 		),
+		
+	-- Desc: signum
+	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
+	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
+	-- Desc: equal? (todo coerce or restrict)
+	-- todo consider returning list of the value or empty rather than 1 0
+	-- Example: == 1 2 == 1 1 -> 0,1
+	op(["=","="],[],[any1, autoTodo {- truthy? -} any1],"(bToI.).(==)" ~> VInt),
+		
 	-- Desc: max
 	-- Example: ]4 5 -> 5
 	-- Test: ]~ *~4 -> 0
-
 	-- todo if change, update it's lit warning catchall at end
 	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, andC num sndArgLarger], "max"~>orChr),
 	-- Desc: add
@@ -444,7 +452,7 @@ rawOps = [
 		"(flip$(concat.).genericReplicate)."++apf ~> ap1),
 	-- Desc: inits
 	-- Example: is,3 -> [[],[1],[1,2],[1,2,3]]
-	extendOp ["=","~"] genericReason ("is", [14,0], [list], "inits"~>VList),
+	op("is", [14,0], [list], "inits"~>VList),
 	
 -- conflicts with exponentiation
 --		-- Test nowrap: =~5"asdf" -> ' '
@@ -591,24 +599,16 @@ rawOps = [
 	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
 	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
 	op(["`",")"], [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
-	
-	-- Desc: signum
-	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
-	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
-	-- Desc: == (todo coerce or restrict)
-	-- todo consider returning list of the value or empty rather than 1 0
-	-- Example: eq 1 2 eq 1 1 -> 0,1
-	op("eq",[],[any1, autoTodo {- truthy? -} any1],"(bToI.).(==)" ~> VInt),
-		
+			
 	-- Desc: split list (todo promote to list when needed)
-	-- Example: split ,5 :3~ -> [[1,2],[4,5]]
-	-- Test end splits: split "abca" "a" -> ["","bc",""]
-	op("split",[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
+	-- Example: `% ,5 :3~ -> [[1,2],[4,5]]
+	-- Test end splits: `% "abca" "a" -> ["","bc",""]
+	op(["`","%"],[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
 	
 	-- Desc: groupAllBy
-	-- Example: groupAllBy "cabcb" $ -> ["a","bb","cc"]
-	-- Test: groupAllBy "cabcb" ~$ -> ["cc","a","bb"]
-	op("groupAllBy",[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
+	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
+	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
+	op(["=","~"],[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
 		\map (map (\\(e,_,_)->e)) $"++
 		(if o==OptionYes then "sortOn (\\((_,_,ind):_)->ind) $" else "")++
 		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
@@ -652,8 +652,8 @@ rawOps = [
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	op("or",[],[autoTodo any1,any1],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
 	-- Desc: strip
-	-- Example: Strip " bcd\n\n" -> "bcd"
-	op("Strip",[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
+	-- Example: -~ " bcd\n\n" -> "bcd"
+	op(["-","~"],[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 		
 	-- Desc: nary cartesian product
