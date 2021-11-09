@@ -81,13 +81,14 @@ main=do
 			else do
 				when (parseMode == FromLit) $ do
 					let (_,_,binLit,_) = compileFn (Nib (paddedNibs) 0)
-					-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse instead)
+					-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse error instead)
 					when (binLit /= lit) $ do
 						hPutStrLn stderr "Warning: your code's binary would actual extract to:"
 						hPutStrLn stderr binLit
 						hPutStrLn stderr "instead of:"
 						hPutStrLn stderr lit
-					hPutStrLn stderr $ reverse $ reverse $ "size = " ++ (show $ length bRaw) ++ " nibbles"
+					hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $ 
+						"size = " ++ (show $ length bRaw) ++ " nibbles"
 				return nibBytes
  			fullHs <- toFullHs impl maybeNibBytes reader
  			writeFile "out.hs" fullHs

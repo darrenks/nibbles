@@ -481,22 +481,27 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
 		let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
 		attempt <- convertOp valList op code
 		case attempt of
-			Left impl -> return impl
-			Right reason -> do
+			OpMatch impl -> return impl
+			OpLitWarn msg -> do
+				put origState
+				parseLitWarning msg
+				tryRest failedMatches
+			OpTypeMismatch reason -> do
 				put origState
 				let opName = concat lit
 				    expectedTypes = catMaybes $ map typeToStr $ fst op
 				tryRest $ (FailedMatch opName reason expectedTypes) : failedMatches
 
+data OpMatchResult = OpMatch Impl | OpTypeMismatch String | OpLitWarn String
+
 -- returns impl or arg types that caused no match
-convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState (Either Impl String)
+convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState OpMatchResult
 convertOp memoizedArgList (ats,behavior) preOpCode = do
 	maybeArgs <- getArgs ats memoizedArgList
 	case (maybeArgs, behavior) of
-		(Right reason,_) -> return $ Right reason
+		(Right reason,_) -> return $ OpTypeMismatch reason
 		(Left args, LitWarn msg) -> do
-			parseLitWarning msg
-			return $ Right "not sure what the reason is (todo)"
+			return $ OpLitWarn msg
 		(Left args, CodeGen impl) -> do
 			afterArgsCode <- gets pdCode
 		
@@ -512,7 +517,7 @@ convertOp memoizedArgList (ats,behavior) preOpCode = do
 			-- todo, might need to do swapping elsewhere if the first arg could have been a tuple too, this assumes it was 1 that is why rotating is a true swap
 			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
 			result <- applyFirstClassFn unpairedFirst
-			return $ Left result
+			return $ OpMatch result
 
 -- todo memoize the parse
 -- todo could put in getValue if wanted to support real first class functions
