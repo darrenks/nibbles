@@ -150,8 +150,8 @@ rawOps = [
 		),
 		
 	-- Desc: signum
-	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
-	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
+	-- Example: `$ *~1 `$ 0 `$ 2 -> -1,0,1
+	op("`$",[],[autoTodo {- -1? -} int], "signum" ~> a1),
 	-- Desc: equal? (todo coerce or restrict)
 	-- todo consider returning list of the value or empty rather than 1 0
 	-- Example: == 1 2 == 1 1 -> 0,1
@@ -340,10 +340,10 @@ rawOps = [
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: groupBy
-	-- Example: gp ,5 /$2 -> [[1],[2,3],[4,5]]
-	-- Test tuple: gp .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
-	-- Test tuple ret: gp ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp ["\\","&"] genericReason ("gp", [11,9], [list, fn (elemT.a1)],
+	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
+	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
+	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
+	extendOp ["\\","&"] genericReason ("`=", [11,9], [list, fn (elemT.a1)],
 		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
@@ -410,22 +410,22 @@ rawOps = [
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: chunksOf
-	-- Example: rs2,5 -> [[1,2],[3,4],[5]]
-	-- Test doesnt get swallowed by ?, : ?rs 1"...a.."~ \/$$a -> 4
-	-- Test lazy: <3 rs2,^10 100 -> [[1,2],[3,4],[5,6]]
-	-- Test: rs~,5 -> [[1,2],[3,4],[5]]
-	-- Test negative: rs -2 ,5 -> [[1],[2,3],[4,5]]
-	extendOp [",","%"] genericReason ("rs", [13,9], [AutoDefault num 2, list], "\\n a->if n<0 \
+	-- Example: `/2,5 -> [[1,2],[3,4],[5]]
+	-- Test doesnt get swallowed by ?, : ?`/ 1"...a.."~ \/$$a -> 4
+	-- Test lazy: <3 `/2,^10 100 -> [[1,2],[3,4],[5,6]]
+	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
+	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
+	extendOp [",","%"] genericReason ("`/", [13,9], [AutoDefault num 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks
-	-- Example: nc 2 ,6 -> [[1,2,3],[4,5,6]]
-	-- Test: nc 2 ,5 -> [[1,2,3],[4,5]]
-	-- Test: nc ~ ,5 -> [[1,2,3],[4,5]]
-	-- Test: nc 4 ,10 -> [[1,2,3],[4,5],[6,7,8],[9,10]]
-	-- Test: nc -4 ,10 -> [[1,2],[3,4,5],[6,7],[8,9,10]]
-	-- Test empty: nc -4 "" -> []
-	extendOp [",","^"] genericReason ("nc", [13,14], [AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
+	-- Example: `\ 2 ,6 -> [[1,2,3],[4,5,6]]
+	-- Test: `\ 2 ,5 -> [[1,2,3],[4,5]]
+	-- Test: `\ ~ ,5 -> [[1,2,3],[4,5]]
+	-- Test: `\ 4 ,10 -> [[1,2,3],[4,5],[6,7,8],[9,10]]
+	-- Test: `\ -4 ,10 -> [[1,2],[3,4,5],[6,7],[8,9,10]]
+	-- Test empty: `\ -4 "" -> []
+	extendOp [",","^"] genericReason ("`\\", [13,14], [AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
 	-- Desc: length
 	-- Example: ,:3 4 -> 2
 	op(",", [13], [list], "genericLength" ~> VInt),
@@ -451,8 +451,8 @@ rawOps = [
 		let (ap1, apf) = promoteList [a1] in
 		"(flip$(concat.).genericReplicate)."++apf ~> ap1),
 	-- Desc: inits
-	-- Example: is,3 -> [[],[1],[1,2],[1,2,3]]
-	op("is", [14,0], [list], "inits"~>VList),
+	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
+	op("`>", [14,0], [list], "inits"~>VList),
 	
 -- conflicts with exponentiation
 --		-- Test nowrap: =~5"asdf" -> ' '
@@ -485,11 +485,11 @@ rawOps = [
 		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
 	
 	-- Desc: hashmod (md5)
-	-- untested example: ."Fizz""Buzz" hm $ 6   68 -> [3,5]
-	-- RawTest: p."Fizz""Buzz" hm $ 6   68 -> "[3,5]\n"
-	-- RawTest: p:hm ~"5a" 100 hm "5" 100 97 -> "[62,62]\n"
-	-- Test: hex hm "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
-	extendOp ["?","~"] genericReason ("hm", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
+	-- untested example: ."Fizz""Buzz" `# $ 6   68 -> [3,5]
+	-- RawTest: p."Fizz""Buzz" `# $ 6   68 -> "[3,5]\n"
+	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[62,62]\n"
+	-- Test: hex `# "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
+	extendOp ["?","~"] genericReason ("`#", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
 		let salt = o/=OptionYes
 		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
@@ -616,8 +616,8 @@ rawOps = [
 		\zip3 a (map f a) [0..]" ~> vList1 a1),
 
 	-- Desc: uniq
-	-- Example: uniq "bcba" -> "bca"
-	op("uniq",[],[list],"nub"~>a1),
+	-- Example: `$ "bcba" -> "bca"
+	op("`$",[],[list],"nub"~>a1),
 	-- Desc: list intersection
 	-- Example: `& "abaccd" "aabce" -> "abac"
 	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
@@ -657,7 +657,7 @@ rawOps = [
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 		
 	-- Desc: nary cartesian product
-	-- Example: `* rs 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
+	-- Example: `* `/ 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
 	op(["`","*"],[],[listOf list],"sequence"~>a1),
 	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
 	-- Example: `P "abc" -> ["abc","bac","cba","bca","cab","acb"]
