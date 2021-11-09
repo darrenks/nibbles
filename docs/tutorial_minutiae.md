@@ -247,7 +247,7 @@ This program is only 14 nibbles instead of 17 encoded in octal.
 $HiddenOutput
 	239234902394023
 
-You can easily convert it to lists of a desired radix with `to base` (`tb`).
+You can easily convert it to lists of a desired radix with `to base` (``@`).
  
 Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto value defaults to using the data value (which then also prevents the data value from overwriting the first int input value). And after the end of the current root expression data is assumed to start rather than needing ~.
 
@@ -259,7 +259,7 @@ $Output
 
 Data can be handy for recreating large strings.
 
-	tb~-41 905456382897869687253
+	`@~-41 905456382897869687253
 $Output
 	Hello, world!
 
@@ -278,7 +278,7 @@ $Output
 
 Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
 
-	fb "Hello, world!" -41
+	`@ "Hello, world!" -41
 $Output
 	905456382897869687253
 

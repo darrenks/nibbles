@@ -173,11 +173,11 @@ If you find possible two nibble extensions, please let me know!
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
 
-This can be done using the `;;` extension. `;;` takes two arguments, treating the second one as a function and passing it the first. But it also adds that function to the context for later use.
+This can be done using the `;~` extension. `;~` takes two arguments, treating the second one as a function and passing it the first. But it also adds that function to the context for later use.
 
 Example:
 
-	;;3 *$$
+	;~3 *$$
 $Output
 	9
 and now we can use that square function with `$`. E.g. `$4` gives `16`.
@@ -190,12 +190,12 @@ It may seem odd that we couldn't define a function without using it. But this is
 
 Define your own divmod (and call it)!
 
-Hint: The first argument to `;;` is actually a function of no arguments (which allows you to pass a tuple into your function).
+Hint: The first argument to `;~` is actually a function of no arguments (which allows you to pass a tuple into your function).
 
 $Solution
 
 	p :                   # pretty print 1st call
-	   ;; ~10 3 ~/$@ %$@  # create fn and call it
+	   ;~ ~10 3 ~/$@ %$@  # create fn and call it
 	   $                  # get the snd result
 	p :                   # pretty print 2nd call
 	   @ 20 5             # call it again

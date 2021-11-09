@@ -76,14 +76,14 @@ rawOps = [
 	-- Example: ;1;2;3 _ -> 1,2,3,1
 	op("_", [5], [], argn 3),
 	-- Desc: let fn (todo this needs a new home for its rep)
-	-- Example: ;;2+1$ $4 -> 3,5
-	-- Test (multiple args): ;;~1 2 +@$ $4 5 -> 3,9
-	-- Test (multiple returns): ;;1 ~$3 $ @4 $ -> 1,3,4,3
-	-- Test (mult args and rets): ;;~1 2 ~+$~+@~ $ @3 4 $ -> 2,3,4,5
-	-- Test (coerce arg): ;;2+1$ $"4" -> 3,5
-	-- Test (coerce pair): ;;~1 2 +@$  $"5"2 -> 3,7
-	-- Test deps: .,2;;2+@$ -> [3,4]
-	op([";",";"], [6,6], [AnyS, fn $ ret.a1],
+	-- Example: ;~2+1$ $4 -> 3,5
+	-- Test (multiple args): ;~~1 2 +@$ $4 5 -> 3,9
+	-- Test (multiple returns): ;~1 ~$3 $ @4 $ -> 1,3,4,3
+	-- Test (mult args and rets): ;~~1 2 ~+$~+@~ $ @3 4 $ -> 2,3,4,5
+	-- Test (coerce arg): ;~2+1$ $"4" -> 3,5
+	-- Test (coerce pair): ;~~1 2 +@$  $"5"2 -> 3,7
+	-- Test deps: .,2;~2+@$ -> [3,4]
+	op([";","~"], [6,6], [AnyS, fn $ ret.a1],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
@@ -91,15 +91,15 @@ rawOps = [
 			ret a2 ++ [VFn (ret a1) (ret a2)]
 			)),
 	-- Desc: recursion
-	-- Example (fact): ;~ 5 $ 1 *@-$~$ -> 120
-	-- Test (multiple args): ;~ ~3 4 $ 0 +_@ -$1 @ -> 12
-	-- Test (multiple rets): ;~ 1 $ ~3 7 +@0 @ $ $ -> 4,7
-	-- Test (quicksort): ;~"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
-	-- Test (coerce rec ret): ;~ 5 1 1 "2" -> 2
-	-- Test memoize: ;~ 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
-	-- Test memoize tuple: ;~ ~1 2 0 @ 5 -> 2
-	-- Test not cond: ;~ 5 ~$ 1 0 -> 1
-	op([";","~"], [6,0], [AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
+	-- Example (fact): `; 5 $ 1 *@-$~$ -> 120
+	-- Test (multiple args): `; ~3 4 $ 0 +_@ -$1 @ -> 12
+	-- Test (multiple rets): `; 1 $ ~3 7 +@0 @ $ $ -> 4,7
+	-- Test (quicksort): `;"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
+	-- Test (coerce rec ret): `; 5 1 1 "2" -> 2
+	-- Test memoize: `; 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
+	-- Test memoize tuple: `; ~1 2 0 @ 5 -> 2
+	-- Test not cond: `; 5 ~$ 1 0 -> 1
+	op(["`",";"], [6,0], [AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
 	\[a1,a2]->
 		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
 	-- Desc: let
@@ -115,18 +115,18 @@ rawOps = [
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [any1], "\\x->(x,x)" ~> dup.a1),
 	-- Desc: iterate while uniq (todo this might collide with singleton/pair)
-	-- Example: iq 10 %+1$3 -> [10,2,0,1]
-	-- Test never stop: <5 iq 10 ~1 -> [10,1,1,1,1]
-	-- Test tuple: iq ~1 2 @$ -> [(1,2),(2,1)]
-	-- Test lazy: <1 iq ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	extendOp [":",":"] associativeReason ("iq", [7,7], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+	-- Example: `. 10 %+1$3 -> [10,2,0,1]
+	-- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
+	-- Test tuple: `. ~1 2 @$ -> [(1,2),(2,1)]
+	-- Test lazy: <1 `. ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
+	extendOp [":",":"] associativeReason ("`.", [7,7], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: aun ,4 >1^$ - 5,$ -> [1,2,3,4,3,2,1]
-	-- Test coerce: <7 aun ,4 1 -> [1,2,3,4,1,1,1]
-	-- Test coerce first: <4 aun 2 1 -> [2,1,1,1]
-	-- Test fibonnaci: <5 aun 1 +<2 $ -> [1,1,2,3,5]
-	op(["aun"], [], [autoTodo any1, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]->
+	-- Example: .~ ,4 >1^$ - 5,$ -> [1,2,3,4,3,2,1]
+	-- Test coerce: <7 .~ ,4 1 -> [1,2,3,4,1,1,1]
+	-- Test coerce first: <4 .~ 2 1 -> [2,1,1,1]
+	-- Test fibonnaci: <5 .~ 1 +<2 $ -> [1,1,2,3,5]
+	op([".","~"], [], [autoTodo any1, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]->
 		let (a1ListT,a1ListF)=promoteList [a1] in
 			"\\a f->appendUntilNull ("++a1ListF++"a) ("++coerceTo [a1ListT] (ret a2)++".f)" ~> a1ListT),
 	-- Desc: singleton
@@ -222,10 +222,10 @@ rawOps = [
 	-- Test: *" "z^:,2~ 2^:,2~2 -> [("1 2","1 2"),("1 2","1 2")]
 	op("*", [8], [str, list], Polylib.join.a2),
 	-- Desc: product
-	-- Example: pd,4 -> 24
-	-- Test: pd,0 -> 1
-	-- Test tuple: pd z,4 "abcd" $ -> 24,"abcd"
-	extendOp ["+","\\"] genericReason ("pd", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	-- Example: `*,4 -> 24
+	-- Test: `*,0 -> 1
+	-- Test tuple: `* z,4 "abcd" $ -> 24,"abcd"
+	extendOp ["+","\\"] genericReason ("`*", [8,11], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: sum
@@ -309,18 +309,18 @@ rawOps = [
 	-- Test empty: /,0+@$ -> 0
 	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
-	-- Example: st"asdf" -> "adfs"
-	lowPriorityExtendOp ["\\","\\"] genericReason ("st", [11, 11], [list], "sort" ~> a1),
+	-- Example: `<"asdf" -> "adfs"
+	lowPriorityExtendOp ["\\","\\"] genericReason ("`<", [11, 11], [list], "sort" ~> a1),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl),
 	-- Desc: transpose (maybe this should even be 1 nib... very common for 2d lists and list of tuples).
-	-- Example: tr "hi""yo" -> ["hy","io"]
-	-- Test mismatch dims: tr "hi""y" -> ["hy","i"]
-	-- Test mismatch dims: tr "h""yo" -> ["hy","o"]
-	-- Test 1 dim: tr "abc" -> ["a","b","c"]
-	-- Test tuple, unzip it: tr z,3"abc" $ -> [1,2,3],"abc"
-	extendOp ["\\","."] genericReason ("tr", [11,12], [list], \[a1] ->
+	-- Example: `' "hi""yo" -> ["hy","io"]
+	-- Test mismatch dims: `' "hi""y" -> ["hy","i"]
+	-- Test mismatch dims: `' "h""yo" -> ["hy","o"]
+	-- Test 1 dim: `' "abc" -> ["a","b","c"]
+	-- Test tuple, unzip it: `' z,3"abc" $ -> [1,2,3],"abc"
+	extendOp ["\\","."] genericReason ("`'", [11,12], [list], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> [a1]
 			VList (_:_:_) -> unzipTuple a1
@@ -498,24 +498,24 @@ rawOps = [
 	-- Test negative: hex *~31 -> "-1f"
 	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
  	-- Desc: to base from data
- 	-- untested example: tb ~ 2   10 -> [1,0,1,0]
- 	-- RawTest: p tb ~ 2 10 -> "[1,0,1,0]\n"
- 	-- RawTest: tb ~ -5 1934 -> "c bad\n"
- 	-- RawTest: tb ~ -150 19178 -> "\DEL\128\n"
- 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
+ 	-- untested example: `@ ~ 2   10 -> [1,0,1,0]
+ 	-- RawTest: p `@ ~ 2 10 -> "[1,0,1,0]\n"
+ 	-- RawTest: `@ ~ -5 1934 -> "c bad\n"
+ 	-- RawTest: `@ ~ -150 19178 -> "\DEL\128\n"
+ 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt))::[VT]->ParseState (VT, String))),
  	-- Desc: to base
- 	-- Example: tb 10 2 -> [1,0,1,0]
- 	-- Test: tb 0 2 -> []
- 	-- Test: tb 89 ~ -> [8,9]
- 	extendOp ["?",litDigit] genericReason ("tb", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
+ 	-- Example: `@ 10 2 -> [1,0,1,0]
+ 	-- Test: `@ 0 2 -> []
+ 	-- Test: `@ 89 ~ -> [8,9]
+ 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
  	-- Desc: from base
- 	-- Example: fb :1 :0 :1 0 2 -> 10
- 	-- Test: fb <0,3 2 -> 0
- 	-- Test: fb :8 9 ~ -> 89
- 	-- Test: fb "fizzbuzz" -27 -> 66635848070
- 	extendOp ["?",litDigit] genericReason ("fb", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
+ 	-- Example: `@ :1 :0 :1 0 2 -> 10
+ 	-- Test: `@ <0,3 2 -> 0
+ 	-- Test: `@ :8 9 ~ -> 89
+ 	-- Test: `@ "fizzbuzz" -27 -> 66635848070
+ 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
  	-- Desc: tbd
  	-- Example: 0 -> 0
  	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
@@ -580,13 +580,13 @@ rawOps = [
 	-- Test not: >~ ,5 ~-$3 -> [4,5]
 	op([">","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: take drop
-	-- Example: `< ,5 2 $ -> [1,2],[3,4,5]
-	-- Test negative: `< ,3 *~2 $ -> [1],[2,3]
-	op(["`","<"], [], [list, int], "\\a n->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
+	-- Example: `< 2 ,5 $ -> [1,2],[3,4,5]
+	-- Test negative: `< *~2 ,3 $ -> [1],[2,3]
+	op(["`","<"], [], [int, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: drop take
-	-- Example: `> ,5 2 $ -> [3,4,5],[1,2]
-	-- Test negative: `> ,3 *~2 $ -> [2,3],[1]
-	op(["`",">"], [], [list, int], "\\a n->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
+	-- Example: `> 2 ,5 $ -> [3,4,5],[1,2]
+	-- Test negative: `> *~2 ,3 $ -> [2,3],[1]
+	op(["`",">"], [], [int, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: uncons
 	-- Example: `( ,3 $ -> 1,[2,3]
 	-- Test empty: `( ,0 $ -> 0,[]
