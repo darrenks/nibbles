@@ -94,7 +94,7 @@ rawOps = [
 	-- Example (fact): `; 5 $ 1 *@-$~$ -> 120
 	-- Test (multiple args): `; ~3 4 $ 0 +_@ -$1 @ -> 12
 	-- Test (multiple rets): `; 1 $ ~3 7 +@0 @ $ $ -> 4,7
-	-- Test (quicksort): `;"hello world!"$$:@&$-/@$$:&$-~^-/@$$~@&$-$/@$ -> " !dehllloorw"
+	-- Test (quicksort): `;"hello world!"$$:@|$-/@$$:|$-~^-/@$$~@|$-$/@$ -> " !dehllloorw"
 	-- Test (coerce rec ret): `; 5 1 1 "2" -> 2
 	-- Test memoize: `; 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: `; ~1 2 0 @ 5 -> 2
@@ -193,14 +193,14 @@ rawOps = [
 	-- ~ before the obj to be justified to center (l/r determines rounding)
 	-- Lists vectorize (and also maxes their length with n)
 	
-	-- Example: | " " 4 "hi" -> "  hi"
-	-- Test ljust: | " " *~4 "hi" -> "hi  "
-	-- Test center: | " " 5 ~"hi" -> " hi  "
-	-- Test center left: | " " *~5 ~"hi" -> "  hi "
-	-- Test coerce: | " " 4 5 -> "   5"
-	-- Test list: | " " 0 >7,10 -> [" 8"," 9","10"]
-	-- Test ljust list: | " " *~1 >7,10 -> ["8 ","9 ","10"]
-	op("|", [8], [str, int, AutoOption "center", vec], \[a1,a2,o1,a3] ->
+	-- Example: & " " 4 "hi" -> "  hi"
+	-- Test ljust: & " " *~4 "hi" -> "hi  "
+	-- Test center: & " " 5 ~"hi" -> " hi  "
+	-- Test center left: & " " *~5 ~"hi" -> "  hi "
+	-- Test coerce: & " " 4 5 -> "   5"
+	-- Test list: & " " 0 >7,10 -> [" 8"," 9","10"]
+	-- Test ljust list: & " " *~1 >7,10 -> ["8 ","9 ","10"]
+	op("&", [8], [str, int, AutoOption "center", vec], \[a1,a2,o1,a3] ->
 		let justify t = 
 			"\\s n o->let oc = "++coerceTo [vstr] [t]++"o ;\
 						    \pad = concat (genericReplicate (abs n-genericLength oc) s) in " ++
@@ -251,24 +251,27 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
+	-- Desc: tbd (remember to remap the extensions that use this bin)
+	-- Example: 0 -> 0
+	op("tbd", [9], [autoTodo num, list], undefinedImpl),
 	-- Desc: step
-	-- Example: %2,5 -> [1,3,5]
-	-- Test: % *~2,5 -> [5,3,1]
-	-- Test: %~,5 -> [1,3,5]
-	-- Test: % 1 ,0 -> []
-	-- Test lazy: <5 %2,^10 100 -> [1,3,5,7,9]
-	op("%", [9], [AutoDefault num 2, list], "step" ~> a2),
+	-- Example: `%2,5 -> [1,3,5]
+	-- Test: `% *~2,5 -> [5,3,1]
+	-- Test: `%~,5 -> [1,3,5]
+	-- Test: `% 1 ,0 -> []
+	-- Test lazy: <5 `%2,^10 100 -> [1,3,5,7,9]
+	op("`%", [], [AutoDefault num 2, list], "step" ~> a2),
 	-- Desc: partition
-	-- Example: &,5~~%$2 $ -> [1,3,5],[2,4]
-	-- Test notted: &,5~~~%$2 $ -> [2,4],[1,3,5]
-	op("&", [9], [list, Auto False, Auto False, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
+	-- Example: |,5~~%$2 $ -> [1,3,5],[2,4]
+	-- Test notted: |,5~~~%$2 $ -> [2,4],[1,3,5]
+	op("|", [9], [list, Auto False, Auto False, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
 	-- Desc: filter
-	-- Example: &,5%$2 -> [1,3,5]
-	-- Test chr truthy: &"a b\nc"$ -> "abc"
-	-- Test list truthy: &"""b"$ -> ["b"]
-	-- Test tuple: & z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
-	-- Test auto not: &,5~%$2 -> [2,4]
-	op("&", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
+	-- Example: |,5%$2 -> [1,3,5]
+	-- Test chr truthy: |"a b\nc"$ -> "abc"
+	-- Test list truthy: |"""b"$ -> ["b"]
+	-- Test tuple: | z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
+	-- Test auto not: |,5~%$2 -> [2,4]
+	op("|", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
 	-- Desc: char class?
 	-- Example: \'z'a -> "z"
 	-- Test: \' 'a -> ""
@@ -331,19 +334,19 @@ rawOps = [
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
 	-- so that you may have access to the final non matching sequence.
-	-- Example: gw "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
-	-- Test leading non match: gw " a" \$a -> [("a"," ")]
-	-- Test trailing non match: gw "a " \$a -> [("a",""),(""," ")]
-	-- Test outer non match: gw " a " \$a -> [("a"," "),(""," ")]
-	-- Test not: gw " a" ~\$a -> [(" ",""),("","a")]
-	op("gw", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
+	-- Example: %~ "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
+	-- Test leading non match: %~ " a" \$a -> [("a"," ")]
+	-- Test trailing non match: %~ "a " \$a -> [("a",""),(""," ")]
+	-- Test outer non match: %~ " a " \$a -> [("a"," "),(""," ")]
+	-- Test not: %~ " a" ~\$a -> [(" ",""),("","a")]
+	op("%~", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: groupBy
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp ["\\","&"] genericReason ("`=", [11,9], [list, fn (elemT.a1)],
+	extendOp ["\\","|"] genericReason ("`=", [11,9], [list, fn (elemT.a1)],
 		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
@@ -351,18 +354,18 @@ rawOps = [
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
+	-- Desc: divmod
+ 	-- Example: `/7 2 $ -> 3,1
+ 	-- Test: `/7 ~ $ -> 3,1
+ 	op(["`","/"], [11,0], [AutoData num, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	-- Test: / *~2 7 -> -1
 	-- Test: / *~2 *~7 -> 0
 	-- Test: / 2 *~7 -> -1
 	-- Test: / 7 ~ -> 3
-	-- Test divmod: /~7 2 $ -> 3,1
-	-- Test divmod auto: /7 ~ -> 3
 	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
-	op("/", [11], [AutoOption "divmod", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
-		then "safeDiv" ~> [VInt]
-		else "safeDivMod" ~> [VInt, VInt]),
+	op("/", [11], [num, AutoDefault num 2], "safeDiv" ~> VInt),
 	-- Desc: init
 	-- Example: <<,5 -> [1,2,3,4]
 	op(["<","<"], [11,0], [list], "init" ~> a1),
@@ -393,6 +396,10 @@ rawOps = [
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
+	-- Desc: moddiv
+ 	-- Example : %~7 2 $ -> 1,3
+ 	-- Test: %~7 ~ $ -> 1,3
+ 	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: modulus
 	-- Example: %7 2 -> 1
 	-- Test: % *~2 7 -> 5
@@ -400,11 +407,7 @@ rawOps = [
 	-- Test: % 2 *~7 -> -5
 	-- Test: % 7 ~ -> 1
 	-- Test mod 0: %7 0 -> 0
-	-- Test moddiv : %~7 2 $ -> 1,3
-	-- Test moddiv auto: %~7 ~ -> 1
-	op("%", [12], [AutoOption "moddiv", AutoData num, AutoDefault num 2], \[o,_,_]->if o/=OptionYes
-	then "safeMod" ~> [VInt]
-	else "(swap.).safeDivMod" ~> [VInt, VInt]),
+	op("%", [12], [num, AutoDefault num 2], "safeMod" ~> VInt),
 	-- Desc: chr/ord todo make ord 1 nibble
 	-- todo consider making a 1 nib version for ord
 	-- Example: ch 100 ch 'e' -> 'd',101
@@ -535,16 +538,16 @@ rawOps = [
 	-- todo match number of rets in false clause (similarly to what should be done for :)
 	-- todo make clauses 1 fn, that way they could share let statements
 	op("?", [15], num:ifBodyArgs, ifImpl),
-	-- Desc: from base str (todo choose lit name)
+	-- Desc: read str at base
 	-- todo also consider returning the stuff after the parsed number...
 	-- todo try to get auto value 10 (can use it since index by does
 	-- note negative base does nothing useful
-	-- Example: ``"1f" 16 -> 31
-	-- Test negative: ``"-1f" 16 -> -31
-	-- test uppercase: ``"1F" 16 -> 31
-	-- Test empty: ``"" 16 -> 0
-	-- Test invalids: ``"z1fz2" 16 -> 31
-	op("``", [15], [str, int], "parseNum" ~> VInt),
+	-- Example: r"1f" 16 -> 31
+	-- Test negative: r"-1f" 16 -> -31
+	-- test uppercase: r"1F" 16 -> 31
+	-- Test empty: r"" 16 -> 0
+	-- Test invalids: r"z1fz2" 16 -> 31
+	op("r", [15], [str, int], "parseNum" ~> VInt),
 	-- Desc: index by
 	-- Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
@@ -846,7 +849,7 @@ simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
 typeToStr (Cond desc _) = Just desc
 typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
 typeToStr (AutoOption _) = Nothing
-typeToStr (AutoNot (Fn _ _ _)) = Nothing
+typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a
 typeToStr (Fn True _ _) = Just "fn"
 typeToStr (Fn False _ _) = Just "fn" -- later... |C"

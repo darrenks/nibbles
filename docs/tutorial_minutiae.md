@@ -253,7 +253,7 @@ Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto valu
 
 This example shows 5006 being divmodded, without overwriting $ (which is 100 since no input).
 
-	*" ":$ :/~~1000 $ 5006
+	*" ":$ :`/~1000 $ 5006
 $Output
 	100 5 6
 

@@ -18,7 +18,7 @@ Typical examples to show off laziness revolve around not throwing an error if yo
 
 And we could also generate the list of numbers from 1 to a googol, then select only the first 5 that are odd as such:
 
-	<5 & ,^10 100 %$2
+	<5 | ,^10 100 %$2
 $HiddenOutput
 	1
 	3
@@ -49,7 +49,7 @@ Hint: If you'd like to negate a "bool" don't forget about the custom truthiness 
 
 $Solution
 
-	<1 &      # Get the first 1 elements of the filtered list.
+	<1 |      # Get the first 1 elements of the filtered list.
 	  >1,$    # Generate the list from 2 to input
 	  - 1 %@$ # \elem -> 1 - (input % elem)
 $HiddenOutput "3902309423233451"
@@ -126,9 +126,9 @@ $EndSolution
 
 When I said `;` is "somewhat special" I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself. Tuples really are somewhat special though (not first class), they will never be bound to an identifier.
 
-For example `/~` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
+For example ``/` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
 
-	"the div is: " /~ 10 3 "\n"
+	"the div is: " `/ 10 3 "\n"
 	"the mod is: " $
 $HiddenOutput
 	the div is: 3
@@ -158,7 +158,7 @@ For example `+5 ,5` -> `[6,7,8,9,10]`. This is cool, but not as useful as in oth
 
 ## Extensions
 
-You've seen an example of extensions already, `/~` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
+You've seen an example of extensions already, ``/` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
 
 In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
 

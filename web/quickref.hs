@@ -91,7 +91,7 @@ toQuickRef isSimple ((types,_)) = [
 		autos = getAutos types
 		replaceComplexType True "vec" = "num"
 		replaceComplexType True "fn1" = "fn"
-		replaceComplexType _ s@_ = s
+		replaceComplexType _ s = s
 		typeStrs = catMaybes $ map typeToStr types
 		sort_type = if null types then "" else rootType $ Data.List.head typeStrs
 
