@@ -356,8 +356,8 @@ rawOps = [
 		then "safeDiv" ~> [VInt]
 		else "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: init
-	-- Example: <~,5 -> [1,2,3,4]
-	op(["<","~"], [11,0], [list], "init" ~> a1),
+	-- Example: <<,5 -> [1,2,3,4]
+	op(["<","<"], [11,0], [list], "init" ~> a1),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- Test negative: <-2 ,5 -> [1,2,3]
@@ -374,12 +374,14 @@ rawOps = [
 	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
 	--- todo, coerce dim length can do the vectorizing for us??
 -- 	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
+	-- Desc: tail
+	-- Example: >>,5 -> [2,3,4,5]
+	op([">",">"], [12,0], [list], "tail" ~> a1),
 	-- Desc: drop
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
-	-- Test: >~,3 -> [2,3]
 	-- Test negative: >-2 ,5 -> [4,5]
-	op(">", [12], [AutoDefault num 1, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
+	op(">", [12], [num, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op(["%","~"], [12,0], [num, list], undefinedImpl),
@@ -396,6 +398,7 @@ rawOps = [
 	then "safeMod" ~> [VInt]
 	else "(swap.).safeDivMod" ~> [VInt, VInt]),
 	-- Desc: chr/ord todo make ord 1 nibble
+	-- todo consider making a 1 nib version for ord
 	-- Example: ch 100 ch 'e' -> 'd',101
 	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: chunksOf
@@ -553,49 +556,45 @@ rawOps = [
 	-- diff could work with non matching tuples too, aka diff by?
 	
 	-- Desc: take drop while
-	-- Example: td ,5 ~ - 3$ $ -> [1,2],[3,4,5]
-	-- Test not: td ,5 ~ ~-$3 $ -> [1,2,3],[4,5]
-	op("td", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
+	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
+	op(["`","<","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: take while
-	-- Example: tw ,5 ~ - 3$ -> [1,2]
-	-- Test not: tw ,5 ~ ~-$3 -> [1,2,3]
-	op("tw", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
+	-- Example: <~ ,5 - 3$ -> [1,2]
+	-- Test not: <~ ,5 ~-$3 -> [1,2,3]
+	op(["<","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: drop take while
-	-- Example: dt ,5 ~ - 3$ $ -> [3,4,5],[1,2]
-	-- Test not: dt ,5 ~ ~-$3 $ -> [4,5],[1,2,3]
-	op("dt", [], [list, auto, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Example: `>~ ,5 - 3$ $ -> [3,4,5],[1,2]
+	-- Test not: `>~ ,5 ~-$3 $ -> [4,5],[1,2,3]
+	op(["`",">","~"], [], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: drop while
-	-- Example: dw ,5 ~ - 3$ -> [3,4,5]
-	-- Test not: dw ,5 ~ ~-$3 -> [4,5]
-	op("dw", [], [list, auto, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
+	-- Example: >~ ,5 - 3$ -> [3,4,5]
+	-- Test not: >~ ,5 ~-$3 -> [4,5]
+	op([">","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: take drop
-	-- Example: td ,5 2 $ -> [1,2],[3,4,5]
-	-- Test negative: td ,3 *~2 $ -> [1],[2,3]
-	op("td", [], [list, int], "\\a n->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
-	
-	
+	-- Example: `< ,5 2 $ -> [1,2],[3,4,5]
+	-- Test negative: `< ,3 *~2 $ -> [1],[2,3]
+	op(["`","<"], [], [list, int], "\\a n->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: drop take
-	-- Example: dt ,5 2 $ -> [3,4,5],[1,2]
-	-- Test negative: dt ,3 *~2 $ -> [2,3],[1]
-	op("dt", [], [list, int], "\\a n->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
-
-	-- Desc: un cons
-	-- Example: uncons ,3 $ -> 1,[2,3]
-	-- Test empty: uncons ,0 $ -> 0,[]
-	-- Test tuple: uncons z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
-	-- Test tuple empty: uncons z ,0"a" $ @ -> 0,' ',[]
-	op("uncons", [], [list], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
+	-- Example: `> ,5 2 $ -> [3,4,5],[1,2]
+	-- Test negative: `> ,3 *~2 $ -> [2,3],[1]
+	op(["`",">"], [], [list, int], "\\a n->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: uncons
+	-- Example: `( ,3 $ -> 1,[2,3]
+	-- Test empty: `( ,0 $ -> 0,[]
+	-- Test tuple: `( z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
+	-- Test tuple empty: `( z ,0"a" $ @ -> 0,' ',[]
+	op(["`","("], [], [list], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
+	-- Desc: swapped uncons
+	-- Example: `) ,3 $ -> [2,3],1
+	-- Test empty: `) ,0 $ -> [],0
+	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
+	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
+	op(["`",")"], [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 	
-	-- Desc: cons un
-	-- Example: consun ,3 $ -> [2,3],1
-	-- Test empty: consun ,0 $ -> [],0
-	-- Test tuple: consun z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
-	-- Test tuple empty: consun z ,0"a" $ @ -> [],0,' '
-	op("consun", [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 	-- Desc: signum
 	-- Example: sn *~1 sn 0 sn 2 -> -1,0,1
 	op("sn",[],[autoTodo {- -1? -} int], "signum" ~> a1),
-	
 	-- Desc: == (todo coerce or restrict)
 	-- todo consider returning list of the value or empty rather than 1 0
 	-- Example: eq 1 2 eq 1 1 -> 0,1
