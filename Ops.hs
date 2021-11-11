@@ -107,8 +107,8 @@ rawOps = [
 	-- Test: ++; 3 ; 2 $ -> 7
 	-- Test: ++; 3 ; 2 @ -> 8
 	-- Test: ++; +5 0 /,1 $ $ -> 11
-	-- Test: ++; +5 0 /,2 _ $ -> 15
-	-- Test: ++; + +5 0 0 /,1 ;7 $ -> 13
+	--- Test: ++; +5 0 /,2 _ $ -> 15
+	--- Test: ++; + +5 0 0 /,1 ;7 $ -> 13
 	-- Test: ++; +++5 0 0 0 /,1 ;+0$ $ -> 11
 	-- Test: ++;2 ;1 @ -> 5
 	-- Test: .,3 ;%$3 -> [1,2,0]
@@ -312,26 +312,53 @@ rawOps = [
 	-- Test: *~ 5 -> -5
 	-- Test: *5 ~ -> 10
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
-	-- Todo combine these 4 into 1 with autos?
+	
+	-- Desc: scanl1 tuple
+	-- Example: =\,3 ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
+	
 	-- Desc: scanl
-	-- Example: =\,3 ~ 0 +@$ -> [0,1,3,6]
-	-- Test tuple: =\,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-	extendOp [",","\\"] genericReason ("=\\", [13,11], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
+	-- Example: =\,3 0 +@$ -> [0,1,3,6]
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+
 	-- Desc: scanl1
-	-- Example: sc,3+*2$@ -> [1,5,11]
-	-- Test empty: sc,0+@$ -> []
-	-- Test tuple: sc z ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+	-- Example: =\,3+*2$@ -> [1,5,11]
+	-- Test empty: =\,0+@$ -> []
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
+		"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(y,x)) i a" ~> VList (ret a2))),
+
+	
+	-- Desc: scanl list tuple
+	-- Example: =\ z ,3 "abc" ~0 ++_@$ -> [0,98,198,300]
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
+	-- Desc: scanl1 list tuple
+	-- Example: =\ z ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+
+	-- Desc: foldr1tuple
+	-- Example: /,3 ~1 2 _ @  $ -> 2,1
+	-- Test triple: /,3 ~~1 2 3 ;$ _ @  $ @ -> 3,2,1
+	-- Test: / ,3 ~0 "" +@$ :$_ $ -> 6,"123"
+	op("/", [10], [nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
+	
 	-- Desc: foldr
-	-- Example: /,3 ~ 1 +@$ -> 7
-	-- Test(list has tuple): / z ,3 ,3 ~ 1 ++_@$ -> 13
-	-- Test(accum has tuple): / ,3 ~ ~0 "" +@$ :$_ $ -> 6,"123"
-	-- Test coerce: / ,3 ~ 0 "5" -> 5
-	op("/", [10], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a" ~> ret a2)),
+	-- Example: /,3 1 +@$ -> 7
+	op("/", [10], [nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
+
 	-- Desc: foldr1
 	-- Example: /,3+@$ -> 6
-	-- Test coerce: /,3"5" -> 5
 	-- Test empty: /,0+@$ -> 0
+	-- Test coerce: / ,3 0 "5" -> 5
+	op("/", [10], [nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
+		"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(x,y)) i a" ~> ret a2)),
+
+	-- Desc: foldr list tuple
+	-- Example: / z ,3 ,3 ~ 1 ++_@$ -> 13
+	op("/", [10], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
+	-- Desc: foldr1 list tuple
+	-- Example: /z"acb" ,3 ]$_ +;$@  $ -> 'c',6
+	-- Test coerce: / z "acb" ,3 100 99 $ -> 'd',99
+	-- Test empty: / z "" ,3 ]$_ +;$@  $ -> ' ',0
 	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
@@ -778,6 +805,9 @@ rawOps = [
 
 foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
+foldrFn :: String -> [VT] -> String
+foldrFn foldOp = (\[a1,a2,a3]->"\\a i f->"++foldOp++" (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a")
+
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
 

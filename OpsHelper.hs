@@ -124,6 +124,8 @@ binOnlyAuto = Auto True
 
 listOf (Cond desc t) = Cond ("["++desc++"]") $ \mtd -> let lastArg = last $ mtdTypes mtd in
 	isList lastArg && t (mtd { mtdTypes=reverse $ elemT $ lastArg })
+	
+nonTupleList = Cond "[1]" $ byType (\t -> isList t && length (elemT t) == 1)
 
 -- -- todo consider arg matching in opcode 15
 elemOfA1 = Cond "a" $ \mtd -> let [a1,a2] = mtdTypes mtd in

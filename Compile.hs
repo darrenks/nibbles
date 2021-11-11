@@ -220,8 +220,7 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 		ReqArg | not (or used) -> FailConstFn impl
 		ReqConst -> if (or used)
 			then FailTypeMismatch $ "arg " ++ show (length prevTs+1) ++ " is not a const"
-			else let nConstArgs = length $ elemT $ head prevTs in
-				success [app1Hs (fillAccums nConstArgs nConstArgs) impl]
+			else success [app1Hs (fillAccums (length argT) (length argT)) impl]
 		otherwise -> success [impl]
 
 tryArg (OptionalFn f) prevTs _ memoArgs = do
