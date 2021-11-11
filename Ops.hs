@@ -292,9 +292,9 @@ rawOps = [
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
 	-- Todo combine these 4 into 1 with autos?
 	-- Desc: scanl
-	-- Example: sc,3 ~ 0 +@$ -> [0,1,3,6]
-	-- Test tuple: sc,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-	extendOp [",","\\"] genericReason ("sc", [13,11], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
+	-- Example: =\,3 ~ 0 +@$ -> [0,1,3,6]
+	-- Test tuple: =\,3 ~ ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
+	extendOp [",","\\"] genericReason ("=\\", [13,11], [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], (\[a1,a2,a3]->"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(y,x)) (i()) a"  ~> VList (ret a2))),
 	-- Desc: scanl1
 	-- Example: sc,3+*2$@ -> [1,5,11]
 	-- Test empty: sc,0+@$ -> []
@@ -330,7 +330,7 @@ rawOps = [
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
 	
-	-- Desc: grouped partition (todo rename to splitBy)
+	-- Desc: splitBy
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
 	-- so that you may have access to the final non matching sequence.
@@ -722,19 +722,19 @@ rawOps = [
 	op("!", [], [list, any1, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	
 	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args)
-	-- Example: `! "asdf" ] -> 's'
-	-- Test: `! "" * -> 1
-	-- Test: `!,3] `!,3[ `!,3+ `!,3* `!,3- `!,3% `!,3^ -> 3,1,6,6,2,1,1
-	-- Test commutative order: `! :9 :6 2 / -> 3
-	-- Test by: `! "asdf" >$ -> 's'
-	-- Test by empty: `! ,0 <$ -> 340282366920938463463374607431768211456
-	op("`!", [], [list, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
+	-- Example: `/ "asdf" ] -> 's'
+	-- Test: `/ "" * -> 1
+	-- Test: `/,3] `/,3[ `/,3+ `/,3* `/,3- `/,3% `/,3^ -> 3,1,6,6,2,1,1
+	-- Test commutative order: `/ :9 :6 2 / -> 3
+	-- Test by: `/ "asdf" >$ -> 's'
+	-- Test by empty: `/ ,0 <$ -> 340282366920938463463374607431768211456
+	op("`/", [], [list, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
 	
 	-- Desc: special scans
-	-- Example: `~ ,4 + -> [1,3,6,10]
-	-- Test: `~ ,0 + -> []
-	-- Test commutative order: `~ \:9 :6 2 / -> [2,3,3]
-	op("`~", [], [list, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
+	-- Example: `\ ,4 + -> [1,3,6,10]
+	-- Test: `\ ,0 + -> []
+	-- Test commutative order: `\ \:9 :6 2 / -> [2,3,3]
+	op("`\\", [], [list, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
@@ -753,7 +753,7 @@ rawOps = [
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
 	op("pt", [], [any1], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
-	-- Desc: show
+	-- Desc: show (todo make it `p and use p as alias)
 	-- Example: p"a" -> "\"a\""
 	op("p", [], [any1], inspect.a1 ~> vstr),
 	-- Desc: debug context types

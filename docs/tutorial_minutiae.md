@@ -272,7 +272,7 @@ The negative in the radix means to use the list of printable characters rather t
 
 or if you prefer nibbles:
 
-	`!!@"Hello, world!"?]
+	`/!@"Hello, world!"?]
 $Output
 	41
 
