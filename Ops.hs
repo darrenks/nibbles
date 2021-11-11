@@ -253,7 +253,10 @@ rawOps = [
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 	-- Desc: tbd (remember to remap the extensions that use this bin)
 	-- Example: 0 -> 0
-	op("tbd", [9], [autoTodo num, list], undefinedImpl),
+	op("tbd", [9], [autoTodo num, list], undefinedImpl),	
+	-- Desc: abs diff
+	-- Example: != 5 3 != 3 5 -> 2,2
+	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
 	-- Desc: step
 	-- Example: `%2,5 -> [1,3,5]
 	-- Test: `% *~2,5 -> [5,3,1]
@@ -271,7 +274,26 @@ rawOps = [
 	-- Test list truthy: |"""b"$ -> ["b"]
 	-- Test tuple: | z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	-- Test auto not: |,5~%$2 -> [2,4]
-	op("|", [9], [list, AutoNot $ fn (elemT.a1)], "\\a f->filter f a" ~> a1),
+	op("|", [9], [list, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\a f->filter f a" ~> a1),
+	-- Desc: zipWith (todo ops don't handle tuples well) todo test vectorize on ~ with scalar, todo also, could use auto value for another special thing)
+	-- Example: ! ,3"abc" + -> "bdf"
+	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
+	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
+	-- Test tuple const: ! "abc" 1 , -> [('a',1),('b',1),('c',1)]
+	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
+	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
+	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
+	-- Test append cons: ! ,3 4 : -> [[1,4],[2,4],[3,4]]
+	-- Test append cons coerce: ! "abc" 3 : -> ["a3","b3","c3"]
+	-- Test vec: ! "abc" .,3,3 + -> ["bdf","bdf","bdf"]
+	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bd","bd"],["bd","bd"]]
+	-- Test anti vec: ! "abc""def" ,3 + -> ["bdf","egi"]
+	-- Test subscript: ! "abc"\,3 = -> "cba"
+	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
+	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
+	-- Test: !,2 2+ !,2 2* !,2 2- !,2 2/ !,2 2% !,2 2^ !,2 2] !,2 2[ !,2 2! -> [3,4],[2,4],[-1,0],[0,1],[1,0],[1,4],[2,2],[1,2],[1,0]
+	-- Test: !"abc" "ccb"? -> [3,3,2]
+	op("!", [9], [list, Fn ReqConst UnusedArg $ \[a1]->(1,elemT a1), ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	-- Desc: char class?
 	-- Example: \'z'a -> "z"
 	-- Test: \' 'a -> ""
@@ -380,7 +402,7 @@ rawOps = [
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
-	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], mapFn ~> VList .ret.a2),
+	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
 	--- Desc: zip2 (incomplete)
 	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
 	--- todo, coerce dim length can do the vectorizing for us??
@@ -678,10 +700,6 @@ rawOps = [
 		\else if n==0 then subsequences a \
 		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	
-	-- Desc: abs diff
-	-- Example: != 5 3 != 3 5 -> 2,2
-	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
-
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: `, 3 -> [0,1,2]
 	-- Test: <3 `, ~ -> [0,1,2]
@@ -689,37 +707,17 @@ rawOps = [
 	
 	-- Desc: find indices by
 	-- Example: `? "a b" \$a -> [1,3]
-	op("`?", [], [list, AutoNot $ Fn True UnusedArg $ \[a1]->(1,elemT a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
+	op("`?", [], [list, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
 	
 	-- Desc: find indices
 	-- Example: `? "a b" ' ' -> [2]
 	-- Test coerce: `? "a b" " " -> [2]
 	-- Test not: `? "a b" ~' ' -> [1,3]
-	op("`?", [{-can use same opcode as find indices by-}], [list, AutoOption "not", Fn False UnusedArg $ \[a1,o]->(1,elemT a1)], \[a1,o,a2]->("\\a needleFn->let needle = ("++coerceTo (elemT a1) (ret a2)++"$needleFn()) in \
+	op("`?", [{-can use same opcode as find indices by-}], [list, AutoOption "not", Fn ReqConst UnusedArg $ \[a1,o]->(1,elemT a1)], \[a1,o,a2]->("\\a needleFn->let needle = ("++coerceTo (elemT a1) (ret a2)++" needleFn) in \
 			\map (\\i->fromIntegral i+1) $ " ++
 				if o==OptionNo then "elemIndices needle a"
 				else "findIndices (\\e->e /= needle) a"
 		) ~> vList1 VInt),
-
-	-- Desc: zipWith (todo ops don't handle tuples well) todo test vectorize on ~ with scalar
-	-- Example: ! ,3"abc" + -> "bdf"
-	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
-	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
-	-- Test tuple const: ! "abc" 1 , -> [('a',1),('b',1),('c',1)]
-	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
-	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
-	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
-	-- Test append cons: ! ,3 4 : -> [[1,4],[2,4],[3,4]]
-	-- Test append cons coerce: ! "abc" 3 : -> ["a3","b3","c3"]
-	-- Test vec: ! "abc" .,3,3 + -> ["bdf","bdf","bdf"]
-	-- Test double vec: ! "ab" .,2.,2,2 + -> [["bd","bd"],["bd","bd"]]
-	-- Test anti vec: ! "abc""def" ,3 + -> ["bdf","egi"]
-	-- Test subscript: ! "abc"\,3 = -> "cba"
-	-- Test vec subscript: ! "abc""abc""def",3 = -> "abf"
-	-- Test antivec subscript: ! "abc".,3,3 = -> ["abc","abc","abc"]
-	-- Test: !,2 2+ !,2 2* !,2 2- !,2 2/ !,2 2% !,2 2^ !,2 2] !,2 2[ !,2 2! -> [3,4],[2,4],[-1,0],[0,1],[1,0],[1,4],[2,2],[1,2],[1,0]
-	-- Test: !"abc" "ccb"? -> [3,3,2]
-	op("!", [], [list, any1, ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 	
 	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args)
 	-- Example: `/ "asdf" ] -> 's'
@@ -784,7 +782,7 @@ mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
 
 ifBodyArgs = 
-	[ Fn False OptionalArg $ \a1 -> (1,a1)
+	[ Fn ReqDontCare OptionalArg $ \a1 -> (1,a1)
 	, OrAuto "default" $ fnx (\[a1,a2]->(length$ret a2,[]))]
 ifImpl [a1,a2,a3] = 
 	if a3==OptionYes -- default
@@ -861,8 +859,9 @@ typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a
-typeToStr (Fn True _ _) = Just "fn"
-typeToStr (Fn False _ _) = Just "fn" -- later... |C"
+typeToStr (Fn ReqDontCare _ _) = Just "fn"
+typeToStr (Fn ReqArg _ _) = Just "reqfn"
+typeToStr (Fn ReqConst _ _) = Just "const"
 typeToStr (AutoDefault t _) = typeToStr t
 typeToStr (AutoData t) = typeToStr t
 typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"

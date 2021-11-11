@@ -47,6 +47,8 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
                                    , mtdNibs :: [SmartList Int]
                                    , mtdState :: ParseData }
 
+data ReqArg = ReqDontCare | ReqArg | ReqConst
+
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
 data ArgSpec
 	= Cond String {-desc-} (MatchTestData -> Bool)
@@ -54,7 +56,7 @@ data ArgSpec
 	| Auto Bool {-binOnly-}
 	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
-	| Fn Bool {-require arg use for match?-} ArgUsedness ([VT] -> (Int, [VT]))
+	| Fn ReqArg ArgUsedness ([VT] -> (Int, [VT]))
 	| OrAuto String {- desc -} ArgSpec
 	| AutoNot ArgSpec {- only Fn -}
 	| AutoOption String {- desc -}

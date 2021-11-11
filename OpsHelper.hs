@@ -112,7 +112,7 @@ str = Cond "str" $ exactType vstr
 
 fn f = fnx $ \ts->(1, f ts)
 fn2 f = fnx $ \ts->(2, f ts)
-fnx = Fn False UnusedArg
+fnx = Fn ReqDontCare UnusedArg
 
 num = Cond "num" $ byType isNum
 vec = Cond "vec" $ byType $ const True

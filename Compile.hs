@@ -208,17 +208,21 @@ tryArg (Auto binOnly) _ _ memoArgs = do
 	return $ if matched then Success (tail memoArgs) [] else FailTypeMismatch "arg isn't ~"
 
 tryArg AnyS prevTs _ _ =
-	tryArg (Fn False UnusedArg (const (1,[]))) prevTs undefined undefined
+	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) prevTs undefined undefined
 
 -- todo create another one called UnusedLeftOver which acts more like a normal Cond
 tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
 	-- todo make fn0 cleaner here?
 	(impl,used) <- getLambdaValue nRets argT argUsedness
-	if reqArgUse && not (or used) then
-		return $ FailConstFn impl
-	else
-		return $ Success (error"memoized args cannot be used after fn") [impl]
+	let success = Success (error"memoized args cannot be used after fn")
+	return $ case reqArgUse of
+		ReqArg | not (or used) -> FailConstFn impl
+		ReqConst -> if (or used)
+			then FailTypeMismatch $ "arg " ++ show (length prevTs+1) ++ " is not a const"
+			else let nConstArgs = length $ elemT $ head prevTs in
+				success [app1Hs (fillAccums nConstArgs nConstArgs) impl]
+		otherwise -> success [impl]
 
 tryArg (OptionalFn f) prevTs _ memoArgs = do
 	let (nRets, argT) = f prevTs
@@ -272,8 +276,8 @@ tryArg CharClassMode _ _ memoArgs = do
 	impl <- parse1Nibble "char class mode" $ zip [0..] charClasses
 	return $ Success (error"memoized args cannot be used after char class mode (but could be)") [impl]
 
-tryArg ZipMode prevTypes _ memoArgs = do
-	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips prevTypes)
+tryArg ZipMode [t1,VFn _ [t2]] _ memoArgs = do
+	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips [t1,t2])
 	return $ Success (error"memoized args cannot be used after zip mode (but could be)") [impl]
 
 tryArg FoldMode prevTypes _ memoArgs = do
