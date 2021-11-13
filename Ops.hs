@@ -114,12 +114,12 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [any1], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate while uniq (todo this might collide with singleton/pair)
+	-- Desc: iterate while uniq
 	-- Example: `. 10 %+1$3 -> [10,2,0,1]
 	-- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
 	-- Test tuple: `. ~1 2 @$ -> [(1,2),(2,1)]
 	-- Test lazy: <1 `. ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	extendOp [":",":"] associativeReason ("`.", [7,7], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+	op("`.", [], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
 	-- Example: .~ ,4 >1^$ - 5,$ -> [1,2,3,4,3,2,1]
@@ -251,7 +251,7 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
-	-- Desc: tbd (remember to remap the extensions that use this bin)
+	-- Desc: tbd (16 extensions)
 	-- Example: 0 -> 0
 	op("tbd", [9], [autoTodo num, list], undefinedImpl),	
 	-- Desc: abs diff
@@ -467,7 +467,7 @@ rawOps = [
 	-- Test lazy: <3 `/2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
-	extendOp [",","%"] genericReason ("`/", [13,9], [AutoDefault num 2, list], "\\n a->if n<0 \
+	op("`/", [], [AutoDefault num 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks

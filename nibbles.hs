@@ -72,6 +72,7 @@ main=do
 		FromBytes -> Nib (concatMap fromByte contents) 0
 	let paddedNibs = padToEvenNibbles bRaw
 	let nibBytes = toBytes paddedNibs
+	let (_,_,binLit,_) = compileFn (Nib (paddedNibs) 0)
 	
 	case filter isOpt args of
 		-- if no c/e/v option specified then assume it means run
@@ -80,13 +81,7 @@ main=do
 			maybeNibBytes <- if errored then return []
 			else do
 				when (parseMode == FromLit) $ do
-					let (_,_,binLit,_) = compileFn (Nib (paddedNibs) 0)
-					-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse error instead)
-					when (binLit /= lit) $ do
-						hPutStrLn stderr "Warning: your code's binary would actual extract to:"
-						hPutStrLn stderr binLit
-						hPutStrLn stderr "instead of:"
-						hPutStrLn stderr lit
+					checkWouldExtractCorrectly binLit lit
 					hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $ 
 						"size = " ++ (show $ length bRaw) ++ " nibbles"
 				return nibBytes
@@ -95,6 +90,7 @@ main=do
  			setLocaleEncoding defaultEncoding
  			when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
 		["-c"] -> do
+			checkWouldExtractCorrectly binLit lit
 			errored <- litErrorHandle "Error" bRaw litWarnings
 			when errored $ errorWithoutStackTrace "aborting"
 			let outname = (basename ++ ".nbb")
@@ -118,6 +114,15 @@ litErrorHandle msgPrefix bRaw litWarnings = do
 		mapM_ (\msg -> hPutStrLn stderr $ msgPrefix++": " ++msg) litWarnings
 		return True
 	else return False
+
+checkWouldExtractCorrectly binLit lit = do
+	-- This warning is necessary because the current accidental extension detection is vulnerable to spaces/etc between ops or possibly other issues. This should be fullproof but will provide a less useful error (and may in fact even cause a parse error instead)
+	when (binLit /= lit) $ do
+		hPutStrLn stderr "Warning: your code's binary would actual extract to:"
+		hPutStrLn stderr binLit
+		hPutStrLn stderr "instead of:"
+		hPutStrLn stderr lit
+
 
 isOpt = isPrefixOf "-"
 toBytes = map toByte . chunksOf 2

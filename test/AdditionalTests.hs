@@ -132,3 +132,55 @@
 
 -- RawTest odd nibble data (size 3): $~5 -> "5\n"
 -- RawTest empty nibble data (size 2): $~0 -> "0\n"
+
+-----------------------------------
+---- Extension collision tests ----
+-----------------------------------
+-- this is more to force one to think about the possible collision than it is to actually test
+
+-- op 0 only used as 2nd op in combo
+
+-- op 1 only used as 2nd op in combo
+
+-- op 2 only used as 2nd op in combo
+
+-- op 3 not used in any extensions
+
+-- op 4 not used in any extensions
+
+-- op 5 not used in any extensions
+
+-- op 6=let, 66=letfn, 60=recursion
+-- 66 is safe since pointless to assign twice
+-- 666 make it mean 6 66 (; letfn) but this is a collision
+-- Test: ;~; 0 4 -> 4
+-- 660 make it mean 66 0 (letfn ~) but this is a collision
+-- Test: ;~ ~1 2 +@$ -> 3
+-- 6660 could be letfn recursion or let letfn ~, but who cares really?
+
+-- op 7=append, 7...0=singleton, 77 (commutative left) = could mean something like list of 2 but this isn't totally sound
+
+-- op 8 only used as 1st op in combo
+
+-- op 9 only used as 2nd op in combo
+
+-- op 10 (a) not used in any extensions
+
+-- op 11 (b) = reverse/divide/take
+--todo
+
+-- op 12 (c) = map/drop/mod used as 2nd in transpose, used in 1st as tail (c0), moddiv (c0), some tbds
+-- todo
+
+-- op 13 (d) = length/range1, used in 1st for many, but only in 2nd as chr, and lazy if
+-- todo
+
+-- op 14 (e), de=nchunks e0=inits
+-- de0 = could mean nchunks~ list or length of inits which we never want (tested by nchunks auto test already)
+
+-- op 15 (f) = only used in 1st op in combo
+
+-----------------------------------
+---- End Extension collision tests ----
+-----------------------------------
+

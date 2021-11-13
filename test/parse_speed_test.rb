@@ -34,7 +34,7 @@ time {
 }
 time {
 	`echo first choice multi character op 1>&2
-	echo '#{'\`<'*n},3' | nibbles -c`; pass &&= $?.exitstatus==0
+	echo '#{'`<'*n},3' | nibbles -c`; pass &&= $?.exitstatus==0
 	`nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 time {
