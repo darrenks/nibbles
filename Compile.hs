@@ -202,10 +202,16 @@ tryArg (ParseArg _ parser) _ _ _ = do
 	(t,code) <- parser
 	return $ Success (error"todo memo args") [noArgsUsed { implType=t, implCode=hsAtom code }]
 
-tryArg (Auto binOnly) _ _ memoArgs = do
-	let lit = if binOnly then [] else snd tildaOp
-	matched <- match (fst tildaOp, lit)
+tryArg Auto _ _ memoArgs = do
+	matched <- match tildaOp
 	return $ if matched then Success (tail memoArgs) [] else FailTypeMismatch "arg isn't ~"
+
+tryArg (BinCode b) _ _ memoArgs = do
+	matched <- match ([b], [])
+	code <- gets pdCode
+	context <- gets pdContext
+	let regenedArgs = head $ exprsByOffset $ Thunk code context
+	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg bincode mismatch"
 
 tryArg AnyS prevTs _ _ =
 	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) prevTs undefined undefined

@@ -20,6 +20,7 @@ import Data.Char
 import Data.Maybe
 import System.Environment
 import System.IO
+import Numeric (showHex)
 
 -- todo javascript show examples/source if hover over
 
@@ -32,7 +33,7 @@ main=do
 	examples <- getExamples
 	let convertToTdList ((lit, nib, impl), desc, [exI, exO]) =
 			[td $ styleCode $ renameIntLit lit]
-			++ifNotSimpleL[td $ styleCode $ toHex nib ++ isBinOnlyAuto impl]
+			++ifNotSimpleL[td $ styleCode $ toHex nib ++ isBinOnly (fst impl)]
 			++[td $ toHtml desc] ++
 			toQuickRef isSimple impl ++
 			[td $ styleCode $ do
@@ -112,7 +113,8 @@ showAuto i
 		| i >= 2^128 = "inf"
 		| otherwise = show i
 
-isBinOnlyAuto (args,_) = if any (\t->case t of Auto True -> True; otherwise -> False) args then " 0" else ""
+isBinOnly :: [ArgSpec] -> String
+isBinOnly args = concatMap (\t->case t of BinCode b -> " "++showHex b ""; otherwise -> "") args
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ t
 

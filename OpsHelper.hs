@@ -119,8 +119,7 @@ vec = Cond "vec" $ byType $ const True
 list = Cond "[*]" $ byType isList
 listToBeReferenced = Cond "[a]" $ byType isList
 any1 = Cond "any" $ byType $ const True
-auto = Auto False
-binOnlyAuto = Auto True
+auto = Auto
 
 listOf (Cond desc t) = Cond ("["++desc++"]") $ \mtd -> let lastArg = last $ mtdTypes mtd in
 	isList lastArg && t (mtd { mtdTypes=reverse $ elemT $ lastArg })
@@ -152,7 +151,7 @@ testCoerceTo to a1 =  (to, coerceTo to a1)
 
 isExtension (lit, nib, op) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
 isExtOpt (types,_) = any (\t -> case t of
-	Auto _ -> True
+	Auto -> True
 	Cond desc _ -> elem '>' desc
 	otherwise -> False) types
 isOpSimple (isPriority, lits, nib, op@(types,_)) =
@@ -164,5 +163,7 @@ isOpSimple (isPriority, lits, nib, op@(types,_)) =
 		lit = concat lits
 		whitelist = ["ct","p"]
 		blacklist = ["tbd"]
-		isSpecialMode (CharClassMode) = True
+		isSpecialMode CharClassMode = True
+		isSpecialMode (BinCode _) = True
+		isSpecialMode ZipMode = True
 		isSpecialMode _ = False

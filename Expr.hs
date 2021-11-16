@@ -53,7 +53,7 @@ data ReqArg = ReqDontCare | ReqArg | ReqConst
 data ArgSpec
 	= Cond String {-desc-} (MatchTestData -> Bool)
 	| ParseArg String {-desc-} (ParseState (VT, String))
-	| Auto Bool {-binOnly-}
+	| Auto
 	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
 	| Fn ReqArg ArgUsedness ([VT] -> (Int, [VT]))
@@ -65,6 +65,7 @@ data ArgSpec
 	| FoldMode
 	| CharClassMode
 	| AnyS -- basically a const fn, but shown as any*
+	| BinCode Int
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
 type Operation = ([ArgSpec], OpBehavior)

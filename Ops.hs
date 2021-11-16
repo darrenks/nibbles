@@ -288,7 +288,7 @@ rawOps = [
 	-- Desc: partition
 	-- Example: |,5~~%$2 $ -> [1,3,5],[2,4]
 	-- Test notted: |,5~~~%$2 $ -> [2,4],[1,3,5]
-	op("|", [9], [list, Auto False, Auto False, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
+	op("|", [9], [list, auto, auto, AutoNot $ fn (elemT.a1)], \[a1,a2]->"\\a f->partition f a" ~> [a1::VT,a1]),
 	-- Desc: filter
 	-- Example: |,5%$2 -> [1,3,5]
 	-- Test chr truthy: |"a b\nc"$ -> "abc"
@@ -400,18 +400,6 @@ rawOps = [
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
 	
-	-- Desc: splitBy
-	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
-	-- assumes that the input ends with a match, if it does not, then it appends an empty match
-	-- so that you may have access to the final non matching sequence.
-	-- Example: %~ "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
-	-- Test leading non match: %~ " a" \$a -> [("a"," ")]
-	-- Test trailing non match: %~ "a " \$a -> [("a",""),(""," ")]
-	-- Test outer non match: %~ " a " \$a -> [("a"," "),(""," ")]
-	-- Test not: %~ " a" ~\$a -> [(" ",""),("","a")]
-	op("%~", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
-		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
-		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
@@ -520,9 +508,18 @@ rawOps = [
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	op("tbd", [14], [char], undefinedImpl),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [14], [list], undefinedImpl),
+	-- Desc: splitBy
+	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
+	-- assumes that the input ends with a match, if it does not, then it appends an empty match
+	-- so that you may have access to the final non matching sequence.
+	-- Example: %~ "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
+	-- Test leading non match: %~ " a" \$a -> [("a"," ")]
+	-- Test trailing non match: %~ "a " \$a -> [("a",""),(""," ")]
+	-- Test outer non match: %~ " a " \$a -> [("a"," "),(""," ")]
+	-- Test not: %~ " a" ~\$a -> [(" ",""),("","a")]
+	op("%~", [14], [list, BinCode 0, AutoNot $ fn (elemT.a1)], \[a1,_]->
+		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
+		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: find salt by
 	-- Example: findSaltBy "Fizz""Buzz" 100 ~ -+$195 -> 1258
 	op ("findSaltBy", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->\
@@ -642,13 +639,13 @@ rawOps = [
 	-- Test empty: `( ,0 $ -> 0,[]
 	-- Test tuple: `( z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
 	-- Test tuple empty: `( z ,0"a" $ @ -> 0,' ',[]
-	op(["`","("], [], [list], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
+	op(["`","("], [14], [list, BinCode 1], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
 	-- Desc: swapped uncons
 	-- Example: `) ,3 $ -> [2,3],1
 	-- Test empty: `) ,0 $ -> [],0
 	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
 	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
-	op(["`",")"], [], [list], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
+	op(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 			
 	-- Desc: split list (todo promote to list when needed)
 	-- Example: `% ,5 :3~ -> [[1,2],[4,5]]
@@ -658,7 +655,7 @@ rawOps = [
 	-- Desc: groupAllBy
 	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
 	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
-	op(["=","~"],[],[list, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
+	op(["=","~"],[14],[list, BinCode 3, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
 		\map (map (\\(e,_,_)->e)) $"++
 		(if o==OptionYes then "sortOn (\\((_,_,ind):_)->ind) $" else "")++
 		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
@@ -667,7 +664,7 @@ rawOps = [
 
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
-	op("`$",[],[list],"nub"~>a1),
+	op("`$",[14],[list, BinCode 4],"nub"~>a1),
 	-- Desc: list intersection
 	-- Example: `& "abaccd" "aabce" -> "abac"
 	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
@@ -675,16 +672,16 @@ rawOps = [
 	--- Test tuple todo
 	-- Test by: `& ,5 %$2 :1 1 -> [3,5]
 	-- Test true set by: `& ,5 ~ %$2 :1 1 -> [1]
-	binarySetOp "`&" "a - (a - b)",
+	binarySetOp "`&" 5 "a - (a - b)",
 	-- Desc: list union
 	-- Example: `| "abccd" "aabce" -> "abccdae"
-	binarySetOp "`|" "a ++ (b - a)",
+	binarySetOp "`|" 6 "a ++ (b - a)",
 	-- Desc: list xor
 	-- Example: `^ "aabce" "abbde" -> "acbd"
-	binarySetOp "`^" "(a-b) ++ (b-a)",
+	binarySetOp "`^" 7 "(a-b) ++ (b-a)",
 	-- Desc: list difference
 	-- Example: `- "aabd" "abc" -> "ad"
-	binarySetOp "`-" "a-b",
+	binarySetOp "`-" 8 "a-b",
 	
 	-- Desc: bit union todo fully vectorize these
 	-- Example: `| 6 3 -> 7
@@ -711,7 +708,7 @@ rawOps = [
 	op(["`","*"],[],[listOf list],"sequence"~>a1),
 	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
 	-- Example: `P "abc" -> ["abc","bac","cba","bca","cab","acb"]
-	op(["`","P"],[],[list],"permutations"~>vList1.a1),
+	op(["`","P"],[14],[list, BinCode 9],"permutations"~>vList1.a1),
 	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat
@@ -732,13 +729,13 @@ rawOps = [
 	
 	-- Desc: find indices by
 	-- Example: `? "a b" \$a -> [1,3]
-	op("`?", [], [list, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
+	op("`?", [14], [list, BinCode 10, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\l f->map ((+1).fromIntegral) $ findIndices f l" ~> vList1 VInt),
 	
 	-- Desc: find indices
 	-- Example: `? "a b" ' ' -> [2]
 	-- Test coerce: `? "a b" " " -> [2]
 	-- Test not: `? "a b" ~' ' -> [1,3]
-	op("`?", [{-can use same opcode as find indices by-}], [list, AutoOption "not", Fn ReqConst UnusedArg $ \[a1,o]->(1,elemT a1)], \[a1,o,a2]->("\\a needleFn->let needle = ("++coerceTo (elemT a1) (ret a2)++" needleFn) in \
+	op("`?", [14], [list, BinCode 10, AutoOption "not", Fn ReqConst UnusedArg $ \[a1,o]->(1,elemT a1)], \[a1,o,a2]->("\\a needleFn->let needle = ("++coerceTo (elemT a1) (ret a2)++" needleFn) in \
 			\map (\\i->fromIntegral i+1) $ " ++
 				if o==OptionNo then "elemIndices needle a"
 				else "findIndices (\\e->e /= needle) a"
@@ -751,13 +748,13 @@ rawOps = [
 	-- Test commutative order: `/ :9 :6 2 / -> 3
 	-- Test by: `/ "asdf" >$ -> 's'
 	-- Test by empty: `/ ,0 <$ -> 340282366920938463463374607431768211456
-	op("`/", [], [list, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
+	op("`/", [14], [list, BinCode 11, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
 	
 	-- Desc: special scans
 	-- Example: `\ ,4 + -> [1,3,6,10]
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ \:9 :6 2 / -> [2,3,3]
-	op("`\\", [], [list, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
+	op("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
@@ -772,6 +769,11 @@ rawOps = [
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
 	op(["`",":"], [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	
+	
+	-- Desc: tbd (13-15)
+	-- Example: 0 -> 0
+	op("tbd", [14], [list], undefinedImpl),
+
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
@@ -833,8 +835,8 @@ zipImpl [a1,a2] = "zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$el
 -- allows option 2nd arg fn that makes it a "on" op
 -- coerces/etc.
 -- code must be defined using -
-binarySetOp name code =
-	op(name, [], [list,AutoOption "uniq",OptionalFn (\[a1,_]->(1,elemT a1)),any1], \[a1,o1,optionalFn,a2]-> let
+binarySetOp name binrep code =
+	op(name, [14], [list, BinCode binrep, AutoOption "uniq",OptionalFn (\[a1,_]->(1,elemT a1)),any1], \[a1,o1,optionalFn,a2]-> let
 		(coercedType, coerceFnA, coerceFnB) = coerce [a1] bt
 		replaceMinus = concatMap (\c->if c=='-' then "`minus`" else [c])
 		maybeNub = if o1==OptionYes then "(nubBy (onToBy snd))" else "id"
@@ -890,7 +892,8 @@ allOps = addHigherValueDeBruijnOps $ concat rawOps
 simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
 
 typeToStr (Cond desc _) = Just desc
-typeToStr (Auto binOnly) = if binOnly then Nothing else Just "~"
+typeToStr Auto = Just "~"
+typeToStr (BinCode b) = Nothing
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a
