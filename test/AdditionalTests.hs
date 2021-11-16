@@ -166,14 +166,16 @@
 
 -- op 10 (a) not used in any extensions
 
--- op 11 (b) = reverse/divide/take
---todo
+-- op 11 (b) = only used as second
 
--- op 12 (c) = map/drop/mod used as 2nd in transpose, used in 1st as tail (c0), moddiv (c0), some tbds
--- todo
+-- op 12 (c) = map/drop/mod only used in fst
 
 -- op 13 (d) = length/range1, used in 1st for many, but only in 2nd as chr, and lazy if
--- todo
+-- dd d list valid, d dd list = pointless
+-- dd b valid, d db = pointless 
+-- dd 9 = chr div... = valid, d d9 = length of chunks of = length of div
+-- dde = same as dd9
+-- dd2 = can't be ch of str
 
 -- op 14 (e), de=nchunks e0=inits
 -- de0 = could mean nchunks~ list or length of inits which we never want (tested by nchunks auto test already)

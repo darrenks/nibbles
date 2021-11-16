@@ -244,6 +244,12 @@ rawOps = [
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		),
+	-- Desc: groupBy
+	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
+	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
+	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
+	extendOp ["|","\\"] genericReason ("`=", [9,11], [list, fn (elemT.a1)],
+		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -362,17 +368,17 @@ rawOps = [
 	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
-	lowPriorityExtendOp ["\\","\\"] genericReason ("`<", [11, 11], [list], "sort" ~> a1),
+	op("`<", [], [list], "sort" ~> a1),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	extendOp ["\\","\""] genericReason ("tbd", [11,2], [], undefinedImpl),
+	extendOp ["\"","\\"] genericReason ("tbd", [11,2], [], undefinedImpl),
 	-- Desc: transpose (maybe this should even be 1 nib... very common for 2d lists and list of tuples).
 	-- Example: `' "hi""yo" -> ["hy","io"]
 	-- Test mismatch dims: `' "hi""y" -> ["hy","i"]
 	-- Test mismatch dims: `' "h""yo" -> ["hy","o"]
 	-- Test 1 dim: `' "abc" -> ["a","b","c"]
 	-- Test tuple, unzip it: `' z,3"abc" $ -> [1,2,3],"abc"
-	extendOp ["\\","."] genericReason ("`'", [11,12], [list], \[a1] ->
+	extendOp ["\\","."] genericReason ("`'", [12,11], [list], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> [a1]
 			VList (_:_:_) -> unzipTuple a1
@@ -391,12 +397,6 @@ rawOps = [
 	op("%~", [], [list, AutoNot $ fn (elemT.a1)], \[a1,_]->
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
-	-- Desc: groupBy
-	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
-	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
-	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp ["\\","|"] genericReason ("`=", [11,9], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
