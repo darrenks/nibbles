@@ -122,7 +122,7 @@ rawOps = [
 	op("`.", [], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
 		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: .~ ,4 >1^$ - 5,$ -> [1,2,3,4,3,2,1]
+	-- Example: .~ ,4 >1^- 5,$$ -> [1,2,3,4,3,2,1]
 	-- Test coerce: <7 .~ ,4 1 -> [1,2,3,4,1,1,1]
 	-- Test coerce first: <4 .~ 2 1 -> [2,1,1,1]
 	-- Test fibonnaci: <5 .~ 1 +<2 $ -> [1,1,2,3,5]
@@ -167,7 +167,7 @@ rawOps = [
 	-- Test: +'a' 2 -> 'c'
 	-- Test: +'\n' '\n' -> 20
 	-- Test vectorized: +1,3 -> [2,3,4]
-	-- Test 2d vectorized: +1 ^:,2~ 2 -> [[2,3],[2,3]]
+	-- Test 2d vectorized: +1 ^2 :,2~ -> [[2,3],[2,3]]
 	-- Test string vectorized: +1"abc" -> "bcd"
 	-- Test char vectorized: +'a' :1 2 -> "bc"
 	-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
@@ -216,10 +216,10 @@ rawOps = [
 		else justify a3 ~> vstr),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
-	-- Test 2d: *" "^:,3~2 -> ["1 2 3","1 2 3"]
+	-- Test 2d: *" "^2:,3~ -> ["1 2 3","1 2 3"]
 	-- Test tuple: *" "z,3"abc" -> ["1 a","2 b","3 c"]
-	-- Test lopsided tuple: *" "z^:,2~2"ab" -> [("1 2",'a'),("1 2",'b')]
-	-- Test: *" "z^:,2~ 2^:,2~2 -> [("1 2","1 2"),("1 2","1 2")]
+	-- Test lopsided tuple: *" "z^2:,2~"ab" -> [("1 2",'a'),("1 2",'b')]
+	-- Test: *" "z^2:,2~ ^2:,2~ -> [("1 2","1 2"),("1 2","1 2")]
 	op("*", [8], [str, list], Polylib.join.a2),
 	-- Desc: product
 	-- Example: `*,4 -> 24
@@ -238,8 +238,8 @@ rawOps = [
 		),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
-	-- Test tuple: +^:z ,2 "ab"~2 -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
-	-- Test tuple2: +z ^:,2~2 "ab" $ -> [1,2,1,2],"ab"
+	-- Test tuple: +^2:z ,2 "ab"~ -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
+	-- Test tuple2: +z ^2:,2~ "ab" $ -> [1,2,1,2],"ab"
 	-- \a -> (concat (map fst a), map snd a)
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
@@ -257,9 +257,24 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
-	-- Desc: tbd (16 extensions)
+	-- Desc: tbd
 	-- Example: 0 -> 0
-	op("tbd", [9], [autoTodo num, list], undefinedImpl),	
+	op("tbd", [9], [char, list], undefinedImpl),	
+	-- Desc: inits
+	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
+	op("`>", [9,0], [list], "inits"~>VList),
+
+--		-- Test nowrap: =~5"asdf" -> ' '
+-- 	op("=", [], [AutoOption "nowrap", int, list], \[o1,a1,a2]->(if o1==OptionYes
+-- 		then "\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i)"
+-- 		else "\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)") ~> elemT a2),
+
+	
+	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
+	-- Example: =2 "asdf" -> 's'
+	-- Test 0 (wrapped): =0 "asdf" -> 'f'
+	-- Test empty: =0"" -> ' '
+	op("=", [9], [int, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: abs diff
 	-- Example: != 5 3 != 3 5 -> 2,2
 	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
@@ -493,38 +508,21 @@ rawOps = [
 	-- Test: ^0 0 -> 1
 	-- Test negative is nth root: ^200 -2 -> 14
 	-- Test: ^81 -4  ^80 -4 -> 3,2
-	op("^", [14], [AutoDefault int 10, AutoDefault num 2], "\\a b->if b<0 then nthRoot (-b) a else a^b" ~> a1),
+	op("^", [14], [AutoDefault int 10, AutoDefault int 2], "\\a b->if b<0 then nthRoot (-b) a else a^b" ~> a1),
 	-- Desc: replicate
-	-- Example: ^"ab"3 -> "ababab"
-	-- Test: ^"ab" *~3 -> ""
-	-- Test: ^'a' 3 -> "aaa"
-	-- Test: <3^"ab" ~ -> "aba"
-	op("^", [14], [orC list char, AutoDefault int (2^128)], \[a1,_] ->
-		let (ap1, apf) = promoteList [a1] in
-		"(flip$(concat.).genericReplicate)."++apf ~> ap1),
-	-- Desc: inits
-	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
-	op("`>", [14,0], [list], "inits"~>VList),
-	
--- conflicts with exponentiation
---		-- Test nowrap: =~5"asdf" -> ' '
--- 	op("=", [], [AutoOption "nowrap", int, list], \[o1,a1,a2]->(if o1==OptionYes
--- 		then "\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i)"
--- 		else "\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)") ~> elemT a2),
-
-	
-	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
-	-- Example: =2 "asdf" -> 's'
-	-- Test 0 (wrapped): =0 "asdf" -> 'f'
-	-- Test empty: =0"" -> ' '
-	op("=", [14], [int, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
-	-- Desc: zip (todo delete and replace now...)
-	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
-	-- Test: .z,3,3+@$ -> [2,4,6]
-	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
-	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
-	op("z", [14], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT)),
-	
+	-- Example: ^3"ab" -> "ababab"
+	-- Test: ^-3"ab" -> ""
+	-- Test: ^3'a' -> "aaa"
+	-- Test: <3^~"ab" -> "aba"
+	op("^", [14], [AutoDefault int (2^128), orC list char], \[_,a2] ->
+		let (ap2, apf) = promoteList [a2] in
+		"\\n a->concat$genericReplicate n$"++apf++" a" ~> ap2),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [14], [char], undefinedImpl),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	op("tbd", [14], [list], undefinedImpl),
 	-- Desc: find salt by
 	-- Example: findSaltBy "Fizz""Buzz" 100 ~ -+$195 -> 1258
 	op ("findSaltBy", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->\
@@ -801,7 +799,14 @@ rawOps = [
 	op("testCoerceToListListInt", [], [any1], testCoerceTo [VList [VList [VInt]]]),
 	op("testCoerceToListStr", [], [any1], testCoerceTo [VList [vstr]]),
 	op("testCoerceToX", [], [AnyS, AnyS], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
-	op("testFinish", [], [any1], flip finish False . a1 ~> vstr)]
+	op("testFinish", [], [any1], flip finish False . a1 ~> vstr),
+	
+	--- Desc: zip
+	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
+	-- Test: .z,3,3+@$ -> [2,4,6]
+	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
+	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
+	op("z", [], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT))]
 
 foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")

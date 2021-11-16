@@ -9,28 +9,28 @@
 -- Test: testCoerce2 1 'a' -> "[VInt]"
 -- Test: testCoerce2 1 ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 1 "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 1 ^:,3~3 -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 1 ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 1 ^3:,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 1 ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 'a' 'a' -> "[VChr]"
 -- Test: testCoerce2 'a' ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 'a' "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 'a' ^:,3~3 -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 'a' ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 'a' ^3:,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 'a' ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 ,3 ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 ,3 ^:,3~3 -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 ,3 ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 ,3 ^3:,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 ,3 ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 "abc" "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 "abc" ^:,3~3 -> "[VList [VChr]]"
--- Test: testCoerce2 "abc" ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 "abc" ^3:,3~ -> "[VList [VChr]]"
+-- Test: testCoerce2 "abc" ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
--- Test: testCoerce2 ^:,3~3 ^:,3~3 -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 ^:,3~3 ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 ^3:,3~ ^3:,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 ^3:,3~ ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
--- Test: testCoerce2 ^:"abc"~3 ^:"abc"~3 -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 ^3:"abc"~ ^3:"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 z,3"abc" ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 z,3"abc" -> "[VList [VInt]]"
@@ -41,44 +41,44 @@
 -- Test: testCoerceToInt ,3 -> 6
 -- Test: testCoerceToInt "abc" -> 0
 -- Test: testCoerceToInt "12" -> 12
--- Test: testCoerceToInt ^:,3~3 -> 18
--- Test: testCoerceToInt ^:"3"~3 -> 9
+-- Test: testCoerceToInt ^3:,3~ -> 18
+-- Test: testCoerceToInt ^3:"3"~ -> 9
 
 -- Test: testCoerceToChr 100 -> 'd'
 -- Test: testCoerceToChr 'a' -> 'a'
 -- Test: testCoerceToChr :100 200 -> 'd'
 -- Test: testCoerceToChr "abc" -> 'a'
 -- Test: testCoerceToChr .,3 .,3 +*100$@ -> 'e'
--- Test: testCoerceToChr ^:"abc"~3 -> 'a'
+-- Test: testCoerceToChr ^3:"abc"~ -> 'a'
 
 -- Test: testCoerceToListInt 100 -> [100]
 -- Test: testCoerceToListInt 'a' -> [97]
 -- Test: testCoerceToListInt ,3 -> [1,2,3]
 -- Test: testCoerceToListInt "abc" -> [97,98,99]
--- Test: testCoerceToListInt ^:,3~3 -> [1,2,3,1,2,3,1,2,3]
--- Test: testCoerceToListInt ^:"abc"~3 -> [0,0,0]
--- Test: testCoerceToListInt ^:"12"~3 -> [12,12,12]
+-- Test: testCoerceToListInt ^3:,3~ -> [1,2,3,1,2,3,1,2,3]
+-- Test: testCoerceToListInt ^3:"abc"~ -> [0,0,0]
+-- Test: testCoerceToListInt ^3:"12"~ -> [12,12,12]
 
 -- Test: testCoerceToStr 100 -> "100"
 -- Test: testCoerceToStr 'a' -> "a"
 -- Test: testCoerceToStr ,3 -> "123"
 -- Test: testCoerceToStr "abc" -> "abc"
--- Test: testCoerceToStr ^:,3~3 -> "123123123"
--- Test: testCoerceToStr ^:"abc"~3 -> "abcabcabc"
+-- Test: testCoerceToStr ^3:,3~ -> "123123123"
+-- Test: testCoerceToStr ^3:"abc"~ -> "abcabcabc"
 
 -- Test: testCoerceToListListInt 100 -> [[100]]
 -- Test: testCoerceToListListInt 'a' -> [[97]]
 -- Test: testCoerceToListListInt ,3 -> [[1,2,3]]
 -- Test: testCoerceToListListInt "abc" -> [[97,98,99]]
--- Test: testCoerceToListListInt ^:,3~3 -> [[1,2,3],[1,2,3],[1,2,3]]
--- Test: testCoerceToListListInt ^:"abc"~3 -> [[97,98,99],[97,98,99],[97,98,99]]
+-- Test: testCoerceToListListInt ^3:,3~ -> [[1,2,3],[1,2,3],[1,2,3]]
+-- Test: testCoerceToListListInt ^3:"abc"~ -> [[97,98,99],[97,98,99],[97,98,99]]
 
 -- Test: testCoerceToListStr 100 -> ["100"]
 -- Test: testCoerceToListStr 'a' -> ["a"]
 -- Test: testCoerceToListStr ,3 -> ["1","2","3"]
 -- Test: testCoerceToListStr "abc" -> ["abc"]
--- Test: testCoerceToListStr ^:,3~3 -> ["1","2","3","1","2","3","1","2","3"]
--- Test: testCoerceToListStr ^:"abc"~3 -> ["abc","abc","abc"]
+-- Test: testCoerceToListStr ^3:,3~ -> ["1","2","3","1","2","3","1","2","3"]
+-- Test: testCoerceToListStr ^3:"abc"~ -> ["abc","abc","abc"]
 
 -- Test: testCoerceToX 4 "5" -> 5
 -- Test: testCoerceToX ~""4 ~4 "3" $ -> "4",3
@@ -91,10 +91,10 @@
 -- Test: testFinish 'c' -> "c"
 -- Test: testFinish "abc" -> "abc"
 -- Test: testFinish ,3 -> "1\n2\n3\n"
--- Test: testFinish ^:,3~3 -> "1 2 3\n1 2 3\n1 2 3\n"
--- Test: testFinish ^:"abc"~3 -> "abc\nabc\nabc\n"
--- Test: testFinish ^:^:,2~2~2 -> "12 12\n12 12\n"
--- Test: testFinish ^:^:"ab"~2~2 -> "ab ab\nab ab\n"
+-- Test: testFinish ^3:,3~ -> "1 2 3\n1 2 3\n1 2 3\n"
+-- Test: testFinish ^3:"abc"~ -> "abc\nabc\nabc\n"
+-- Test: testFinish ^2:^2:,2~~ -> "12 12\n12 12\n"
+-- Test: testFinish ^2:^2:"ab"~~ -> "ab ab\nab ab\n"
 -- Test: testFinish z ,3 "abc" -> "1 a\n2 b\n3 c\n"
 
 -- Test "hi\n": \@ -> "ih"
@@ -162,7 +162,7 @@
 
 -- op 8 only used as 1st op in combo
 
--- op 9 only used as 2nd op in combo
+-- op 9 only used as 1st op in combo
 
 -- op 10 (a) not used in any extensions
 

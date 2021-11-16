@@ -99,7 +99,7 @@ Hint: Since we haven't introduced assignments yet, it is ok to hard code the len
 
 $Solution
 
-	^:"Darren" '\n' 6
+	^6:"Darren" '\n'
 $HiddenOutput
 	Darren
 	Darren
@@ -210,7 +210,7 @@ Input a number n, then repeat the second line n times.
 
 $Solution
 
-	^;@$
+	^$;@
 $HiddenOutput "2\nabc"
 	abcabc
   
