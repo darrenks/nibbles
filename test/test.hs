@@ -72,7 +72,7 @@ printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFr
 main=do
 	let ?isSimple = False
 	testCases <- getTestsFromAnnotations
-	let tests = map toTest $ take 1000 $ filter (not.isErrorResult) testCases
+	let tests = map toTest $ take 1000 $ drop 0 $ filter (not.isErrorResult) testCases
 	let (_,(_,_,x,_,_,_,_)) = last tests
 	putStrLn $ x
 	header <- readFile "Header.hs"

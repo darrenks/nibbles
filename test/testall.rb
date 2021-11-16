@@ -31,4 +31,4 @@ if Dir.exist?('web')
 	`sh scripts/generate`
 end
 
-puts pass ? 'all tests pass' : 'FAIL'
+puts pass ? 'all tests pass' : 'FAIL' + "#"*100

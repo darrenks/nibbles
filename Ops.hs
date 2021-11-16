@@ -250,6 +250,14 @@ rawOps = [
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
 	extendOp ["|","\\"] genericReason ("`=", [9,11], [list, fn (elemT.a1)],
 		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
+	-- Desc: to uppercase
+	-- Example: `> 'a' -> 'A'
+	-- Test: ."Hi there!"`>$ -> "HI THERE!"
+	op(["`",">"], [9], [char, BinCode 2], "myOrd.toUpper.myChr"~>a1),
+	-- Desc: to lowercase
+	-- Example: `< 'A' -> 'a'
+	-- Test: ."Hi there!"`<$ -> "hi there!"
+	op(["`","<"], [9], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -257,9 +265,6 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op("-", [9], [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [9], [char, list], undefinedImpl),	
 	-- Desc: inits
 	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
 	op("`>", [9,0], [list], "inits"~>VList),
@@ -383,7 +388,7 @@ rawOps = [
 	op("/", [10], [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
-	op("`<", [], [list], "sort" ~> a1),
+	op("`<", [14], [list, BinCode 13], "sort" ~> a1),
 	-- Desc: tbd
 	-- Example: 0 -> 0
 	extendOp ["\"","\\"] genericReason ("tbd", [11,2], [], undefinedImpl),
@@ -403,9 +408,6 @@ rawOps = [
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(["/","~"], [11,0], [autoTodo num, list], undefinedImpl),
 	-- Desc: divmod
  	-- Example: `/7 2 $ -> 3,1
  	-- Test: `/7 ~ $ -> 3,1
@@ -445,9 +447,6 @@ rawOps = [
 	-- Test more than size: >5,3 -> []
 	-- Test negative: >-2 ,5 -> [4,5]
 	op(">", [12], [num, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op(["%","~"], [12,0], [num, list], undefinedImpl),
 	-- Desc: moddiv
  	-- Example : %~7 2 $ -> 1,3
  	-- Test: %~7 ~ $ -> 1,3
@@ -565,7 +564,7 @@ rawOps = [
  	extendOp ["?",litDigit] genericReason ("`@", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
  	-- Desc: tbd
  	-- Example: 0 -> 0
- 	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [list], undefinedImpl),
+ 	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [any1, list], undefinedImpl),
 	-- Desc: if nonnull (lazy) todo alias to regular if/else
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0
@@ -582,9 +581,8 @@ rawOps = [
 	-- todo match number of rets in false clause (similarly to what should be done for :)
 	-- todo make clauses 1 fn, that way they could share let statements
 	op("?", [15], num:ifBodyArgs, ifImpl),
-	-- Desc: read str at base
+	-- Desc: read str at base (todo need ~ = 10, index uses it)
 	-- todo also consider returning the stuff after the parsed number...
-	-- todo try to get auto value 10 (can use it since index by does
 	-- note negative base does nothing useful
 	-- Example: r"1f" 16 -> 31
 	-- Test negative: r"-1f" 16 -> -31
@@ -613,27 +611,27 @@ rawOps = [
 	-- Desc: take drop while
 	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
 	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
-	op(["`","<","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	op(["`","<","~"], [11,0,0], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: take while
 	-- Example: <~ ,5 - 3$ -> [1,2]
 	-- Test not: <~ ,5 ~-$3 -> [1,2,3]
-	op(["<","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
+	op(["<","~"], [14], [list, BinCode 15, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: drop take while
 	-- Example: `>~ ,5 - 3$ $ -> [3,4,5],[1,2]
 	-- Test not: `>~ ,5 ~-$3 $ -> [4,5],[1,2,3]
-	op(["`",">","~"], [], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
+	op(["`",">","~"], [12,0,0], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: drop while
 	-- Example: >~ ,5 - 3$ -> [3,4,5]
 	-- Test not: >~ ,5 ~-$3 -> [4,5]
-	op([">","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
+	op([">","~"], [14], [list, BinCode 14, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: take drop
 	-- Example: `< 2 ,5 $ -> [1,2],[3,4,5]
 	-- Test negative: `< *~2 ,3 $ -> [1],[2,3]
-	op(["`","<"], [], [int, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
+	op(["`","<"], [11,0], [num, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: drop take
 	-- Example: `> 2 ,5 $ -> [3,4,5],[1,2]
 	-- Test negative: `> *~2 ,3 $ -> [2,3],[1]
-	op(["`",">"], [], [int, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
+	op(["`",">"], [12,0], [num, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: uncons
 	-- Example: `( ,3 $ -> 1,[2,3]
 	-- Test empty: `( ,0 $ -> 0,[]
@@ -755,25 +753,10 @@ rawOps = [
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ \:9 :6 2 / -> [2,3,3]
 	op("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
-	
-	-- Desc: to uppercase
-	-- Example: `> 'a' -> 'A'
-	-- Test: ."Hi there!"`>$ -> "HI THERE!"
-	op(["`",">"], [], [char], "myOrd.toUpper.myChr"~>a1),
-	-- Desc: to lowercase
-	-- Example: `< 'A' -> 'a'
-	-- Test: ."Hi there!"`<$ -> "hi there!"
-	op(["`","<"], [], [char], "myOrd.toLower.myChr"~>a1),
-	
+		
 	-- Desc: list of 2 lists
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
 	op(["`",":"], [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
-	
-	
-	-- Desc: tbd (13-15)
-	-- Example: 0 -> 0
-	op("tbd", [14], [list], undefinedImpl),
-
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
