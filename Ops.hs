@@ -148,7 +148,10 @@ rawOps = [
 		in
 			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 		),
-		
+	-- Desc: list of 2 lists
+	-- Example: `: ,2 ,1 -> [[1,2],[1]]
+	op(["`",":"], [15], [listToBeReferenced, BinCode 11, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
+	
 	-- Desc: signum
 	-- Example: `$ *~1 `$ 0 `$ 2 -> -1,0,1
 	op("`$",[],[autoTodo {- -1? -} int], "signum" ~> a1),
@@ -283,13 +286,6 @@ rawOps = [
 	-- Desc: abs diff
 	-- Example: != 5 3 != 3 5 -> 2,2
 	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
-	-- Desc: step
-	-- Example: `%2,5 -> [1,3,5]
-	-- Test: `% *~2,5 -> [5,3,1]
-	-- Test: `%~,5 -> [1,3,5]
-	-- Test: `% 1 ,0 -> []
-	-- Test lazy: <5 `%2,^10 100 -> [1,3,5,7,9]
-	op("`%", [], [AutoDefault num 2, list], "step" ~> a2),
 	-- Desc: partition
 	-- Example: |,5~~%$2 $ -> [1,3,5],[2,4]
 	-- Test notted: |,5~~~%$2 $ -> [2,4],[1,3,5]
@@ -409,9 +405,9 @@ rawOps = [
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
 	-- Desc: divmod
- 	-- Example: `/7 2 $ -> 3,1
- 	-- Test: `/7 ~ $ -> 3,1
- 	op(["`","/"], [11,0], [AutoData num, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
+	-- Example: `/7 2 $ -> 3,1
+	-- Test: `/7 ~ $ -> 3,1
+	op(["`","/"], [11,0], [AutoData num, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	-- Test: / *~2 7 -> -1
@@ -423,6 +419,25 @@ rawOps = [
 	-- Desc: init
 	-- Example: <<,5 -> [1,2,3,4]
 	op(["<","<"], [11,0], [list], "init" ~> a1),
+	-- Desc: step
+	-- Example: `%2,5 -> [1,3,5]
+	-- Test: `% *~2,5 -> [5,3,1]
+	-- Test: `%~,5 -> [1,3,5]
+	-- Test: `% 1 ,0 -> []
+	-- Test lazy: <5 `%2,^10 100 -> [1,3,5,7,9]
+	extendOp [".","<"] genericReason ("`%", [12,11], [AutoDefault num 2, list], "step" ~> a2),
+	-- Desc: subsequences
+	-- 0 means all
+	-- - allow repeat
+	-- auto means 2
+	-- Example: `_ 2 "abc" -> ["ab","ac","bc"]
+	-- Test: `_ ~ "abc" -> ["ab","ac","bc"]
+	-- Test: `_ 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
+	-- Test: `_ -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
+	extendOp [".",">"] genericReason("`_",[12,12],[AutoDefault int 2, list],"\\n a->\
+		\if n>0 then subsequencesN n a \
+		\else if n==0 then subsequences a \
+		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	-- Desc: take
 	-- Example: <3,5 -> [1,2,3]
 	-- Test negative: <-2 ,5 -> [1,2,3]
@@ -448,9 +463,9 @@ rawOps = [
 	-- Test negative: >-2 ,5 -> [4,5]
 	op(">", [12], [num, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: moddiv
- 	-- Example : %~7 2 $ -> 1,3
- 	-- Test: %~7 ~ $ -> 1,3
- 	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
+	-- Example : %~7 2 $ -> 1,3
+	-- Test: %~7 ~ $ -> 1,3
+	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: modulus
 	-- Example: %7 2 -> 1
 	-- Test: % *~2 7 -> 5
@@ -543,28 +558,32 @@ rawOps = [
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
 	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
- 	-- Desc: to base from data
- 	-- untested example: `@ ~ 2   10 -> [1,0,1,0]
- 	-- RawTest: p `@ ~ 2 10 -> "[1,0,1,0]\n"
- 	-- RawTest: `@ ~ -5 1934 -> "c bad\n"
- 	-- RawTest: `@ ~ -150 19178 -> "\DEL\128\n"
- 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
+	-- Desc: to base from data
+	-- untested example: `@ ~ 2   10 -> [1,0,1,0]
+	-- RawTest: p `@ ~ 2 10 -> "[1,0,1,0]\n"
+	-- RawTest: `@ ~ -5 1934 -> "c bad\n"
+	-- RawTest: `@ ~ -150 19178 -> "\DEL\128\n"
+	extendOp ["?",litDigit] genericReason ("`@", [15,1], [auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt))::[VT]->ParseState (VT, String))),
- 	-- Desc: to base
- 	-- Example: `@ 10 2 -> [1,0,1,0]
- 	-- Test: `@ 0 2 -> []
- 	-- Test: `@ 89 ~ -> [8,9]
- 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
- 	-- Desc: from base
- 	-- Example: `@ :1 :0 :1 0 2 -> 10
- 	-- Test: `@ <0,3 2 -> 0
- 	-- Test: `@ :8 9 ~ -> 89
- 	-- Test: `@ "fizzbuzz" -27 -> 66635848070
- 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
- 	-- Desc: tbd
- 	-- Example: 0 -> 0
- 	extendOp ["?",litDigit] genericReason ("tbd", [15,1], [any1, list], undefinedImpl),
+	-- Desc: to base
+	-- Example: `@ 10 2 -> [1,0,1,0]
+	-- Test: `@ 0 2 -> []
+	-- Test: `@ 89 ~ -> [8,9]
+	extendOp ["?",litDigit] genericReason ("`@", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
+	-- Desc: from base
+	-- Example: `@ :1 :0 :1 0 2 -> 10
+	-- Test: `@ <0,3 2 -> 0
+	-- Test: `@ :8 9 ~ -> 89
+	-- Test: `@ "fizzbuzz" -27 -> 66635848070
+	extendOp ["?",litDigit] genericReason ("`@", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
+	-- Desc: split list
+	-- Example: /~ :3~ ,5 -> [[1,2],[4,5]]
+	-- Test end splits: /~ "a" "abca" -> ["","bc",""]
+	-- Test promote: /~ 3 ,5 -> [[1,2],[4,5]]
+	-- Test coerce: /~ 'b' "abc" -> ["a","c"]
+	extendOp ["?",litDigit] genericReason("/~",[15,1],[any1,list], \[a1,a2]->
+		"\\needle a->splitOn ("++coerceTo [a2] [a1]++" needle) a" ~> vList1 a2),
 	-- Desc: if nonnull (lazy) todo alias to regular if/else
 	-- Example: ?,:5 5 1 0 -> 1
 	-- Test: ?,:"" "" 1 0 -> 0
@@ -644,12 +663,6 @@ rawOps = [
 	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
 	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
 	op(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
-			
-	-- Desc: split list (todo promote to list when needed)
-	-- Example: `% ,5 :3~ -> [[1,2],[4,5]]
-	-- Test end splits: `% "abca" "a" -> ["","bc",""]
-	op(["`","%"],[],[listToBeReferenced,sameAsA1],"flip splitOn" ~> vList1.a1),
-	
 	-- Desc: groupAllBy
 	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
 	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
@@ -707,18 +720,6 @@ rawOps = [
 	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
 	-- Example: `P "abc" -> ["abc","bac","cba","bca","cab","acb"]
 	op(["`","P"],[14],[list, BinCode 9],"permutations"~>vList1.a1),
-	-- Desc: subsequences
-	-- 0 means all
-	-- - allow repeat
-	-- auto means 2
-	-- Example: `_ 2 "abc" -> ["ab","ac","bc"]
-	-- Test: `_ ~ "abc" -> ["ab","ac","bc"]
-	-- Test: `_ 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
-	-- Test: `_ -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
-	op(["`","_"],[],[AutoDefault int 2, list],"\\n a->\
-		\if n>0 then subsequencesN n a \
-		\else if n==0 then subsequences a \
-		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: `, 3 -> [0,1,2]
@@ -753,10 +754,6 @@ rawOps = [
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ \:9 :6 2 / -> [2,3,3]
 	op("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
-		
-	-- Desc: list of 2 lists
-	-- Example: `: ,2 ,1 -> [[1,2],[1]]
-	op(["`",":"], [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
