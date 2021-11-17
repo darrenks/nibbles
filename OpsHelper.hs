@@ -16,7 +16,7 @@ op (lit,nib,args,impl) = makeOp True (lit,nib,args,CodeGen $ toImpl impl)
 lowPriorityOp :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 lowPriorityOp (lit,nib,args,impl) = makeOp False (lit,nib,args,CodeGen $ toImpl impl)
 
-genericReason = "This usually means there is an alternative (likely shorter) way to do what you are trying to."
+genericReason = "This usually means there is an alternative (equal or shorter) way to do what you are trying to."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 

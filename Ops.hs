@@ -247,6 +247,19 @@ rawOps = [
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		),
+	-- Desc: bit intersection
+	-- Example: `& 6 3 -> 2
+	-- Test chr: `& 'e' 'q' -> 'a'
+	-- Test auto: `& ~ ~ -> 0
+	op("`&",[11],[AutoDefault num 1,BinCode 13,NotBinCode 2,AutoDefault num 2],".&."~>orChr),
+	-- Desc: bit union
+	-- Example: `| 6 3 -> 7
+	-- Test chr: `| 'b' 1 -> 'c'
+	-- Test auto: `| 1 ~ -> 3
+	op("`|",[9],[num,BinCode 13,NotBinCode 2,AutoDefault num 2],".|."~>orChr),
+	-- Desc: bit xor (todo use commutative of bit union/etc)
+	-- Example: `^ 6 3 -> 5
+	op("`^",[],[AutoDefault num 1,AutoDefault num 2],"xor"~>xorChr),
 	-- Desc: groupBy
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
@@ -256,11 +269,11 @@ rawOps = [
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
 	-- Test: ."Hi there!"`>$ -> "HI THERE!"
-	op(["`",">"], [9], [char, BinCode 2], "myOrd.toUpper.myChr"~>a1),
+	op(["`",">"], [12], [char, BinCode 2], "myOrd.toUpper.myChr"~>a1),
 	-- Desc: to lowercase
 	-- Example: `< 'A' -> 'a'
 	-- Test: ."Hi there!"`<$ -> "hi there!"
-	op(["`","<"], [9], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
+	op(["`","<"], [12], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -282,7 +295,7 @@ rawOps = [
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
-	op("=", [9], [int, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
+	op("=", [9], [num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: abs diff
 	-- Example: != 5 3 != 3 5 -> 2,2
 	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
@@ -417,7 +430,7 @@ rawOps = [
 	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
 	op("/", [11], [num, AutoDefault num 2], "safeDiv" ~> VInt),
 	-- Desc: init
-	-- Example: <<,5 -> [1,2,3,4]
+	-- Example: <<"asdf" -> "asd"
 	op(["<","<"], [11,0], [list], "init" ~> a1),
 	-- Desc: step
 	-- Example: `%2,5 -> [1,3,5]
@@ -439,8 +452,8 @@ rawOps = [
 		\else if n==0 then subsequences a \
 		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	-- Desc: take
-	-- Example: <3,5 -> [1,2,3]
-	-- Test negative: <-2 ,5 -> [1,2,3]
+	-- Example: <3"asdfg" -> "asd"
+	-- Test negative: <-2 "asdfg" -> "asd"
 	op("<", [11], [num, list], "\\n a->genericTake (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: tbd
 	-- Example: 0 -> 0
@@ -461,7 +474,7 @@ rawOps = [
 	-- Example: >3,5 -> [4,5]
 	-- Test more than size: >5,3 -> []
 	-- Test negative: >-2 ,5 -> [4,5]
-	op(">", [12], [num, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
+	op(">", [12], [int, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
 	-- Test: %~7 ~ $ -> 1,3
@@ -484,7 +497,8 @@ rawOps = [
 	-- Test lazy: <3 `/2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
-	op("`/", [], [AutoDefault num 2, list], "\\n a->if n<0 \
+	-- todo warn extend with bincode
+	op("`/", [14], [AutoDefault num 2, BinCode 11, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks
@@ -501,7 +515,7 @@ rawOps = [
 	-- Desc: range from 1 to (todo what negatives do?)
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,*~3 -> []
-	-- Test: <3,~ -> [1,2,3]
+	-- Test auto: <3 :0,~ -> [0,1,2]
 	op(",", [13], [AutoDefault num (2^128)], "\\x->[1..x]" ~> vList1 .a1),
 	-- Desc: exponentiation
 	-- Example: ^2 8 -> 256
@@ -573,7 +587,7 @@ rawOps = [
 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
 	-- Desc: from base
 	-- Example: `@ :1 :0 :1 0 2 -> 10
-	-- Test: `@ <0,3 2 -> 0
+	-- Test: `@ ,0 2 -> 0
 	-- Test: `@ :8 9 ~ -> 89
 	-- Test: `@ "fizzbuzz" -27 -> 66635848070
 	extendOp ["?",litDigit] genericReason ("`@", [15,1], [list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
@@ -693,18 +707,7 @@ rawOps = [
 	-- Desc: list difference
 	-- Example: `- "aabd" "abc" -> "ad"
 	binarySetOp "`-" 8 "a-b",
-	
-	-- Desc: bit union todo fully vectorize these
-	-- Example: `| 6 3 -> 7
-	-- Test chr: `| ~ 'b' -> 'c'
-	op("`|",[],[AutoDefault num 1,AutoDefault num 2],".|."~>orChr),
-	-- Desc: bit intersection
-	-- Example: `& 6 3 -> 2
-	op("`&",[],[AutoDefault num 1,AutoDefault num 2],".&."~>xorChr),
-	-- Desc: bit xor
-	-- Example: `^ 6 3 -> 5
-	op("`^",[],[AutoDefault num 1,AutoDefault num 2],"xor"~>xorChr),
-	
+		
 	-- Desc: or (todo coerce/etc, only need this op for lists though)
 	-- actually would be useful for ints as well (like after elem or conversion)
 	-- Example: or"" "b" or "a" "c" -> "b","a"
@@ -874,6 +877,7 @@ simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
 typeToStr (Cond desc _) = Just desc
 typeToStr Auto = Just "~"
 typeToStr (BinCode b) = Nothing
+typeToStr (NotBinCode b) = Nothing
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a

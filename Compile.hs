@@ -213,6 +213,11 @@ tryArg (BinCode b) _ _ memoArgs = do
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg bincode mismatch"
 
+tryArg (NotBinCode b) _ _ memoArgs = do
+	code <- gets pdCode
+	let matched = isJust $ onlyCheckMatch code ([b], ["dontmatchme"])
+	return $ if not matched then Success memoArgs [] else FailTypeMismatch "arg bincode mismatch"
+
 tryArg AnyS prevTs _ _ =
 	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) prevTs undefined undefined
 

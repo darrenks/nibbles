@@ -66,6 +66,7 @@ data ArgSpec
 	| CharClassMode
 	| AnyS -- basically a const fn, but shown as any*
 	| BinCode Int
+	| NotBinCode Int
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
 type Operation = ([ArgSpec], OpBehavior)
