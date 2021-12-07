@@ -177,6 +177,8 @@ rawOps = [
 	-- Test: +3 ~ -> 4
 	-- Test: +3 3 -> 6
 	extendOp ["]"] commutativeReason ("+", [8], [AutoDefault num 1, AutoDefault vec 1], vectorize "+" xorChr),
+	-- Desc: hidden catch all to do what they intended while giving warning
+	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, num], "max"~>orChr),
 	-- Desc: split. Removing empties.
 	-- Example: %"a b c" " " -> ["a","b","c"]
 	-- Test empties: %" a  b " " " -> ["a","b"]
@@ -250,21 +252,26 @@ rawOps = [
 	-- Desc: abs diff
 	-- Example: != 3 5 -> 2
 	-- Test auto: != ~ -3 -> 3
-	op("!=", [12,0], [AutoDefault num 0,andC num nArgLarger], "(abs.).(-)" ~> VInt),
+	extendOp ["`","&"] commutativeReason("!=", [12,0], [AutoDefault num 0,andC num nArgLarger], "(abs.).(-)" ~> VInt),
 	-- Desc: bit intersection
 	-- Example: `& 6 3 -> 2
 	-- Test chr: `& 'q' 'e' -> 'a'
 	-- Test auto: `& 3 ~ -> 1
-	op("`&",[12,0],[num,AutoDefault num 1],".&."~>orChr),
+	extendOp ["!","="] commutativeReason ("`&",[12,0],[num,AutoDefault num 1],".&."~>orChr),
+	-- Desc: hidden catch all to do what they intended while giving warning
+	extendOp ["`","&"] commutativeReason("!=",[12,0],[AutoDefault num 0,num],"(abs.).(-)" ~> VInt),
 	-- Desc: bit union
 	-- Example: `| 3 6 -> 7
 	-- Test chr: `| 1 'b' -> 'c'
 	-- Test auto: `| ~ 2 -> 3
 	op("`|",[11,0],[AutoDefault num 1,andC num nArgLarger],".|."~>orChr),
-	-- Desc: bit xor (todo use commutative of bit union/etc)
+	-- Desc: bit xor
 	-- Example: `^ 6 3 -> 5
 	-- Test auto: `^ 6 ~ -> 7
 	op("`^",[11,0],[num,AutoDefault num 1],"xor"~>xorChr),
+	-- Desc: hidden catch all to do what they intended while giving warning
+	extendOp ["`","^"] commutativeReason("`|",[11,0],[AutoDefault num 1,num],".|."~>orChr),
+
 	-- Desc: groupBy
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
@@ -353,6 +360,9 @@ rawOps = [
 	-- Test: *~ 5 -> -5
 	-- Test: *5 ~ -> 10
 	extendOp ["["] commutativeReason ("*", [10], [AutoDefault int (-1), AutoDefault vec 2], vectorize "*" (const VInt)),
+	
+	-- Desc: hidden catch all to do what they intended while giving warning
+	extendOp ["*"] commutativeReason ("[", [10], [int, num], "min"~>orChr),
 	
 	-- Desc: scanl1 tuple
 	-- Example: =\,3 ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
@@ -770,10 +780,6 @@ rawOps = [
 	-- Desc: error
 	-- Example: error p +2 1 -> error "3"
 	op("error", [], [str], "errorWithoutStackTrace.aToS" ~> vstr),
-	
-	-- catch alls to do what they intended while giving warning
-	extendOp ["+"] commutativeReason ("]", [8], [AutoDefault num 0, num], "max"~>orChr),
-	extendOp ["*"] commutativeReason ("[", [10], [int, num], "min"~>orChr),
 
 
 	op("testCoerce2", [], [any1, any1], testCoerce2 ~> vstr),

@@ -42,7 +42,7 @@ main=do
 				toHtml exO]
 	
 	let ops = concatMap selectNonWarningOps $ rawOps -- the others are for invalid literate warnings
-	let opsInfo = zip3 ops descs examples
+	let opsInfo = map (\((a,b),c) -> (a,b,c)) $ zip (filter (\(o,d)->not $ isPrefixOf "hidden" d) $ zip ops descs) examples
 	let opsInfo2 = if isSimple then filter (\(a,_,_)->isOpSimple a) opsInfo else opsInfo
 	hPutStrLn stderr $ show (length opsInfo2) ++ " " ++ show args ++ " ops"
 	let opsInfo3 = map (\(a,b,c)->(concatLit $ convertNullNib a,b,c)) opsInfo2

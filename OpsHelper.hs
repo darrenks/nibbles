@@ -155,6 +155,7 @@ isExtension (lit, nib, op) = length nib > 1 && length lit > 1 || isExtOpt op || 
 isExtOpt (types,_) = any (\t -> case t of
 	Auto -> True
 	Cond desc _ -> elem '>' desc
+	BinCode _ -> True
 	otherwise -> False) types
 isOpSimple (isPriority, lits, nib, op@(types,_)) =
 	(not (isExtension (lit, nib, op) || null nib)
