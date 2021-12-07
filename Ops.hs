@@ -247,19 +247,24 @@ rawOps = [
 	op("+", [8], [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
 		),
+	-- Desc: abs diff
+	-- Example: != 3 5 -> 2
+	-- Test auto: != ~ -3 -> 3
+	op("!=", [12,0], [AutoDefault num 0,andC num nArgLarger], "(abs.).(-)" ~> VInt),
 	-- Desc: bit intersection
 	-- Example: `& 6 3 -> 2
-	-- Test chr: `& 'e' 'q' -> 'a'
-	-- Test auto: `& ~ ~ -> 0
-	op("`&",[11],[AutoDefault num 1,BinCode 13,NotBinCode 2,AutoDefault num 2],".&."~>orChr),
+	-- Test chr: `& 'q' 'e' -> 'a'
+	-- Test auto: `& 3 ~ -> 1
+	op("`&",[12,0],[num,AutoDefault num 1],".&."~>orChr),
 	-- Desc: bit union
-	-- Example: `| 6 3 -> 7
-	-- Test chr: `| 'b' 1 -> 'c'
-	-- Test auto: `| 1 ~ -> 3
-	op("`|",[9],[num,BinCode 13,NotBinCode 2,AutoDefault num 2],".|."~>orChr),
+	-- Example: `| 3 6 -> 7
+	-- Test chr: `| 1 'b' -> 'c'
+	-- Test auto: `| ~ 2 -> 3
+	op("`|",[11,0],[AutoDefault num 1,andC num nArgLarger],".|."~>orChr),
 	-- Desc: bit xor (todo use commutative of bit union/etc)
 	-- Example: `^ 6 3 -> 5
-	op("`^",[],[AutoDefault num 1,AutoDefault num 2],"xor"~>xorChr),
+	-- Test auto: `^ 6 ~ -> 7
+	op("`^",[11,0],[num,AutoDefault num 1],"xor"~>xorChr),
 	-- Desc: groupBy
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
@@ -274,6 +279,10 @@ rawOps = [
 	-- Example: `< 'A' -> 'a'
 	-- Test: ."Hi there!"`<$ -> "hi there!"
 	op(["`","<"], [12], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
+	-- Desc: divmod
+	-- Example: `/7 2 $ -> 3,1
+	-- Test: `/7 ~ $ -> 3,1
+	op(["`","/"], [9], [num, BinCode 13,NotBinCode 2, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -296,9 +305,6 @@ rawOps = [
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
 	op("=", [9], [num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
-	-- Desc: abs diff
-	-- Example: != 5 3 != 3 5 -> 2,2
-	op(["!","="], [], [autoTodo num, AutoDefault num 0], "(abs.).(-)" ~> VInt),
 	-- Desc: partition
 	-- Example: |,5~~%$2 $ -> [1,3,5],[2,4]
 	-- Test notted: |,5~~~%$2 $ -> [2,4],[1,3,5]
@@ -413,14 +419,13 @@ rawOps = [
 			VList (_:_:_) -> unzipTuple a1
 			otherwise -> "transpose.(:[])" ~> [VList [a1]]
 		),
-	
+	-- Desc: moddiv
+	-- Example : %~7 2 $ -> 1,3
+	-- Test: %~7 ~ $ -> 1,3
+	op(["%","~"], [11], [num,BinCode 13,NotBinCode 2,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op("\\", [11], [list], "reverse" ~> a1),
-	-- Desc: divmod
-	-- Example: `/7 2 $ -> 3,1
-	-- Test: `/7 ~ $ -> 3,1
-	op(["`","/"], [11,0], [AutoData num, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
 	-- Test: / *~2 7 -> -1
@@ -475,10 +480,6 @@ rawOps = [
 	-- Test more than size: >5,3 -> []
 	-- Test negative: >-2 ,5 -> [4,5]
 	op(">", [12], [int, list], "\\n a->genericDrop (if n<0 then genericLength a+n else n) a" ~> a2),
-	-- Desc: moddiv
-	-- Example : %~7 2 $ -> 1,3
-	-- Test: %~7 ~ $ -> 1,3
-	op(["%","~"], [12,0], [AutoData num, AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: modulus
 	-- Example: %7 2 -> 1
 	-- Test: % *~2 7 -> 5
@@ -568,10 +569,6 @@ rawOps = [
 		let salt = o/=OptionYes
 		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
-	-- Desc: to hex
-	-- Example: hex 31 -> "1f"
-	-- Test negative: hex *~31 -> "-1f"
-	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: to base from data
 	-- untested example: `@ ~ 2   10 -> [1,0,1,0]
 	-- RawTest: p `@ ~ 2 10 -> "[1,0,1,0]\n"
@@ -686,7 +683,10 @@ rawOps = [
 		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
 		\sortOn (\\(_,fa,_)->fa) $\
 		\zip3 a (map f a) [0..]" ~> vList1 a1),
-
+	-- Desc: to hex
+	-- Example: hex 31 -> "1f"
+	-- Test negative: hex *~31 -> "-1f"
+	op ("hex", [14,13], [int, BinCode 4], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
 	op("`$",[14],[list, BinCode 4],"nub"~>a1),

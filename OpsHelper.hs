@@ -134,6 +134,8 @@ sameAsA1 = Cond "[a]" $ \mtd -> let [a1,a2] = mtdTypes mtd in
 
 sndArgLarger = Cond ">" $ \mtd -> let [op1b,op2b] = mtdNibs mtd
 	in op2b > op1b
+nArgLarger = Cond ">" $ \mtd -> let (op1b:oprb) = mtdNibs mtd
+	in last oprb > op1b
 
 andC (Cond as af) (Cond bs bf) = Cond (bs++as) (\mtd -> af mtd && bf mtd)
 orC (Cond as af) (Cond bs bf) = Cond (as++"|"++bs) (\mtd -> af mtd || bf mtd)

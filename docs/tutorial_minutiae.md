@@ -251,11 +251,7 @@ You can easily convert it to lists of a desired radix with `to base` (``@`).
  
 Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto value defaults to using the data value (which then also prevents the data value from overwriting the first int input value). And after the end of the current root expression data is assumed to start rather than needing ~.
 
-This example shows 5006 being divmodded, without overwriting $ (which is 100 since no input).
-
-	*" ":$ :`/~1000 $ 5006
-$Output
-	100 5 6
+TODO example of data arg
 
 Data can be handy for recreating large strings.
 

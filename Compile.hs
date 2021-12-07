@@ -384,7 +384,7 @@ getArgsH prevArgs prevNibs (spec:s) memoArgs = do
 		Success nextMemoizedArgs impl -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
 	where
 		afterState = snd $ head memoArgs
-		theseNibs = pdNib $ afterState
+		theseNibs = pdNib $ afterState -- this could cause a bug if true args after parsed arg aren't the memoized one, i.e. if you use BinCode arg type, but for now just avoid this, if really needed we could refactor code to return the actual bin rep.
 		nibs = (prevNibs++if pdImplicitArgUsed afterState then [newSmartList []] else [theseNibs])
 		prevArgTypes = map implType prevArgs
 
