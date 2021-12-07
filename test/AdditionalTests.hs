@@ -153,7 +153,7 @@
 -- op 6=let, 66=letfn, 60=recursion
 -- 66 is safe since pointless to assign twice
 -- 666 make it mean 6 66 (; letfn) but this is a collision
--- Test: ;~; 0 4 -> 4
+-- Test: ;~; 0 +1$ -> 1
 -- 660 make it mean 66 0 (letfn ~) but this is a collision
 -- Test: ;~ ~1 2 +@$ -> 3
 -- 6660 could be letfn recursion or let letfn ~, but who cares really?

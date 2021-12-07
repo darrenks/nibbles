@@ -83,13 +83,21 @@ rawOps = [
 	-- Test (coerce arg): ;~2+1$ $"4" -> 3,5
 	-- Test (coerce pair): ;~~1 2 +@$  $"5"2 -> 3,7
 	-- Test deps: .,2;~2+@$ -> [3,4]
-	op([";","~"], [6,6], [AnyS, fn $ ret.a1],
+	op([";","~"], [6,6], [AnyS, Fn ReqArg UnusedArg $ \[a1]->(1,ret a1)],
 		(\[a1,a2]->
 			let a1L = length $ ret a1
 			    a2L = length $ ret a2 in
 			"\\x f->"++flattenTuples a2L 1 ++ "(f $ x(),f)" ~>
 			ret a2 ++ [VFn (ret a1) (ret a2)]
 			)),
+	-- Desc: equal?
+	-- todo consider returning list of the value or empty rather than 1 0
+	-- Example: == 1 2 == 1 1 -> 0,1
+	-- Test coerce: == 1 "1" -> 1
+	op("==",[6,6],[AnyS, Fn ReqConst UnusedArg $ \[a1]->(1,ret a1)],\[a1,a2]->
+		let (coercedType, coerceFnA, coerceFnB) = coerce (ret a1) (ret a2) in
+			"\\a b->bToI$"++coerceFnA++"(a())=="++coerceFnB++"b" ~> VInt),
+
 	-- Desc: recursion
 	-- Example (fact): `; 5 $ 1 *@-$~$ -> 120
 	-- Test (multiple args): `; ~3 4 $ 0 +_@ -$1 @ -> 12
@@ -155,10 +163,6 @@ rawOps = [
 	-- Desc: signum
 	-- Example: `$ *~1 `$ 0 `$ 2 -> -1,0,1
 	op("`$",[],[autoTodo {- -1? -} int], "signum" ~> a1),
-	-- Desc: equal? (todo coerce or restrict)
-	-- todo consider returning list of the value or empty rather than 1 0
-	-- Example: == 1 2 == 1 1 -> 0,1
-	op(["=","="],[],[any1, autoTodo {- truthy? -} any1],"(bToI.).(==)" ~> VInt),
 		
 	-- Desc: max
 	-- Example: ]4 5 -> 5
@@ -276,8 +280,12 @@ rawOps = [
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp ["|","\\"] genericReason ("`=", [9,11], [list, fn (elemT.a1)],
-		\[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
+	extendOp ["|","\\"] genericReason ("`=", [9,11], [list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
+	-- Desc: or
+	-- Example: or"" "b" or "a" "c" -> "b","a"
+	-- Test coerce: or "" 5 -> "5"
+	extendOp ["|","\\"] genericReason ("or",[9,11],[list,Fn ReqConst UnusedArg $ \[a1]->(1,elemT a1)],\[a1,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
+
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
 	-- Test: ."Hi there!"`>$ -> "HI THERE!"
@@ -718,10 +726,6 @@ rawOps = [
 	-- Example: `- "aabd" "abc" -> "ad"
 	binarySetOp "`-" 8 "a-b",
 		
-	-- Desc: or (todo coerce/etc, only need this op for lists though)
-	-- actually would be useful for ints as well (like after elem or conversion)
-	-- Example: or"" "b" or "a" "c" -> "b","a"
-	op("or",[],[autoTodo any1,any1],\[a1,_]->"\\a b->if "++truthy [a1]++" a then a else b" ~> a1),
 	-- Desc: strip
 	-- Example: -~ " bcd\n\n" -> "bcd"
 	op(["-","~"],[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
