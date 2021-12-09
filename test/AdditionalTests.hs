@@ -166,7 +166,8 @@
 
 -- op 10 (a) not used in any extensions
 
--- op 11 (b) = only used as second
+-- op 11 (b) = reverse, only used as second
+-- except for iterate while uniq which uses b2 this is a collision, but oh wells
 
 -- op 12 (c) = map/drop/mod only used in fst
 

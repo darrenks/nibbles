@@ -122,21 +122,6 @@ rawOps = [
 	-- Test: .,3 ;%$3 -> [1,2,0]
 	-- Test: +++0 0;1 ;+2$ -> 4
 	op(";", [6], [any1], "\\x->(x,x)" ~> dup.a1),
-	-- Desc: iterate while uniq
-	-- Example: `. 10 %+1$3 -> [10,2,0,1]
-	-- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
-	-- Test tuple: `. ~1 2 @$ -> [(1,2),(2,1)]
-	-- Test lazy: <1 `. ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
-	op("`.", [], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
-		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
-	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: .~ ,4 >1^- 5,$$ -> [1,2,3,4,3,2,1]
-	-- Test coerce: <7 .~ ,4 1 -> [1,2,3,4,1,1,1]
-	-- Test coerce first: <4 .~ 2 1 -> [2,1,1,1]
-	-- Test fibonnaci: <5 .~ 1 +<2 $ -> [1,1,2,3,5]
-	op([".","~"], [], [autoTodo any1, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]->
-		let (a1ListT,a1ListF)=promoteList [a1] in
-			"\\a f->appendUntilNull ("++a1ListF++"a) ("++coerceTo [a1ListT] (ret a2)++".f)" ~> a1ListT),
 	-- Desc: singleton
 	-- Example: :3~ -> [3]
 	-- Test tuple: :~1 2~ -> [(1,2)]
@@ -264,18 +249,6 @@ rawOps = [
 	extendOp ["!","="] commutativeReason ("`&",[12,0],[num,AutoDefault num 1],".&."~>orChr),
 	-- Desc: hidden catch all to do what they intended while giving warning
 	extendOp ["`","&"] commutativeReason("!=",[12,0],[AutoDefault num 0,num],"(abs.).(-)" ~> VInt),
-	-- Desc: bit union
-	-- Example: `| 3 6 -> 7
-	-- Test chr: `| 1 'b' -> 'c'
-	-- Test auto: `| ~ 2 -> 3
-	op("`|",[11,0],[AutoDefault num 1,andC num nArgLarger],".|."~>orChr),
-	-- Desc: bit xor
-	-- Example: `^ 6 3 -> 5
-	-- Test auto: `^ 6 ~ -> 7
-	op("`^",[11,0],[num,AutoDefault num 1],"xor"~>xorChr),
-	-- Desc: hidden catch all to do what they intended while giving warning
-	extendOp ["`","^"] commutativeReason("`|",[11,0],[AutoDefault num 1,num],".|."~>orChr),
-
 	-- Desc: groupBy
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
@@ -422,9 +395,13 @@ rawOps = [
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
 	op("`<", [14], [list, BinCode 13], "sort" ~> a1),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	extendOp ["\"","\\"] genericReason ("tbd", [11,2], [], undefinedImpl),
+	-- Desc: iterate while uniq
+	-- Example: `. 10 %+1$3 -> [10,2,0,1]
+	-- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
+	-- Test tuple: `. ~1 2 @$ -> [(1,2),(2,1)]
+	-- Test lazy: <1 `. ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
+	extendOp ["\"","\\"] genericReason ("`.", [11,2], [AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
+		\[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 	-- Desc: transpose (maybe this should even be 1 nib... very common for 2d lists and list of tuples).
 	-- Example: `' "hi""yo" -> ["hy","io"]
 	-- Test mismatch dims: `' "hi""y" -> ["hy","i"]
@@ -451,7 +428,20 @@ rawOps = [
 	-- Test: / 2 *~7 -> -1
 	-- Test: / 7 ~ -> 3
 	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
-	op("/", [11], [num, AutoDefault num 2], "safeDiv" ~> VInt),
+	op("/", [11], [num, AutoDefault num 2], "safeDiv" ~> VInt),	
+	-- Desc: hidden tbd
+	op("tbd", [11,0], [autoTodo num, list], undefinedImpl),
+	-- Desc: bit union todo commutative warning? (and others)
+	-- Example: `| 3 6 -> 7
+	-- Test chr: `| 1 'b' -> 'c'
+	-- Test auto: `| ~ 2 -> 3
+	op("`|",[11,0],[AutoDefault num 1,andC num nArgLarger],".|."~>orChr),
+	-- Desc: bit xor
+	-- Example: `^ 6 3 -> 5
+	-- Test auto: `^ 6 ~ -> 7
+	op("`^",[11,0],[num,AutoDefault num 1],"xor"~>xorChr),
+	-- Desc: hidden catch all to do what they intended while giving warning
+	extendOp ["`","^"] commutativeReason("`|",[11,0],[AutoDefault num 1,num],".|."~>orChr),
 	-- Desc: init
 	-- Example: <<"asdf" -> "asd"
 	op(["<","<"], [11,0], [list], "init" ~> a1),
@@ -478,13 +468,56 @@ rawOps = [
 	-- Example: <3"asdfg" -> "asd"
 	-- Test negative: <-2 "asdfg" -> "asd"
 	op("<", [11], [num, list], "\\n a->genericTake (if n<0 then genericLength a+n else n) a" ~> a2),
-	-- Desc: tbd
-	-- Example: 0 -> 0
+	-- Desc: hidden tbd (it collides though)
 	extendOp [",","."] genericReason ("tbd", [13,12], [list], undefinedImpl),
+	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
+	-- Example: .~ ,4 >1^- 5,$$ -> [1,2,3,4,3,2,1]
+	-- Test coerce: <7 .~ ,4 1 -> [1,2,3,4,1,1,1]
+	-- Test coerce first: <4 .~ :2~ 1 -> [2,1,1,1]
+	-- Test fibonnaci: <5 .~ :1~ +<2 $ -> [1,1,2,3,5]
+	op (".~", [], [list, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]-> "\\a f->appendUntilNull a ("++coerceTo [a1] (ret a2)++".f)" ~> a1),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
+	
+	-- Desc: take drop while
+	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
+	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
+	op(["`","<","~"], [14,0,11], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: take while
+	-- Example: <~ ,5 - 3$ -> [1,2]
+	-- Test not: <~ ,5 ~-$3 -> [1,2,3]
+	op(["<","~"], [14], [list, BinCode 15, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
+	-- Desc: drop take while
+	-- Example: `>~ ,5 - 3$ $ -> [3,4,5],[1,2]
+	-- Test not: `>~ ,5 ~-$3 $ -> [4,5],[1,2,3]
+	op(["`",">","~"], [12,0,0], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
+	-- Desc: drop while
+	-- Example: >~ ,5 - 3$ -> [3,4,5]
+	-- Test not: >~ ,5 ~-$3 -> [4,5]
+	op([">","~"], [14], [list, BinCode 14, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
+	-- Desc: take drop
+	-- Example: `< 2 ,5 $ -> [1,2],[3,4,5]
+	-- Test negative: `< *~2 ,3 $ -> [1],[2,3]
+	op(["`","<"], [14], [num, BinCode 11, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
+	-- Desc: drop take
+	-- Example: `> 2 ,5 $ -> [3,4,5],[1,2]
+	-- Test negative: `> *~2 ,3 $ -> [2,3],[1]
+	op(["`",">"], [12,0], [num, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
+	-- Desc: uncons
+	-- Example: `( ,3 $ -> 1,[2,3]
+	-- Test empty: `( ,0 $ -> 0,[]
+	-- Test tuple: `( z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
+	-- Test tuple empty: `( z ,0"a" $ @ -> 0,' ',[]
+	op(["`","("], [14], [list, BinCode 1], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
+	-- Desc: swapped uncons
+	-- Example: `) ,3 $ -> [2,3],1
+	-- Test empty: `) ,0 $ -> [],0
+	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
+	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
+	op(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
+	
 	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
 	--- Desc: zip2 (incomplete)
 	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
@@ -506,10 +539,13 @@ rawOps = [
 	-- Test: % 7 ~ -> 1
 	-- Test mod 0: %7 0 -> 0
 	op("%", [12], [num, AutoDefault num 2], "safeMod" ~> VInt),
-	-- Desc: chr/ord todo make ord 1 nibble
-	-- todo consider making a 1 nib version for ord
-	-- Example: ch 100 ch 'e' -> 'd',101
-	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault num 126], "id" ~> xorChr.(VChr:)),
+	-- Desc: chr
+	-- Example: ch 100 -> 'd'
+	extendOp [",",","] genericReason ("ch", [13,13], [AutoDefault int 126], "id" ~> xorChr.(VChr:)),
+	-- Desc: tbd
+	-- Example: 0 -> 0
+	extendOp [",",","] genericReason ("tbd", [13,13], [autoTodo char], undefinedImpl),
+
 	-- Desc: chunksOf
 	-- Example: `/2,5 -> [[1,2],[3,4],[5]]
 	-- Test doesnt get swallowed by ?, : ?`/ 1"...a.."~ \/$$a -> 4
@@ -517,7 +553,7 @@ rawOps = [
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
 	-- todo warn extend with bincode
-	op("`/", [14], [AutoDefault num 2, BinCode 11, list], "\\n a->if n<0 \
+	extendOp ["^","."] genericReason ("`/", [14,12], [AutoDefault int 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks
@@ -552,9 +588,9 @@ rawOps = [
 	op("^", [14], [AutoDefault int (2^128), orC list char], \[_,a2] ->
 		let (ap2, apf) = promoteList [a2] in
 		"\\n a->concat$genericReplicate n$"++apf++" a" ~> ap2),
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	op("tbd", [14], [char], undefinedImpl),
+	-- Desc: ord
+	-- Example: o'd' -> 100
+	op("o", [14], [char], "id"~>VInt),
 	-- Desc: splitBy
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
@@ -656,42 +692,6 @@ rawOps = [
 	-- todo there are some type combinations that are invalid for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
 	
-	-- Desc: take drop while
-	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
-	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
-	op(["`","<","~"], [11,0,0], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
-	-- Desc: take while
-	-- Example: <~ ,5 - 3$ -> [1,2]
-	-- Test not: <~ ,5 ~-$3 -> [1,2,3]
-	op(["<","~"], [14], [list, BinCode 15, AutoNot $ fn (elemT.a1)], "flip takeWhile" ~> \[a1,_]->a1::VT),
-	-- Desc: drop take while
-	-- Example: `>~ ,5 - 3$ $ -> [3,4,5],[1,2]
-	-- Test not: `>~ ,5 ~-$3 $ -> [4,5],[1,2,3]
-	op(["`",">","~"], [12,0,0], [list, AutoNot $ fn (elemT.a1)], "(swap.).flip span" ~> \[a1,_]->[a1::VT,a1]),
-	-- Desc: drop while
-	-- Example: >~ ,5 - 3$ -> [3,4,5]
-	-- Test not: >~ ,5 ~-$3 -> [4,5]
-	op([">","~"], [14], [list, BinCode 14, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
-	-- Desc: take drop
-	-- Example: `< 2 ,5 $ -> [1,2],[3,4,5]
-	-- Test negative: `< *~2 ,3 $ -> [1],[2,3]
-	op(["`","<"], [11,0], [num, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
-	-- Desc: drop take
-	-- Example: `> 2 ,5 $ -> [3,4,5],[1,2]
-	-- Test negative: `> *~2 ,3 $ -> [2,3],[1]
-	op(["`",">"], [12,0], [num, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
-	-- Desc: uncons
-	-- Example: `( ,3 $ -> 1,[2,3]
-	-- Test empty: `( ,0 $ -> 0,[]
-	-- Test tuple: `( z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
-	-- Test tuple empty: `( z ,0"a" $ @ -> 0,' ',[]
-	op(["`","("], [14], [list, BinCode 1], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
-	-- Desc: swapped uncons
-	-- Example: `) ,3 $ -> [2,3],1
-	-- Test empty: `) ,0 $ -> [],0
-	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
-	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
-	op(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 	-- Desc: groupAllBy
 	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
 	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
