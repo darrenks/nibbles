@@ -703,7 +703,8 @@ rawOps = [
 	-- Desc: to hex
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
-	op ("hex", [14,13], [int, BinCode 4], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+	-- [14,13], [int, BinCode 4]
+	op ("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
 	op("`$",[14],[list, BinCode 4],"nub"~>a1),
@@ -901,3 +902,9 @@ typeToStr (ZipMode) = Just "zipop"
 typeToStr (FoldMode) = Just "foldop"
 typeToStr (CharClassMode) = Just "chClass"
 typeToStr AnyS = Just "any*"
+
+
+opSpecificity (_,lit,bin,(args, _))  = let replen = if head bin==16 then length (concat lit) else length bin in -(replen + sum (map argSpecificity args))
+argSpecificity (BinCode _) = 1
+argSpecificity Auto = 1
+argSpecificity _ = 0

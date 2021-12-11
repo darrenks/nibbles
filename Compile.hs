@@ -2,7 +2,7 @@
 
 module Compile(compile,padToEvenNibbles) where
 
-import Data.List(inits,intercalate)
+import Data.List(inits,intercalate,sortOn)
 import Control.Monad (msum)
 import Data.List.Split(splitOn)
 import Data.Maybe
@@ -469,7 +469,7 @@ data FailedMatch = FailedMatch {
 
 getValue :: (?isSimple::Bool) => [[(Impl, ParseData)]] -> ParseState Impl
 getValue memoArgOffsets = do
-	let ops = if ?isSimple then simpleOps else allOps
+	let ops = sortOn opSpecificity $ if ?isSimple then simpleOps else allOps
 	code <- gets pdCode
 	if empty code
 	then argImplicit
