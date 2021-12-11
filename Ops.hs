@@ -257,7 +257,7 @@ rawOps = [
 	-- Desc: or
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	-- Test coerce: or "" 5 -> "5"
-	extendOp ["|","\\"] genericReason ("or",[9,11],[list,Fn ReqConst UnusedArg $ \[a1]->(1,elemT a1)],\[a1,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
+	op("or",[],[list,any1],\[a1,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] [a2]++"b" ~> a1),
 
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
@@ -480,7 +480,12 @@ rawOps = [
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
-	
+	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
+	--- Desc: zip2 (incomplete)
+	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
+	--- todo, coerce dim length can do the vectorizing for us??
+-- 	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
+
 	-- Desc: take drop while
 	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
 	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
@@ -517,12 +522,6 @@ rawOps = [
 	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
 	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
 	op(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
-	
-	op(".", [12], [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
-	--- Desc: zip2 (incomplete)
-	--- Example: ."abc",3 -> [('a',1),('b',2),('c',3)]
-	--- todo, coerce dim length can do the vectorizing for us??
--- 	op(".", [12], [list, Fn False UnusedArg $ \[a1]->(1,elemT a1)], (\[a1,a2]->"\\aa bb->zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT$head$ret a2) ++ "(a,b)) aa (bb())" ~> (VList $ elemT a1++(elemT$head$ret$a2)))),
 	-- Desc: tail
 	-- Example: >>,5 -> [2,3,4,5]
 	op([">",">"], [12,0], [list], "tail" ~> a1),
@@ -553,7 +552,7 @@ rawOps = [
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
 	-- todo warn extend with bincode
-	extendOp ["^","."] genericReason ("`/", [14,12], [AutoDefault int 2, list], "\\n a->if n<0 \
+	op("`/", [], [AutoDefault int 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks

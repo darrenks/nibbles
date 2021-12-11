@@ -162,14 +162,13 @@
 
 -- op 8 only used as 1st op in combo
 
--- op 9 only used as 1st op in combo
+-- op 9 = filter, only used as 1st op in combo (todo snd now)?
 
 -- op 10 (a) not used in any extensions
 
--- op 11 (b) = reverse, only used as second
--- except for iterate while uniq which uses b2 this is a collision, but oh wells
+-- op 11 (b) = reverse, only used as first on lists
 
--- op 12 (c) = map/drop/mod only used in fst
+-- op 12 (c) = map/drop/mod only used in fst (todo snd?)
 
 -- op 13 (d) = length/range1, used in 1st for many, but only in 2nd as chr, and lazy if
 -- dd d list valid, d dd list = pointless
