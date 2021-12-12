@@ -10,7 +10,7 @@ import Hs
 import OpsHelper
 
 import State
-import Data.List(concat)
+import Data.List(concat,sortOn)
 import Data.Maybe
 
 autoTodoValue = -88
@@ -881,8 +881,8 @@ binOp ':' [a,b] = let
 binOp '=' [a1,a2] = (elemT a1, "\\a i->if null a then "++defaultValue (elemT a1)++"else lazyAtMod a (fromIntegral i - 1)")
 binOp '?' [a1,a2] = ([VInt], "\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e a)")
 
-allOps = addHigherValueDeBruijnOps $ concat rawOps
-simpleOps = addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
+allOps = sortOn opSpecificity $ addHigherValueDeBruijnOps $ concat rawOps
+simpleOps = sortOn opSpecificity $ addHigherValueDeBruijnOps $ filter isOpSimple $ map last rawOps
 
 typeToStr (Cond desc _) = Just desc
 typeToStr Auto = Just "~"
@@ -902,9 +902,3 @@ typeToStr (ZipMode) = Just "zipop"
 typeToStr (FoldMode) = Just "foldop"
 typeToStr (CharClassMode) = Just "chClass"
 typeToStr AnyS = Just "any*"
-
-
-opSpecificity (_,lit,bin,(args, _))  = let replen = if head bin==16 then length (concat lit) else length bin in -(replen + sum (map argSpecificity args))
-argSpecificity (BinCode _) = 1
-argSpecificity Auto = 1
-argSpecificity _ = 0

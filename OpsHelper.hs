@@ -170,3 +170,8 @@ isOpSimple (isPriority, lits, nib, op@(types,_)) =
 		isSpecialMode (BinCode _) = True
 		isSpecialMode ZipMode = True
 		isSpecialMode _ = False
+
+opSpecificity (_,lit,bin,(args, _))  = let replen = if head bin==16 then length (concat lit) else length bin in -(replen + sum (map argSpecificity args))
+argSpecificity (BinCode _) = 1
+argSpecificity Auto = 1
+argSpecificity _ = 0
