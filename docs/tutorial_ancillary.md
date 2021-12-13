@@ -14,7 +14,7 @@ What if I use it multiple times? It will return the same result each time. In fa
 ### Infinite lists and errors
 If this is all unfamiliar to you, you could read up on [lazy evaluation](https://en.wikipedia.org/wiki/Lazy_evaluation). But you'll do ok with just the information here, as laziness should be pure win compared to eager evaluation (for code golf purposes). Anything you would do eagerly will still work in equal or better asymptotic time lazily.
 
-Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=1 \: /1 0 2` -> `2` (which builds the list of `[error,2]`, reverses it then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
+Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=1 :2 /1 0` -> `2` (which builds a list of `[2,error]`, then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
 
 And we could also generate the list of numbers from 1 to a googol, then select only the first 5 that are odd as such:
 

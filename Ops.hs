@@ -160,10 +160,10 @@ rawOps = [
 		),
 	-- Desc: list of 2 lists
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
-	extendOp "`:" [diffRep] (shorterReason"reversing the second list does nothing") ([listToBeReferenced, BinCodeRep reverseRep, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
+	opM("`:", [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	-- Desc: signum
 	-- Example: `$ *~1 `$ 0 `$ 2 -> -1,0,1
-	opM("`$",[],[autoTodo {- -1? -} int], "signum" ~> a1),
+	extendOp "`$" [lengthRep, consRep] (shorterReason"just add 1 to the length") ([autoTodo {- -1? -} num], "signum" ~> VInt),
 		
 	commutativeExtension [8]
 		-- Desc: max
@@ -235,7 +235,7 @@ rawOps = [
 	-- Example: `*,4 -> 24
 	-- Test: `*,0 -> 1
 	-- Test tuple: `* z,4 "abcd" $ -> 24,"abcd"
-	extendOp "`*" [sumRep, reverseRep] (shorterReason"just use sum without the reverse") ([listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	opM("`*", [], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: sum
@@ -270,7 +270,7 @@ rawOps = [
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp "`=" [filterRep, reverseRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
+	extendOp "`=" [filterRep, mapRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 	-- Desc: or
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	-- Test coerce: or "" 5 -> "5"
@@ -361,25 +361,24 @@ rawOps = [
 		
 	-- Desc: scanl1 tuple
 	-- Example: =\,3 ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-	extendOp "=\\" [lengthRep, reverseRep] (shorterReason"just take length without reverse") ([nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
 	
 	-- Desc: scanl
 	-- Example: =\,3 0 +@$ -> [0,1,3,6]
-	extendOp "=\\" [lengthRep, reverseRep] (shorterReason"just take length without reverse") ([nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 
 	-- Desc: scanl1
 	-- Example: =\,3+*2$@ -> [1,5,11]
 	-- Test empty: =\,0+@$ -> []
-	extendOp "=\\" [lengthRep, reverseRep] (shorterReason"just take length without reverse") ([nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
 		"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(y,x)) i a" ~> VList (ret a2))),
-
 	
 	-- Desc: scanl list tuple
 	-- Example: =\ z ,3 "abc" ~0 ++_@$ -> [0,98,198,300]
-	extendOp "=\\" [lengthRep, reverseRep] (shorterReason"just take length without reverse") ([list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
 	-- Desc: scanl1 list tuple
 	-- Example: =\ z ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
-	extendOp "=\\" [lengthRep, reverseRep] (shorterReason"just take length without reverse") ([list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 
 	-- Desc: foldr1tuple
 	-- Example: /,3 ~1 2 _ @  $ -> 2,1
@@ -408,6 +407,7 @@ rawOps = [
 	op(('/',10), [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
+	-- FYI rep is used for hex extension too!
 	opM("`<", [14], [list, BinCode 13], "sort" ~> a1),
 	-- Desc: iterate while uniq
 	-- Example: `. 10 %+1$3 -> [10,2,0,1]
@@ -422,7 +422,7 @@ rawOps = [
 	-- Test mismatch dims: `' "h""yo" -> ["hy","o"]
 	-- Test 1 dim: `' "abc" -> ["a","b","c"]
 	-- Test tuple, unzip it: `' z,3"abc" $ -> [1,2,3],"abc"
-	extendOp "`'" [mapRep, reverseRep] equivalentOrderReason ([list], \[a1] ->
+	extendOp "`'" [reverseRep, mapRep] equivalentOrderReason ([list], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> [a1]
 			VList (_:_:_) -> unzipTuple a1
@@ -467,7 +467,7 @@ rawOps = [
 	-- Test: `%~,5 -> [1,3,5]
 	-- Test: `% 1 ,0 -> []
 	-- Test lazy: <5 `%2,^10 100 -> [1,3,5,7,9]
-	extendOp "`%" [mapRep, takeRep] equivalentOrderReason ([AutoDefault num 2, list], "step" ~> a2),
+	extendOp "`%" [takeRep, mapRep] equivalentOrderReason ([AutoDefault num 2, list], "step" ~> a2),
 	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat
@@ -476,7 +476,7 @@ rawOps = [
 	-- Test: `_ ~ "abc" -> ["ab","ac","bc"]
 	-- Test: `_ 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
 	-- Test: `_ -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
-	extendOp "`_" [mapRep, dropRep] equivalentOrderReason ([AutoDefault int 2, list],"\\n a->\
+	extendOp "`_" [dropRep, mapRep] equivalentOrderReason ([AutoDefault int 2, list],"\\n a->\
 		\if n>0 then subsequencesN n a \
 		\else if n==0 then subsequences a \
 		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
@@ -554,10 +554,10 @@ rawOps = [
 	op(('%',12), [num, AutoDefault num 2], "safeMod" ~> VInt),
 	-- Desc: chr
 	-- Example: ch 100 -> 'd'
-	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([AutoDefault int 126], "id" ~> xorChr.(VChr:)),
+	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([NotBinCodeRep strRep,AutoDefault int 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	extendOp "tbd" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([autoTodo char], undefinedImpl),
+	extendOp "tbd" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([NotBinCodeRep strRep,autoTodo char], undefinedImpl),
 
 	-- Desc: chunksOf
 	-- Example: `/2,5 -> [[1,2],[3,4],[5]]
@@ -566,7 +566,7 @@ rawOps = [
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
 	-- todo warn extend with bincode
-	opM("`/", [], [AutoDefault int 2, list], "\\n a->if n<0 \
+	extendOp "`/" [reverseRep,repRep] equivalentOrderReason ([AutoDefault num 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
 	-- Desc: nChunks
@@ -578,7 +578,7 @@ rawOps = [
 	-- Test empty: `\ -4 "" -> []
 	extendOp "`\\" [lengthRep, repRep] "Multiply length by fst arg instead of replicating list." ([AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
 	-- Desc: length
-	-- Example: ,:3 4 -> 2
+	-- Example: ,>1"asdf" -> 3
 	op(lengthRep, [list], "genericLength" ~> VInt),
 	-- Desc: range from 1 to (todo what negatives do?)
 	-- Example: ,3 -> [1,2,3]
@@ -663,9 +663,9 @@ rawOps = [
 	extendOp "/~" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([any1,list], \[a1,a2]->
 		"\\needle a->splitOn ("++coerceTo [a2] [a1]++" needle) a" ~> vList1 a2),
 	-- Desc: if nonnull (lazy) todo alias to regular if/else
-	-- Example: ?,:5 5 1 0 -> 1
-	-- Test: ?,:"" "" 1 0 -> 0
-	-- Test: ?,:5 5 $ 0 -> [5,5]
+	-- Example: ?,>0:5 5 1 0 -> 1
+	-- Test: ?,>0:"" "" 1 0 -> 0
+	-- Test: ?,>0:5 5 $ 0 -> [5,5]
 	lowPriorityOp([fst ifRep,fst lengthRep], [snd ifRep,snd lengthRep], list:ifBodyArgs, ifImpl),
 	-- Desc: if/else todo delet fn arg
 	-- Example: ? +0 0 "T" "F" -> "F"
@@ -718,7 +718,8 @@ rawOps = [
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
 	-- [14,13], [int, BinCode 4]
-	opM("hex", [], [int], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+	-- Todo extension warning... this is saying sort of a range is pointless
+	opM("hex", [14,snd rangeRep], [NotBinCode (snd strRep),int,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
 	opM("`$",[14],[list, BinCode 4],"nub"~>a1),
@@ -755,7 +756,7 @@ rawOps = [
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: `, 3 -> [0,1,2]
 	-- Test: <3 `, ~ -> [0,1,2]
-	opM("`,", [], [AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
+	extendOp "`," [reverseRep, consRep] equivalentOrderReason ([AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	
 	-- Desc: find indices by
 	-- Example: `? "a b" \$a -> [1,3]
@@ -771,7 +772,7 @@ rawOps = [
 				else "findIndices (\\e->e /= needle) a"
 		) ~> vList1 VInt),
 	
-	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args)
+	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args) (todo use a ;; opcode)
 	-- Example: `/ "asdf" ] -> 's'
 	-- Test: `/ "" * -> 1
 	-- Test: `/,3] `/,3[ `/,3+ `/,3* `/,3- `/,3% `/,3^ -> 3,1,6,6,2,1,1
@@ -783,7 +784,7 @@ rawOps = [
 	-- Desc: special scans
 	-- Example: `\ ,4 + -> [1,3,6,10]
 	-- Test: `\ ,0 + -> []
-	-- Test commutative order: `\ \:9 :6 2 / -> [2,3,3]
+	-- Test commutative order: `\ :2 :6 9 / -> [2,3,3]
 	opM("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: debug arg type
