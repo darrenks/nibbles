@@ -213,6 +213,13 @@ tryArg (BinCode b) _ _ memoArgs = do
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg bincode mismatch"
 
+tryArg (LitCode l) _ _ memoArgs = do
+	matched <- match ([], [[l]])
+	code <- gets pdCode
+	context <- gets pdContext
+	let regenedArgs = head $ exprsByOffset $ Thunk code context
+	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg litcode mismatch"
+
 tryArg (NotBinCode b) _ _ memoArgs = do
 	code <- gets pdCode
 	let matched = isJust $ onlyCheckMatch code ([b], ["dontmatchme"])

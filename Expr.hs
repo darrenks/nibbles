@@ -65,8 +65,13 @@ data ArgSpec
 	| FoldMode
 	| CharClassMode
 	| AnyS -- basically a const fn, but shown as any*
+	| BinCodeRep (Char, Int) -- only used in spec, converted to BinCode/LitCode
 	| BinCode Int
+	| LitCode Char
+	| NotBinCodeRep (Char, Int)
 	| NotBinCode Int
+	| NotLitCode Char
+
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
 type Operation = ([ArgSpec], OpBehavior)

@@ -114,7 +114,7 @@ showAuto i
 		| otherwise = show i
 
 isBinOnly :: [ArgSpec] -> String
-isBinOnly args = concatMap (\t->case t of BinCode b -> " "++showHex b ""; otherwise -> "") args
+isBinOnly args = concatMap (\t->case toBinCode t of BinCode b -> " "++showHex b ""; otherwise -> "") args
 
 rootType t = stringValue $ filter (\x->isAlpha x || x=='[') $ t
 

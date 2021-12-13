@@ -11,12 +11,17 @@ import Hs
 makeOp :: (ToLitSpec lit) => Bool -> (lit, [Int], [ArgSpec], OpBehavior) -> [(Bool, [String], [Int], Operation)]
 makeOp priority (lit, nib, t, behavior) = [(priority, toLitSpec lit, nib, (t, behavior))]
 
-op :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-op (lit,nib,args,impl) = makeOp True (lit,nib,args,CodeGen $ toImpl impl)
+opM :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+opM (lit,nib,args,impl) = makeOp True (lit,nib,args,CodeGen $ toImpl impl)
+
+op :: OpImpl impl => ((Char, Int), [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+op ((lit,nib),args,impl) = opM(repToLit lit,[nib],args,impl)
+
 lowPriorityOp :: (OpImpl impl, ToLitSpec lit) => (lit, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 lowPriorityOp (lit,nib,args,impl) = makeOp False (lit,nib,args,CodeGen $ toImpl impl)
 
-genericReason = "This usually means there is an alternative (equal or shorter) way to do what you are trying to."
+shorterReason how = "There is a shorter way to achieve this effect, " ++ how ++ "."
+equivalentOrderReason = "Use the other equivalent operation order."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
@@ -25,12 +30,23 @@ litExtError invalidLit lit reason = LitWarn $ "You used an op combo that has bee
 
 makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 makeExtendOp priority invalidLit reason (lit, nib, t, impl) =
-	makeOp priority (invalidLit, [], t, litExtError invalidLit lit reason) 
-		++ op (lit, nib, t, impl)
-extendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
-extendOp = makeExtendOp True
+	makeOp priority (invalidLit, [], map toLitCode t, litExtError invalidLit lit reason) 
+		++ opM (lit, nib, map toBinCode t, impl)
+extendOpHelper :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+extendOpHelper = makeExtendOp True
 lowPriorityExtendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 lowPriorityExtendOp = makeExtendOp False
+
+extendOp :: OpImpl impl => String -> [(Char, Int)] -> String -> ([ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+extendOp name from reason impl = extendOpHelper (map (repToLit.fst) from) reason (name, (map snd from), fst impl, snd impl)
+repToLit r = if r == '\0' then [] else [r]
+
+-- first op must have 2nd arg larger
+commutativeExtension bin (rep1,t1,impl1) (rep2,t2,impl2) = concat [
+	extendOpHelper [rep2] commutativeReason (rep1, bin, init t1 ++ [andC (last t1) nArgLarger], impl1),
+	extendOpHelper [rep1] commutativeReason (rep2, bin, t2, impl2),
+	-- catch all to do what they intended while giving warning
+	extendOpHelper [rep2] commutativeReason (rep1, [], t1, impl1)]
 
 undefinedImpl = (VInt,"asdf")
 
@@ -132,8 +148,6 @@ elemOfA1 = Cond "a" $ \mtd -> let [a1,a2] = mtdTypes mtd in
 sameAsA1 = Cond "[a]" $ \mtd -> let [a1,a2] = mtdTypes mtd in
 	a1 == a2
 
-sndArgLarger = Cond ">" $ \mtd -> let [op1b,op2b] = mtdNibs mtd
-	in op2b > op1b
 nArgLarger = Cond ">" $ \mtd -> let (op1b:oprb) = mtdNibs mtd
 	in last oprb > op1b
 
@@ -175,3 +189,13 @@ opSpecificity (_,lit,bin,(args, _))  = let replen = if head bin==16 then length 
 argSpecificity (BinCode _) = 1
 argSpecificity Auto = 1
 argSpecificity _ = 0
+
+autoTodoValue = -88
+autoTodo t = AutoDefault t autoTodoValue
+
+toLitCode (BinCodeRep (l,b)) = LitCode l
+toLitCode (NotBinCodeRep (l,b)) = NotLitCode l
+toLitCode a = a
+toBinCode (BinCodeRep (l,b)) = BinCode b
+toBinCode (NotBinCodeRep (l,b)) = NotBinCode b
+toBinCode a = a
