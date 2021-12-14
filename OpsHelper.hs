@@ -194,8 +194,6 @@ autoTodoValue = -88
 autoTodo t = AutoDefault t autoTodoValue
 
 toLitCode (BinCodeRep (l,b)) = LitCode l
-toLitCode (NotBinCodeRep (l,b)) = NotLitCode l
 toLitCode a = a
 toBinCode (BinCodeRep (l,b)) = BinCode b
-toBinCode (NotBinCodeRep (l,b)) = NotBinCode b
 toBinCode a = a

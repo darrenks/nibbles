@@ -98,7 +98,9 @@ parseStr(Nib (a:s) cp)
 	| otherwise = cont (chr c) 2
 	where
 		a8=a`mod`8
-		c=a8*16+head s
+		c=a8*16+if null s
+			then 128 -- invalid binary string but where is "rest" being used that lazy eval even requests this?
+			else head s
 		cont ch used = if a>=8
 			then ([[ch]], after)
 			else let (rest:rest2, rs)=parseStr after in ((ch:rest):rest2, rs)
@@ -271,9 +273,11 @@ strParser = do
 	modify $ \st -> st { pdCode=rest }
 	appendRep (strToNib ss, tail $ concat $ map show ss)
 	
-	return $ case ss of
-		[s] -> (vstr, "sToA " ++ show s)
-		_ -> (VList [vstr], "map sToA " ++ show ss)
+	-- Set element type rather than total type so that lazy evaluation can deduce either way is not a num
+	let (et,val) = case ss of
+		[s] -> (VChr, "sToA " ++ show s)
+		_ -> (vstr, "map sToA " ++ show ss)
+	return (VList [et], val)
 
 chrParser :: ParseState (VT,String)
 chrParser = do

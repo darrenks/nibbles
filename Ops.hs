@@ -280,7 +280,7 @@ rawOps = [
 	-- Desc: divmod
 	-- Example: `/7 2 $ -> 3,1
 	-- Test: `/7 ~ $ -> 3,1
-	extendOp "`/" [subscriptRep] (shorterReason"this could be accomplished with mod after length") ([num, BinCodeRep rangeRep,NotBinCodeRep strRep, AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
+	extendOp "`/" [subscriptRep] (shorterReason"this could be accomplished with mod after length") ([num, BinCodeRep rangeRep,AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: subtract
 	-- Example: - 5 3 -> 2
 	-- Test: -'b''a' -> 1
@@ -424,7 +424,7 @@ rawOps = [
 	-- Desc: moddiv
 	-- Example : %~7 2 $ -> 1,3
 	-- Test: %~7 ~ $ -> 1,3
-	extendOp "%~" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,NotBinCodeRep strRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
+	extendOp "%~" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
 	op(reverseRep, [list], "reverse" ~> a1),
@@ -547,10 +547,10 @@ rawOps = [
 	op(('%',12), [num, AutoDefault num 2], "safeMod" ~> VInt),
 	-- Desc: chr
 	-- Example: ch 100 -> 'd'
-	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([NotBinCodeRep strRep,AutoDefault int 126], "id" ~> xorChr.(VChr:)),
+	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([AutoDefault int 126], "id" ~> xorChr.(VChr:)),
 	-- Desc: tbd
 	-- Example: 0 -> 0
-	extendOp "tbd" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([NotBinCodeRep strRep,autoTodo char], undefinedImpl),
+	extendOp "tbd" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([autoTodo char], undefinedImpl),
 
 	-- Desc: chunksOf
 	-- Example: `/2,5 -> [[1,2],[3,4],[5]]
@@ -717,7 +717,7 @@ rawOps = [
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
 	-- [14,13], [int, BinCode 4]
-	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [NotBinCode (snd strRep),num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
 	opM("`$",[14],[list, BinCode 4],"nub"~>a1),
@@ -911,7 +911,6 @@ simpleOps = sortOn opSpecificity $ addHigherValueDeBruijnOps $ filter isOpSimple
 typeToStr (Cond desc _) = Just desc
 typeToStr Auto = Just "~"
 typeToStr (BinCode b) = Nothing
-typeToStr (NotBinCode b) = Nothing
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a
