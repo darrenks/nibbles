@@ -255,7 +255,7 @@ TODO example of data arg
 
 Data can be handy for recreating large strings.
 
-	`@~-41 905456382897869687253
+	`D -41 905456382897869687253
 $Output
 	Hello, world!
 
@@ -274,7 +274,7 @@ $Output
 
 Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
 
-	`@ "Hello, world!" -41
+	`@ -41 "Hello, world!"
 $Output
 	905456382897869687253
 

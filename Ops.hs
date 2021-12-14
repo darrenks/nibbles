@@ -267,7 +267,7 @@ rawOps = [
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
-	extendOp "`=" [filterRep, mapRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
+	extendOp "`=" [reverseRep, filterRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
 
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
@@ -436,9 +436,6 @@ rawOps = [
 	-- Test: / 7 ~ -> 3
 	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
 	op(('/',11), [num, AutoDefault num 2], "safeDiv" ~> VInt),	
-	-- Desc: tbd
-	-- Example: 0 -> 0
-	opM("tbd", [11,0], [autoTodo num, list], undefinedImpl),
 
 	commutativeExtension [11,0]
 		-- Desc: bit union
@@ -620,7 +617,7 @@ rawOps = [
 	opM ("findSalt", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->\
 		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
 	
-	-- Desc: hashmod (md5) (todo use a 1 char thing since bin int doesn't need a nibble, same for to base from data)
+	-- Desc: hashmod (md5) (todo use a 1 char thing since bin int doesn't need a nibble)
 	-- untested example: ."Fizz""Buzz" `# $ 6   68 -> [3,5]
 	-- RawTest: p."Fizz""Buzz" `# $ 6   68 -> "[3,5]\n"
 	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[62,62]\n"
@@ -630,31 +627,34 @@ rawOps = [
 		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 	-- Desc: to base from data
-	-- untested example: `@ ~ 2   10 -> [1,0,1,0]
-	-- RawTest: p `@ ~ 2 10 -> "[1,0,1,0]\n"
-	-- RawTest: `@ ~ -5 1934 -> "c bad\n"
-	-- RawTest: `@ ~ -150 19178 -> "\DEL\128\n"
-	extendOp "`@" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([auto, ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
+	-- untested example: `D 2   10 -> [1,0,1,0]
+	-- RawTest: p `D 2 10 -> "[1,0,1,0]\n"
+	-- RawTest: `D -5 1934 -> "c bad\n"
+	-- RawTest: `D -150 19178 -> "\DEL\128\n"
+	extendOp "`D" [addRep,tildaRep,tildaRep] (shorterReason"+~~ = 3") ([ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt))::[VT]->ParseState (VT, String))),
 	-- Desc: to base
-	-- Example: `@ 10 2 -> [1,0,1,0]
-	-- Test: `@ 0 2 -> []
-	-- Test: `@ 89 ~ -> [8,9]
-	extendOp "`@" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([num, AutoDefault num 10], "flip toBase"~>vList1 .a2),
+	-- Example: `@ 2 10 -> [1,0,1,0]
+	-- Test: `@ 2 0 -> []
+	-- Test: `@ ~ 89 -> [8,9]
+	extendOp "`@" [sumRep, consRep] ("just use a+b") ([AutoDefault int 10, autoTodo num], "toBase"~>vList1 .a1),
 	-- Desc: from base
-	-- Example: `@ :1 :0 :1 0 2 -> 10
-	-- Test: `@ ,0 2 -> 0
-	-- Test: `@ :8 9 ~ -> 89
-	-- Test: `@ "fizzbuzz" -27 -> 66635848070
-	extendOp "`@" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list {-todo 1d-}, AutoDefault num 10], "\\a base->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a2),
+	-- Example: `@ 2 :1 :0 :1 0 -> 10
+	-- Test: `@ 2 ,0 -> 0
+	-- Test: `@ ~ :8 9 -> 89
+	-- Test: `@ -27 "fizzbuzz" -> 66635848070
+	opM("`@",[11,0], [AutoDefault num 10,list {-todo 1d-}], "\\base a->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a1),
+	-- Desc: int to str
+	-- Example: `p 5 -> "5"
+	extendOp "`p" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([num], inspect.a1 ~> vstr),
 	-- Desc: split list
-	-- Example: /~ :3~ ,5 -> [[1,2],[4,5]]
-	-- Test end splits: /~ "a" "abca" -> ["","bc",""]
-	-- Test promote: /~ 3 ,5 -> [[1,2],[4,5]]
-	-- Test coerce: /~ 'b' "abc" -> ["a","c"]
-	extendOp "/~" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([any1,list], \[a1,a2]->
-		"\\needle a->splitOn ("++coerceTo [a2] [a1]++" needle) a" ~> vList1 a2),
+	-- Example: /~ ,5 :3~ -> [[1,2],[4,5]]
+	-- Test end splits: /~ "abca" "a" -> ["","bc",""]
+	-- Test promote: /~ ,5 3 -> [[1,2],[4,5]]
+	-- Test coerce: /~ "abc" 'b' -> ["a","c"]
+	extendOp "/~" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,any1], \[a1,a2]->
+		"\\a needle->splitOn ("++coerceTo [a1] [a2]++" needle) a" ~> vList1 a1),
 	-- Desc: if nonnull (lazy) todo alias to regular if/else
 	-- Example: ?,>0:5 5 1 0 -> 1
 	-- Test: ?,>0:"" "" 1 0 -> 0
@@ -788,10 +788,6 @@ rawOps = [
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ :2 :6 9 / -> [2,3,3]
 	opM("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
-	
-	-- Desc: int to str
-	-- Example: `p 5 -> "5"
-	opM("`p", [], [int], inspect.a1 ~> vstr),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
