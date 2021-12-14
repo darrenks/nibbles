@@ -153,14 +153,11 @@ rawOps = [
 	-- Test promoting to list: :1 2 -> [1,2]
 	op(consRep, [AnyS, AnyS], \[a,b]->
 		let
-			(ap,apFn) = promoteList (ret a)
+			(ap,apFn) = promoteList (ret a) -- FYI : int chr extension relies on this coerce behavior
 			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
 		in
 			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 		),
-	-- Desc: list of 2 lists
-	-- Example: `: ,2 ,1 -> [[1,2],[1]]
-	opM("`:", [], [listToBeReferenced, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	-- Desc: signum
 	-- Example: `$ *~1 `$ 0 `$ 2 -> -1,0,1
 	extendOp "`$" [lengthRep, consRep] (shorterReason"just add 1 to the length") ([autoTodo {- -1? -} num], "signum" ~> VInt),
@@ -271,10 +268,6 @@ rawOps = [
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
 	extendOp "`=" [filterRep, mapRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
-	-- Desc: or
-	-- Example: or"" "b" or "a" "c" -> "b","a"
-	-- Test coerce: or "" 5 -> "5"
-	opM("or",[],[list,any1],\[a1,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] [a2]++"b" ~> a1),
 
 	-- Desc: to uppercase
 	-- Example: `> 'a' -> 'A'
@@ -422,7 +415,7 @@ rawOps = [
 	-- Test mismatch dims: `' "h""yo" -> ["hy","o"]
 	-- Test 1 dim: `' "abc" -> ["a","b","c"]
 	-- Test tuple, unzip it: `' z,3"abc" $ -> [1,2,3],"abc"
-	extendOp "`'" [reverseRep, mapRep] equivalentOrderReason ([list], \[a1] ->
+	opM("`'",[14],[list, BinCode 3], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> [a1]
 			VList (_:_:_) -> unzipTuple a1
@@ -448,11 +441,11 @@ rawOps = [
 	opM("tbd", [11,0], [autoTodo num, list], undefinedImpl),
 
 	commutativeExtension [11,0]
-		-- Desc: bit union todo commutative warning? (and others)
+		-- Desc: bit union
 		-- Example: `| 3 6 -> 7
 		-- Test chr: `| 1 'b' -> 'c'
 		-- Test auto: `| ~ 2 -> 3
-		("`|",[AutoDefault num 1,andC num nArgLarger],".|."~>orChr)
+		("`|",[AutoDefault num 1,num],".|."~>orChr)
 		-- Desc: bit xor
 		-- Example: `^ 6 3 -> 5
 		-- Test auto: `^ 6 ~ -> 7
@@ -627,7 +620,7 @@ rawOps = [
 	opM ("findSalt", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->\
 		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
 	
-	-- Desc: hashmod (md5)
+	-- Desc: hashmod (md5) (todo use a 1 char thing since bin int doesn't need a nibble, same for to base from data)
 	-- untested example: ."Fizz""Buzz" `# $ 6   68 -> [3,5]
 	-- RawTest: p."Fizz""Buzz" `# $ 6   68 -> "[3,5]\n"
 	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[62,62]\n"
@@ -691,6 +684,7 @@ rawOps = [
 	-- Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
 	op(('?',15), [list, auto, AutoNot $ fn (elemT.a1)], "\\l f->fromIntegral$1+(fromMaybe (-1) $ findIndex f l)" ~> VInt),
+
 	-- Desc: index. Or 0 if not found.
 	-- Example: ?  :3:4 5  4 -> 2
 	-- Test not found: ? ,3 4 -> 0
@@ -708,18 +702,22 @@ rawOps = [
 	-- Desc: groupAllBy
 	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
 	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
-	opM("=~",[14],[list, BinCode 3, AutoOption "nosort", fn $ elemT.a1], \[a1,o,_]->"\\a f->\
+	extendOp "=~" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "nosort", Fn ReqArg UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,_]->"\\a f->\
 		\map (map (\\(e,_,_)->e)) $"++
 		(if o==OptionYes then "sortOn (\\((_,_,ind):_)->ind) $" else "")++
 		"groupBy (onToBy (\\(_,fa,_)->fa)) $\
 		\sortOn (\\(_,fa,_)->fa) $\
 		\zip3 a (map f a) [0..]" ~> vList1 a1),
+	-- Desc: or
+	-- Example: or"" "b" or "a" "c" -> "b","a"
+	-- Test coerce: or "" 5 -> "5"
+	extendOp "or" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "todo", Fn ReqConst UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
+	
 	-- Desc: to hex
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex *~31 -> "-1f"
 	-- [14,13], [int, BinCode 4]
-	-- Todo extension warning... this is saying sort of a range is pointless
-	opM("hex", [14,snd rangeRep], [NotBinCode (snd strRep),int,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [NotBinCode (snd strRep),num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: uniq
 	-- Example: `$ "bcba" -> "bca"
 	opM("`$",[14],[list, BinCode 4],"nub"~>a1),
@@ -737,8 +735,12 @@ rawOps = [
 	-- Desc: list xor
 	-- Example: `^ "aabce" "abbde" -> "acbd"
 	binarySetOp "`^" 7 "(a-b) ++ (b-a)",
+	
+	-- Desc: list of 2 lists
+	-- Example: `: ,2 ,1 -> [[1,2],[1]]
+	extendOpHelper ["`-"] (shorterReason"just use -") ("`:", [14], [listToBeReferenced, BinCode 8, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
 	-- Desc: list difference
-	-- Example: `- "aabd" "abc" -> "ad"
+	-- Example: `- "aabd" 'a' -> "abd"
 	binarySetOp "`-" 8 "a-b",
 		
 	-- Desc: strip
@@ -787,10 +789,14 @@ rawOps = [
 	-- Test commutative order: `\ :2 :6 9 / -> [2,3,3]
 	opM("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
+	-- Desc: int to str
+	-- Example: `p 5 -> "5"
+	opM("`p", [], [int], inspect.a1 ~> vstr),
+	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
 	opM("pt", [], [any1], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
-	-- Desc: show (todo make it `p and use p as alias)
+	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	opM("p", [], [any1], inspect.a1 ~> vstr),
 	-- Desc: debug context types
@@ -920,3 +926,4 @@ typeToStr (ZipMode) = Just "zipop"
 typeToStr (FoldMode) = Just "foldop"
 typeToStr (CharClassMode) = Just "chClass"
 typeToStr AnyS = Just "any*"
+typeToStr _ = Just $ "unknown"

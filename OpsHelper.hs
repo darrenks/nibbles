@@ -25,7 +25,7 @@ equivalentOrderReason = "Use the other equivalent operation order."
 associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
-litExtError invalidLit lit reason = LitWarn $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote:\n" ++ formatInvalidLit invalidLit ++ "\nBut this actually will mean:\n" ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
+litExtError invalidLit lit reason = LitWarn $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote: " ++ formatInvalidLit invalidLit ++ " but this actually will mean: " ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
 	formatInvalidLit = concatMap $ \l -> if l==litDigit then "[digit]" else l
 
 makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
