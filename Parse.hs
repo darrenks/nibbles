@@ -69,7 +69,7 @@ parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	_ -> error $ "unparsable int: " ++ s
 
-parseNibInt [] _ _ = error "unterminated number" -- todo make last digit base 16, but this is non trivial due to padding odd nibble lengths into bytes
+parseNibInt [] _ _ = error "unterminated binary number" -- todo make last digit base 16, but this is non trivial due to padding odd nibble lengths into bytes
 parseNibInt(f:s) a cp
 	| f>=8 = (c,Nib s (cp+1))
 	| otherwise = parseNibInt s c (cp+1)
@@ -86,7 +86,7 @@ intToNibH n = init digits ++ [last digits + 8]
 	where digits = map digitToInt $ showOct n ""
 
 parseStr :: Code -> ([String], Code)
-parseStr(Nib [] cp) = error "unterminated string" -- todo make this string the new default separator instead of " ", but this is also non trivial due to padding odd nibble lengths into bytes
+parseStr(Nib [] cp) = error "unterminated binary string" -- todo make this string the new default separator instead of " ", but this is also non trivial due to padding odd nibble lengths into bytes
 parseStr(Nib (a:s) cp)
 	| a8==0 = cont '\n' 1
 	| a8==1 = cont ' ' 1

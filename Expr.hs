@@ -68,6 +68,7 @@ data ArgSpec
 	| BinCodeRep (Char, Int) -- only used in spec, converted to BinCode/LitCode
 	| BinCode Int
 	| LitCode Char
+	| NotEOF
 
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))

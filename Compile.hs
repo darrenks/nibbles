@@ -213,6 +213,12 @@ tryArg (BinCode b) _ _ memoArgs = do
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg bincode mismatch"
 
+tryArg (NotEOF) _ _ memoArgs = do
+	code <- gets pdCode
+	return $ if not (isBinary code) && empty code
+		then FailTypeMismatch "EOF cannot be here since this op needs part of its binary representation after the arg (try not using implicit args)"
+		else Success memoArgs []
+
 tryArg (LitCode l) _ _ memoArgs = do
 	matched <- match ([], [[l]])
 	code <- gets pdCode
@@ -373,9 +379,14 @@ charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $
 	,('$',"\\c->isPunctuation c || isSymbol c")
 	,('!',"\\c->not $ isPunctuation c || isSymbol c")]
 
+-- If using BinCode, add some checks to the argument before BinCode to ensure there isn't an EOF in the lit there, if there was then the binary code would be invalid since the BinCode would be 1 arg too early.
+addEofChecks (a:BinCode c:as) = NotEOF:a:BinCode c:addEofChecks as
+addEofChecks (a:as) = a:addEofChecks as
+addEofChecks [] = []
+
 -- get the args (possibly fail with string reason), ok to modify parse state and fail
 getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
-getArgs = getArgsH [] []
+getArgs argSpecs = getArgsH [] [] (addEofChecks argSpecs)
 getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
 getArgsH prevArgs _ [] _ = return $ Left prevArgs
 getArgsH prevArgs prevNibs (spec:s) memoArgs = do

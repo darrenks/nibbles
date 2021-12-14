@@ -27,6 +27,7 @@ lengthRep = (',',13)
 rangeRep = lengthRep
 repRep = ('^',14)
 addRep = sumRep
+subtractRep = ('-',9)
 multRep = ('*',10)
 takeRep = ('<',11)
 dropRep = ('>',12)
@@ -287,7 +288,7 @@ rawOps = [
 	-- Test: -'d'1 -> 'c'
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
-	op(('-',9), [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
+	op(subtractRep, [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 	-- Desc: inits
 	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
 	opM("`>", [9,0], [list], "inits"~>VList),
@@ -475,11 +476,13 @@ rawOps = [
 	-- Test negative: <-2 "asdfg" -> "asd"
 	op(takeRep, [num, list], "\\n a->genericTake (if n<0 then genericLength a+n else n) a" ~> a2),
 	-- Desc: append until null (todo consider prepend or something since this will be inefficient)
-	-- Example: .~ ,4 >1^- 5,$$ -> [1,2,3,4,3,2,1]
-	-- Test coerce: <7 .~ ,4 1 -> [1,2,3,4,1,1,1]
-	-- Test coerce first: <4 .~ :2~ 1 -> [2,1,1,1]
-	-- Test fibonnaci: <5 .~ :1~ +<2 $ -> [1,1,2,3,5]
-	opM(".~", [], [list, autoTodo $ fn $ \[a1]->[fst $ promoteList [a1]]], \[a1,a2]-> "\\a f->appendUntilNull a ("++coerceTo [a1] (ret a2)++".f)" ~> a1),
+	-- Example: .~~ ,4 >1^- 5,$$ -> [1,2,3,4,3,2,1]
+	-- Test coerce: <7 .~~ ,4 1 -> [1,2,3,4,1,1,1]
+	-- Test coerce first: <4 .~~ :2~ 1 -> [2,1,1,1]
+	-- Test fibonnaci: <5 .~~ :1~ +<2 $ -> [1,1,2,3,5]
+	extendOp ".~~" [subtractRep,tildaRep,tildaRep] (shorterReason"-~~ = 0") ([AnyS, fn $ \[a1]->[fst $ promoteList (ret a1)]], \[a1,a2]-> 
+		let (a1T,a1C) = promoteList (ret a1) in
+			"\\a f->appendUntilNull ("++a1C++"(a())) ("++coerceTo [a1T] (ret a2)++".f)" ~> a1T),
 	-- Desc: map
 	-- Example: ."abc"+1$ -> "bcd"
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
@@ -555,7 +558,6 @@ rawOps = [
 	-- Test lazy: <3 `/2,^10 100 -> [[1,2],[3,4],[5,6]]
 	-- Test: `/~,5 -> [[1,2],[3,4],[5]]
 	-- Test negative: `/ -2 ,5 -> [[1],[2,3],[4,5]]
-	-- todo warn extend with bincode
 	extendOp "`/" [reverseRep,repRep] equivalentOrderReason ([AutoDefault num 2, list], "\\n a->if n<0 \
 	\then reverse $ map reverse $ chunksOf (fromIntegral (-n)) (reverse a)\
 	\else chunksOf (fromIntegral n) a" ~> vList1 .a2),
@@ -774,7 +776,7 @@ rawOps = [
 				else "findIndices (\\e->e /= needle) a"
 		) ~> vList1 VInt),
 	
-	-- Desc: special folds (todo vec) (op shouldn't be last if possible, blocks implicit args) (todo use a ;; opcode)
+	-- Desc: special folds (todo vec)
 	-- Example: `/ "asdf" ] -> 's'
 	-- Test: `/ "" * -> 1
 	-- Test: `/,3] `/,3[ `/,3+ `/,3* `/,3- `/,3% `/,3^ -> 3,1,6,6,2,1,1

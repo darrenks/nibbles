@@ -61,6 +61,8 @@ Because it is just the same as `p.,3+$$`
 
 `$` will always be something because it corresponds the first integer from stdin at the beginning of your program. However input identifiers are set for optional use and so will not count as unused.
 
+Some 2 nibble list ops require part of their binary representation after the first arg, so they won't be compatible with implicit args, but don't worry too much about this as you will get a useful error message if you do happen to do so.
+
 ## Special Values when stdin is Empty
 
 If stdin is empty, it likely means your program is supposed to produce some preset output. In this case constants like 100 are very common and so a few of these become available. Specifically `$` will be `100` and `;$` will be `1000`.

@@ -167,18 +167,18 @@ baseElem t = t
 cidim [VInt] = 0
 cidim [VChr] = 0
 cidim [VList a] = 1+cidim a
-cidim (t:_) = cidim [t]
+cidim (t:_:_) = cidim [t]
 
 sdim :: [VT] -> Int
 sdim [VInt] = 1
 sdim [VChr] = 0
 sdim [VList a] = 1+sdim a
-sdim (t:ts) = 1+ maximum (map (sdim.(:[])) (t:ts))
+sdim (t:t2:ts) = 1+ maximum (map (sdim.(:[])) (t:t2:ts))
 
 csdim [VInt] = 1
 csdim [VChr] = 0
 csdim [VList a] = 1+csdim a
-csdim (t:_) = csdim [t]
+csdim (t:_:_) = csdim [t]
 
 -- todo consider only applying on first to guarantee it works
 -- ["(+1)", "(+2)"] -> "(\(x, y) -> ((+1) x, (+2) y)"
