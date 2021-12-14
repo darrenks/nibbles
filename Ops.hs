@@ -233,7 +233,7 @@ rawOps = [
 	-- Example: `*,4 -> 24
 	-- Test: `*,0 -> 1
 	-- Test tuple: `* z,4 "abcd" $ -> 24,"abcd"
-	opM("`*", [], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
+	opM("`*", [9,0], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: sum
@@ -289,9 +289,6 @@ rawOps = [
 	-- Test: -~2 -> -1
 	-- Test: - 2~ -> 1
 	op(subtractRep, [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
-	-- Desc: inits
-	-- Example: `>,3 -> [[],[1],[1,2],[1,2,3]]
-	opM("`>", [9,0], [list], "inits"~>VList),
 
 --		-- Test nowrap: =~5"asdf" -> ' '
 -- 	op("=", [], [AutoOption "nowrap", int, list], \[o1,a1,a2]->(if o1==OptionYes
@@ -496,7 +493,7 @@ rawOps = [
 	-- Desc: take drop while
 	-- Example: `<~ ,5 - 3$ $ -> [1,2],[3,4,5]
 	-- Test not: `<~ ,5 ~-$3 $ -> [1,2,3],[4,5]
-	opM(["`<","~"], [], [list, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
+	opM(["`<","~"], [14], [list, BinCode 9, AutoNot $ fn (elemT.a1)], "flip span" ~> \[a1,_]->[a1::VT,a1]),
 	-- Desc: take while
 	-- Example: <~ ,5 - 3$ -> [1,2]
 	-- Test not: <~ ,5 ~-$3 -> [1,2,3]
@@ -747,15 +744,15 @@ rawOps = [
 		
 	-- Desc: strip
 	-- Example: -~ " bcd\n\n" -> "bcd"
-	opM("-~",[],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
+	opM("-~",[9,0],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
 		"dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
 		
 	-- Desc: nary cartesian product
 	-- Example: `* `/ 2 ,4 -> [[1,3],[1,4],[2,3],[2,4]]
-	opM("`*",[],[listOf list],"sequence"~>a1),
+	opM("`*",[9,0],[listOf list],"sequence"~>a1),
 	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
-	-- Example: `P "abc" -> ["abc","bac","cba","bca","cab","acb"]
-	opM("`P",[14],[list, BinCode 9],"permutations"~>vList1.a1),
+	-- Example: `PS "abc" -> ["abc","bac","cba","bca","cab","acb"]
+	extendOp "`PS" [multRep, tildaRep, tildaRep] (shorterReason"*~~ = -2") ([list], "permutations"~>vList1.a1),
 	
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: `, 3 -> [0,1,2]
