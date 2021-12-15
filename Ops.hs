@@ -17,22 +17,22 @@ tildaRep = (head $ head $ snd tildaOp, head $ fst tildaOp)
 intRep = ('\0', 1)
 strRep = ('"',2)
 setRep = (';',6)
-consRep = (':',7)
-sumRep = ('+',8)
-mapRep = ('.',12)
-filterRep = ('|',9)
-subscriptRep = ('=',9)
-reverseRep = ('\\',11)
-lengthRep = (',',13)
-rangeRep = lengthRep
-repRep = ('^',14)
-addRep = sumRep
-subtractRep = ('-',9)
-multRep = ('*',10)
-takeRep = ('<',11)
-dropRep = ('>',12)
-ifRep = ('?',15)
-diffRep = ('-',15)
+consRep = (':',7) -- only used as 2nd in ext
+sumRep = ('+',8) -- only used as 2nd in ext
+mapRep = ('.',12)  -- only used as 2nd in ext
+filterRep = ('|',9)  -- only used as 2nd in ext
+subscriptRep = ('=',9)  -- only used as 1st in ext
+reverseRep = ('\\',11)  -- only used as 1st in ext
+lengthRep = (',',13) -- only used as 1st in ext
+rangeRep = lengthRep -- only used as 2nd in ext
+repRep = ('^',14) -- -- only used as 2nd in ext
+addRep = sumRep -- addRep = sumRep -- used only in 1st followed by ~~ which can't match type list (which is arg where it is used)
+subtractRep = ('-',9) -- only used as 1st in ext
+multRep = ('*',10) -- only used as 1st in ext (could be useful for first with length though on vec
+takeRep = ('<',11) -- only used as 1st in ext
+dropRep = ('>',12) -- only used as 1st in ext
+ifRep = ('?',15) -- only used as 1st in ext
+diffRep = ('-',15) -- not used as ext yet
 
 rawOps :: [[(Bool, [String], [Int], Operation)]]
 rawOps = [
@@ -116,7 +116,11 @@ rawOps = [
 		let (coercedType, coerceFnA, coerceFnB) = coerce (ret a1) (ret a2) in
 			"\\a b->bToI$"++coerceFnA++"(a())=="++coerceFnB++"b" ~> VInt),
 
-	-- Desc: recursion
+	-- Desc: hidden recursion alt (because ;; might be invalid if arg is $ @ _)
+	-- Test: ``; 5 $ 1 *@-$~$ -> 120
+	extendOp "``;" [multRep, tildaRep, tildaRep] (shorterReason"*~~ = -2") recursionDef,
+
+	-- Desc: recursion (use ``; if extension collision)
 	-- Example (fact): `; 5 $ 1 *@-$~$ -> 120
 	-- Test (multiple args): `; ~3 4 $ 0 +_@ -$1 @ -> 12
 	-- Test (multiple rets): `; 1 $ ~3 7 +@0 @ $ $ -> 4,7
@@ -125,9 +129,7 @@ rawOps = [
 	-- Test memoize: `; 100 $ 1 +@-$2 @-$1 -> 927372692193078999176
 	-- Test memoize tuple: `; ~1 2 0 @ 5 -> 2
 	-- Test not cond: `; 5 ~$ 1 0 -> 1
-	extendOp "`;" [setRep,setRep] (shorterReason"multiple assignments on the same thing is useless, just use 1") ([AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
-	\[a1,a2]->
-		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2)),
+	extendOp "`;" [setRep,setRep] (shorterReason"multiple assignments on the same thing is useless, just use 1") recursionDef,
 	-- Desc: let
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
@@ -295,7 +297,7 @@ rawOps = [
 	-- Desc: hidden subscript no wrap
 	-- Test: = ~5"asdf" -> ' '
 	-- Test: = ~2"asdf" -> 's'
-	extendOpM ["=","~"] [subscriptRep,addRep] (shorterReason"length of vec+ is just length of") ([autoTodo num, list], \[a1,a2]->"\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i - 1)" ~> elemT a2),
+	extendOpM ["=","~"] [lengthRep,addRep] (shorterReason"length of vec+ is just length of") ([num, list], \[a1,a2]->"\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i - 1)" ~> elemT a2),
 		
 	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
 	-- Example: =2 "asdf" -> 's'
@@ -656,9 +658,9 @@ rawOps = [
 	extendOp "/~" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,any1], \[a1,a2]->
 		"\\a needle->splitOn ("++coerceTo [a1] [a2]++" needle) a" ~> vList1 a1),
 	-- Desc: if nonnull (lazy) todo alias to regular if/else
-	-- Example: ?,>0:5 5 1 0 -> 1
-	-- Test: ?,>0:"" "" 1 0 -> 0
-	-- Test: ?,>0:5 5 $ 0 -> [5,5]
+	-- Example: ?,>+0 0:5 5 1 0 -> 1
+	-- Test: ?,>+0 0:"" "" 1 0 -> 0
+	-- Test: ?,>+0 0:5 5 $ 0 -> [5,5]
 	lowPriorityOp([fst ifRep,fst lengthRep], [snd ifRep,snd lengthRep], list:ifBodyArgs, ifImpl),
 	-- Desc: if/else todo delet fn arg
 	-- Example: ? +0 0 "T" "F" -> "F"
@@ -753,7 +755,7 @@ rawOps = [
 	opM("`*",[9,0],[listOf list],"sequence"~>a1),
 	-- Desc: permutations todo rename to `\ or `/ depending what scan uses
 	-- Example: `PS "abc" -> ["abc","bac","cba","bca","cab","acb"]
-	extendOp "`PS" [multRep, tildaRep, tildaRep] (shorterReason"*~~ = -2") ([list], "permutations"~>vList1.a1),
+	extendOp "`PS" [dropRep,intRep,('0',8)] (shorterReason"drop 0 is a no op") ([list], "permutations"~>vList1.a1),
 	
 	-- Desc: range from 0 ... (maybe don't need this?
 	-- Example: `, 3 -> [0,1,2]
@@ -828,6 +830,10 @@ foldrFn foldOp = (\[a1,a2,a3]->"\\a i f->"++foldOp++" (\\x y->"++coerceTo (ret a
 
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
+
+recursionDef = ([AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
+	\[a1,a2]->
+		"\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2))
 
 ifBodyArgs = 
 	[ Fn ReqDontCare OptionalArg $ \a1 -> (1,a1)

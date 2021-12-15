@@ -22,7 +22,7 @@ lowPriorityOp (lit,nib,args,impl) = makeOp False (lit,nib,args,CodeGen $ toImpl 
 
 shorterReason how = "There is a shorter way to achieve this effect, " ++ how ++ "."
 equivalentOrderReason = "Use the other equivalent operation order."
-associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. a+(b+c) instead of (a+b)+c."
+associativeReason = "Use the other operation order for this associative op to accomplish this. E.g. (a+b)+c instead of a+(b+c)."
 commutativeReason = "Use the other operator order for this commutative op to accomplish this. E.g. (b+a) instead of (a+b)."
 
 litExtError invalidLit lit reason = LitWarn $ "You used an op combo that has been remapped to an extension in the binary form.\nYou wrote: " ++ formatInvalidLit invalidLit ++ " but this actually will mean: " ++ lit ++ "\n" ++ reason ++ " For more infromation see https://nibbles.golf/tutorial_ancillary.html#extensions or if you are learning try \"nibbles -simple\" to disable all extensions." where
