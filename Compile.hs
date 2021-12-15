@@ -206,6 +206,9 @@ tryArg Auto _ _ memoArgs = do
 	matched <- match tildaOp
 	return $ if matched then Success (tail memoArgs) [] else FailTypeMismatch "arg isn't ~"
 
+tryArg (FakeAuto _) _ _ memoArgs = do
+	return $ Success memoArgs []
+
 tryArg (BinCode b) _ _ memoArgs = do
 	matched <- match ([b], [])
 	code <- gets pdCode

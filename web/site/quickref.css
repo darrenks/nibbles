@@ -30,3 +30,7 @@ table.subtable, table.subtable th, table.subtable td  {
 	padding: 0px 3px;
 	text-align: center;
 }
+
+table tr th {
+	cursor: pointer;
+}

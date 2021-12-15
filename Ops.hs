@@ -208,10 +208,12 @@ rawOps = [
 	-- Test coerce: & " " 4 5 -> "   5"
 	-- Test list: & " " 0 >7,10 -> [" 8"," 9","10"]
 	-- Test ljust list: & " " *~1 >7,10 -> ["8 ","9 ","10"]
+	-- Test >1: & ". " 8 4 -> ". . . .4"
+	-- Test 0: & "" 8 4 -> "4"
 	op(('&',8), [str, int, AutoOption "center", vec], \[a1,a2,o1,a3] ->
 		let justify t = 
 			"\\s n o->let oc = "++coerceTo [vstr] [t]++"o ;\
-						    \pad = concat (genericReplicate (abs n-genericLength oc) s) in " ++
+						    \pad = genericTake (abs n-genericLength oc) (if null s then s else cycle s) in " ++
 			(if o1 == OptionYes then
 				"let (smallPad,bigPad)=splitAt (length pad `div` 2) pad in \
 				\if n >= 0 then smallPad ++ oc ++ bigPad else bigPad ++ oc ++ smallPad"
@@ -290,17 +292,16 @@ rawOps = [
 	-- Test: - 2~ -> 1
 	op(subtractRep, [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 
---		-- Test nowrap: =~5"asdf" -> ' '
--- 	op("=", [], [AutoOption "nowrap", int, list], \[o1,a1,a2]->(if o1==OptionYes
--- 		then "\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i)"
--- 		else "\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)") ~> elemT a2),
-
-	
+	-- Desc: hidden subscript no wrap
+	-- Test: = ~5"asdf" -> ' '
+	-- Test: = ~2"asdf" -> 's'
+	extendOpM ["=","~"] [subscriptRep,addRep] (shorterReason"length of vec+ is just length of") ([autoTodo num, list], \[a1,a2]->"\\i a->fromMaybe "++defaultValue (elemT a2)++" $ at a (fromIntegral i - 1)" ~> elemT a2),
+		
 	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
-	op(subscriptRep, [num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
+	op(subscriptRep, [FakeAuto "nowrap", num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: partition
 	-- Example: |,5~~%$2 $ -> [1,3,5],[2,4]
 	-- Test notted: |,5~~~%$2 $ -> [2,4],[1,3,5]
@@ -904,6 +905,7 @@ simpleOps = sortOn opSpecificity $ addHigherValueDeBruijnOps $ filter isOpSimple
 
 typeToStr (Cond desc _) = Just desc
 typeToStr Auto = Just "~"
+typeToStr (FakeAuto _) = Nothing
 typeToStr (BinCode b) = Nothing
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s

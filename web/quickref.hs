@@ -57,10 +57,7 @@ main=do
 			table ! class_ "sortable" $ do
 				tr $ do
 					th "Lit"
-					ifNotSimple $ do
-						th ! class_ "sorttable_alpha sorttable_sorted" $ do
-							"Bin"
-							H.span (preEscapedToHtml "&nbsp;&#x25BE;") ! A.id "sorttable_sortfwdind"
+					ifNotSimple $ th "Bin"
 					th "Desc"
 					th "Arg Types"
 					ifNotSimple $ th "Autos"
@@ -105,6 +102,7 @@ getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoData _ -> Just "data"
 	AutoNot _ -> Just "not."
 	AutoOption desc -> Just desc
+	FakeAuto desc -> Just desc
 	OrAuto desc _ -> Just desc
 	otherwise -> Nothing
 

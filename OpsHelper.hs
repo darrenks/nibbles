@@ -32,13 +32,25 @@ makeExtendOp :: (OpImpl impl) => Bool -> [String] -> String -> (String, [Int], [
 makeExtendOp priority invalidLit reason (lit, nib, t, impl) =
 	makeOp priority (invalidLit, [], map toLitCode t, litExtError invalidLit lit reason) 
 		++ opM (lit, nib, map toBinCode t, impl)
+makeExtendOpM :: (OpImpl impl) => Bool -> [String] -> String -> ([String], [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+makeExtendOpM priority invalidLit reason (lit, nib, t, impl) =
+	makeOp priority (invalidLit, [], map toLitCode t, litExtError invalidLit (concat lit) reason) 
+		++ opM (lit, nib, map toBinCode t, impl)
+
 extendOpHelper :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 extendOpHelper = makeExtendOp True
+extendOpHelperM :: (OpImpl impl) => [String] -> String -> ([String], [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+extendOpHelperM = makeExtendOpM True
+
 lowPriorityExtendOp :: (OpImpl impl) => [String] -> String -> (String, [Int], [ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 lowPriorityExtendOp = makeExtendOp False
 
 extendOp :: OpImpl impl => String -> [(Char, Int)] -> String -> ([ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
 extendOp name from reason impl = extendOpHelper (map (repToLit.fst) from) reason (name, (map snd from), fst impl, snd impl)
+
+extendOpM :: OpImpl impl => [String] -> [(Char, Int)] -> String -> ([ArgSpec], impl) -> [(Bool, [String], [Int], Operation)]
+extendOpM name from reason impl = extendOpHelperM (map (repToLit.fst) from) reason (name, (map snd from), fst impl, snd impl)
+
 repToLit r = if r == '\0' then [] else [r]
 
 -- first op must have 2nd arg larger
