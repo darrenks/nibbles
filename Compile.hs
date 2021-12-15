@@ -348,7 +348,7 @@ specialFolds [a1] =
 	(map (\deets->(fst deets,createFoldFromBinOp deets a1)) 
 		[(']',-2^128)
 		,('[',2^128)
-		,('+',0) -- todo consider making this/etc go to scan since shorter way already
+		,('+',0)
 		,('*',1)
 		,('-',0)
 		,('/',1)
@@ -356,6 +356,9 @@ specialFolds [a1] =
 		,('^',1)])++
 		[('>', takeAnotherOrderBy ">" (-2^128))
 		,('<', takeAnotherOrderBy "<" (2^128))
+		,(':', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> tail $ inits a")
+		)
+		-- todo add more. bit ops? flipped ops?
 		] where
 	takeAnotherOrderBy fName initValue = do
 		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )

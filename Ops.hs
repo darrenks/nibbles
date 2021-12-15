@@ -781,11 +781,12 @@ rawOps = [
 	-- Test by: `/ "asdf" >$ -> 's'
 	-- Test by empty: `/ ,0 <$ -> 340282366920938463463374607431768211456
 	opM("`/", [14], [list, BinCode 11, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
-	
+		
 	-- Desc: special scans
 	-- Example: `\ ,4 + -> [1,3,6,10]
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ :2 :6 9 / -> [2,3,3]
+	-- Test cons: `\ ,3 : -> [[1],[1,2],[1,2,3]]
 	opM("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	
 	-- Desc: debug arg type
@@ -870,8 +871,6 @@ addHigherValueDeBruijnOps ops = concat [opM(
 
 -- todo replace code in ops table
 binOp :: Char -> [VT] -> ([VT], String)
--- binOp ':' [a1,a2] = let (ct,f1,f2)=coerce [a1] [a2] in
--- 	(head ct, "\\a b->["++f1++" a,"++f2++" b]", (0,0))
 binOp '+' a = ([xorChr a], "+")
 binOp '*' a = ([VInt], "*")
 binOp '-' a = ([xorChr a], "-")

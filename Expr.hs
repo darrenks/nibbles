@@ -53,6 +53,7 @@ data ReqArg = ReqDontCare | ReqArg | ReqConst
 data ArgSpec
 	= Cond String {-desc-} (MatchTestData -> Bool)
 	| ParseArg String {-desc-} (ParseState (VT, String))
+	| FakeAuto String -- an auto for quickref purposes only, it is implemented by a hidden op
 	| Auto
 	| AutoData ArgSpec
 	| AutoDefault ArgSpec Integer -- todo make any type
