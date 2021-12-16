@@ -14,7 +14,7 @@ import Data.List.Split -- needs cabal install --lib split
 import Hs(flatHs)
 
 getExample (c:s) | isSpace c = getExample s
-getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s || isPrefixOf "-- RawTest" s = Just (
+getExample s | isPrefixOf "-- Example" s || isPrefixOf "-- Test" s || isPrefixOf "-- RawTest" s || isPrefixOf "-- hidden Example" s = Just (
 	case elemIndex ':' s of
 		Just i -> (input, stdin, output, size, isPrefixOf "-- RawTest" s) where
 			beforeColon = take i s

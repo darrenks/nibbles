@@ -177,14 +177,15 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 testCoerceTo :: [VT] -> [VT] -> ([VT], String)
 testCoerceTo to a1 =  (to, coerceTo to a1)
 
-isExtension (lit, nib, op) = length nib > 1 && length lit > 1 || isExtOpt op || elem '~' lit 
-isExtOpt (types,_) = any (\t -> case t of
+isExtension isExtOptFn (lit, nib, op) = length nib > 1 && length lit > 1 || any isExtOptFn (fst op) || elem '~' lit 
+isExtOpt t = case t of
 	Auto -> True
 	Cond desc _ -> elem '>' desc
 	BinCode _ -> True
-	otherwise -> False) types
+	Fn ReqConst _ _ -> True 
+	otherwise -> False
 isOpSimple (isPriority, lits, nib, op@(types,_)) =
-	(not (isExtension (lit, nib, op) || null nib)
+	(not (isExtension isExtOpt (lit, nib, op) || null nib)
 	||elem lit whitelist)
 		&& not (elem lit blacklist)
 		&& not (any isSpecialMode types)

@@ -239,8 +239,8 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	(impl,used) <- getLambdaValue nRets argT argUsedness
 	let success = Success (error"memoized args cannot be used after fn")
 	return $ case reqArgUse of
-		ReqArg | not (or used) -> FailConstFn impl
-		ReqConst -> if (or used)
+		ReqArg | not (or used) && not ?isSimple -> FailConstFn impl
+		ReqConst -> if (or used) && not ?isSimple
 			then FailTypeMismatch $ "arg " ++ show (length prevTs+1) ++ " is not a const"
 			else success [app1Hs (fillAccums (length argT) (length argT)) impl]
 		otherwise -> success [impl]
