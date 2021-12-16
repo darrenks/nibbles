@@ -211,7 +211,7 @@ drawLegend = do
 			td zsym ! class_ "code" >> td zmean >> td fsym ! class_ "code" >> td fmean)
 		 ++ repeat (do;return())
 
-	p $ b "Special args"
+	p $ b "Special args:"
 	table $ do	
 		tr $ th "chclass" ! colspan "2" >> th "zipop" ! colspan "2" >> th "foldop" ! colspan "2"
 		flip mapM_ (zip chrows opsrows) $ \(chrow,opsrow) -> tr $ do

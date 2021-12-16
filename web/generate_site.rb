@@ -1,8 +1,8 @@
 Navbar='<div id="navbar"><ul>
 	<li id="nibbles"><a href="index.html">Nibbles</a></li>
-	<li><a href="tutorial_basics.html">Tutorial: Basics</a> | <a href="tutorial_ancillary.html">Ancillary</a> | <a href="tutorial_minutiae.html">Minutiae</a></li>
+	<li><a href="tutorial_basics.html">Basics</a> | <a href="tutorial_ancillary.html">Ancillary</a> | <a href="tutorial_tour.html">Tour</a> | <a href="tutorial_minutiae.html">Minutiae</a></li>
 	<li><a href="quickref.html">Quick Ref</a></li>
-	<li><a href="install.html">Code: Install</a> | <a href="https://github.com/darrenks/nibbles">Github</a></li>
+	<li><a href="install.html">Install</a> | <a href="https://github.com/darrenks/nibbles">Source</a></li>
 </ul></div>'
 
 def addTest(raw, prog, input, output)

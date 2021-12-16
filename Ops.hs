@@ -118,7 +118,7 @@ rawOps = [
 	-- Test promoting to list: :1 2 -> [1,2]
 	op(consRep, [AnyS, FakeAuto "[]", AnyS], \[a,b]->
 		let
-			(ap,apFn) = promoteList (ret a) -- FYI : int chr extension relies on this coerce behavior
+			(ap,apFn) = promoteList (ret a)
 			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
 		in
 			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
@@ -436,9 +436,9 @@ rawOps = [
 	-- Test: `/7 ~ $ -> 3,1
 	extendOp "`/" [subscriptRep] (shorterReason"this could be accomplished with mod after length") ([num, BinCodeRep rangeRep,AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
 	-- Desc: moddiv
-	-- Example : %~7 2 $ -> 1,3
-	-- Test: %~7 ~ $ -> 1,3
-	extendOp "%~" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
+	-- Example : `%7 2 $ -> 1,3
+	-- Test: `%7 ~ $ -> 1,3
+	extendOp "`%" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: tail
 	-- Example: >>,5 -> [2,3,4,5]
 	opM([">",">"], [12,0], [list], "tail" ~> a1),

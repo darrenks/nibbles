@@ -134,7 +134,7 @@ $HiddenOutput
 	the div is: 3
 	the mod is: 1
 
-Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function `%~` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
+Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function ``%` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
 
 ### Creating Tuples
 
@@ -146,10 +146,6 @@ $Output
 
 Outside of functions it would be pointless to create your own tuple, it would immediately be deconstructed, and so that opcode has been rebound to something else, making it invalid to even try.
 
-## Maybe
-
-Currently nothing returns a maybe type, but there are plans to do so for some operations. These would behave like normal values except would behave like Haskell's `>>=` when nothing, and would overload `?` for handling the nothing case more easily. TODO implement and update this.
-
 ## Vectorization
 
 Check out the full $QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
@@ -158,67 +154,19 @@ For example `+5 ,5` -> `[6,7,8,9,10]`. This is cool, but not as useful as in oth
 
 ## Extensions
 
-You've seen an example of extensions already, ``/` (divmod). Extensions are just a remapping of the behavior of something that would be useless to something useful. There isn't an auto value for the numerator of div that would be canonical (1 would be if floats were used in Nibbles, but they are not). So we just remap this to do something else. Here divmod is related to div so we keep the literate form inline with the binary. But sometimes this would be confusing, for example, reversing a list twice has been remapped to sort. Rather than make you memorize that `\\` means sort, sort is just named `st` in the literate form.
+You've seen an example of extensions already, ``/` (divmod). If you look at the binary representation of divmod it is `9 d`. This would normally correspond to `< num , num`, but it is pointless to do a `take` after using `range`. At best you could have wanted a range on the min of the two nums, but that could be done equally as short with `,[num num` So we remap `9 d` to divmod and give it a new name so that you don't need to remember that `< ,` is divmod.
 
-In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you tried to reverse a list). Nibbles will give you an error if you do this in the literate form.
+In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if did try to take on a range). Nibbles will give you a warning if you do this.
 
-Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (for now at least). This is reasonable in that a 3 nibble op has an implied probability of use as 1/2<sup>12</sup> which would mean that very few programs would use it and I don't wish to convolute the language with things that are of little use.
+Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (in most cases). There are probably hundreds of possible 3 nibble extensions, but finding them and avoiding extension collisions would be extremely unmanageable, besides a primary goal of Nibbles is to be simple (few operations) anyway.
+
+If you find possible two nibble extensions, please let me know!
 
 ### Commutative Extensions
 
 Alright these things are going to be annoying, but their efficiency cannot be passed up. There's no reason to make `+1 2` do the same thing as `+2 1` so we can remap one of the orders so long as there is a way to statically say which way the args are ordered. We say that the order is for `+` when the left operand is larger or equal to the right operand (and `]` which means `max` otherwise). But by larger we don't mean the value, but the length of the nibbles binary code (or lexicographically as a tie breaker). So in general if you want to use `+` put the longer code first. This should always be possible but it might not always be easy to put the small operand first since if both sides use the values of let statements, the lets will always need to be in the first operand. I think it is possible to factor that code out and will try to do this in the future.
 
-If you find possible two nibble extensions, please let me know!
 
-## Creating Your Own Functions
-It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
+### reqfn and const Extensions
 
-This can be done using the `;~` extension. `;~` takes two arguments, treating the second one as a function and passing it the first. But it also adds that function to the context for later use.
-
-Example:
-
-	;~3 *$$
-$Output
-	9
-and now we can use that square function with `$`. E.g. `$4` gives `16`.
-
-Note that we can even square strings now. E.g. `$"5"` gives `25`.
-
-It may seem odd that we couldn't define a function without using it. But this is code golf, why would you want to!
-
-### Exercise
-
-Define your own divmod (and call it)!
-
-Hint: The first argument to `;~` is actually a function of no arguments (which allows you to pass a tuple into your function).
-
-$Solution
-
-	p :                   # pretty print 1st call
-	   ;~ ~10 3 ~/$@ %$@  # create fn and call it
-	   $                  # get the snd result
-	p :                   # pretty print 2nd call
-	   @ 20 5             # call it again
-	   $                  # get the snd result
-$Output
-	[3,1][4,0]
-
-Notice that the second use of your function didn't require you to use `~`. It knew it took two arguments.
-
-$EndSolution
-
-### Recursive Functions
-
-Unfortunately recursive functions (without type specifications) are difficult to implement because when we recurse we don't yet know the return type. Luckily there is a hacky way to get around this, that actually makes the code even shorter!
-
-Recursive functions always need a base case to terminate, and the base case is easy to deduce the type of. So recursive functions are implemented as a function that returns 3 things.
-
-1.	the condition for when to use the base case
-1.	the base case
-1. the recursive case
-
-The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).
-
-Create a recursive funciton with `;~`.
-
-Check out the example in the $QuickRef
+Some ops have a function arg where it usually wouldn't make sense to ignore the arg. Filter for example. We can detect that and instead use that opcode for something else. In filter's (`|`) case, if the snd arg ignores the element arg then it will perform a "zip with" (`!`) instead. (There is a separate literate name for this so that you don't accidentally do the wrong thing, but they have the same binary form). This isn't quite a perfect abstraction though because when using `!` you need to be aware that all DeBruijn indices are 1 higher than normal when entering the second argument. You can see these extensions in the $QuickRef if the arg type is reqfn or const.

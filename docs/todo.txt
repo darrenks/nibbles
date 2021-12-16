@@ -80,3 +80,7 @@ float/big decimal
 memoize let rec
 
 separate calculation of truthiness of ints for better lazy evaluation (and SmartList). i.e. max of a truthy int is truthy regardless of second arg, don't need to do the computation, but as it is, it would.
+
+
+## Maybe
+Currently nothing returns a maybe type, but there are plans to do so for some operations. These would behave like normal values except would behave like Haskell's `>>=` when nothing, and would overload `?` for handling the nothing case more easily. TODO implement and update this.

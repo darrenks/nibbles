@@ -4,7 +4,7 @@
 That's outside the scope of this page, but my quick answer is that can be fun to produce surprisingly short and incomprehensible code. It's also good practice to push yourself to seek simpler solutions than your first instinct.
 
 ### Why code golf languages?
-This too is outside the scope of this page, but my quick answer is that it is fun to produce even shorter and more incomprehensible code! It also can make golfing more about seeking the true simplest solution to a problem rather than fighting your mainstream language to avoid long function names and abuse obscure features.
+This too is outside the scope of this page, but my quick answer is that it is fun to produce even shorter and more incomprehensible code! It also can make golfing more about seeking the true simplest solution to a problem rather than fighting your mainstream language to avoid long function names and abuse obscure but short features.
 
 ## Why Nibbles?
 -	To have a language that I would actually want to golf in.
@@ -16,7 +16,7 @@ I created [Golfscript](http://www.golfscript.com/golfscript/) in 2007. Originall
 
 Sure Golfscript was a little hacky and had its problems but it enjoyed being widely used because it had the shortest solutions for code golf problems (by far). It had a monopoly, being the only language that was optimized for this.
 
-But Golfscript was never fully optimized for truly short solutions, after all it really only used the symbol characters (of which there are only 32), yet stored instructions in bytes. I did this because I thought it would be unfair and impure to do otherwise, its goal was to beat mainstream languages, but clearly this could have been done by just compressing the source code of programs said languages.
+But Golfscript was never fully optimized for truly short solutions, after all it really only used the symbol characters (of which there are only 32), yet stored instructions in bytes. I did this because I thought it would be unfair and impure to do otherwise, its goal was to beat mainstream languages, but clearly this could have been done by just compressing the source code of programs in said languages.
 
 The allure of creating even more compact golf languages was irresistible and over time many have been created it. But compactness was usually accomplished by adding more instructions instead of reducing the instruction size. The result of this was very complicated languages (competitive ones have over 400 different built-ins).
 

@@ -4,7 +4,7 @@ In this final tutorial you will learn obscure features and how to calculate bina
 
 ## Binary size
 
-All ops correspond to their literate size. `+` is 1 nibble (half a byte). `st` is 2 nibbles.
+All ops correspond to their literate size. `+` is 1 nibble (half a byte). `=\` is 2 nibbles.
 
 **Integers** require 1 nibble plus their size in octal. So, `6` is 1 byte but `8` is 1.5 bytes. `10` and `7` are special cases - their input sizes are swapped since 10 is very common. A negative number takes an extra nibble.
 
@@ -17,8 +17,6 @@ There are a few exceptions:
 *	Space and newline each require only 1 nibble.
 *	Empty string is 3 nibbles.
 *	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline which should be more common).
-
-FYI strings don't use ascii, since it seems bad that the first 32 ascii characters are essentially useless.
 
 **Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
@@ -251,9 +249,7 @@ $HiddenOutput
 
 You can easily convert it to lists of a desired radix with `to base` (``@`).
  
-Some ops (toBase,hash,divmod,etc.) use big numbers so often that their auto value defaults to using the data value (which then also prevents the data value from overwriting the first int input value). And after the end of the current root expression data is assumed to start rather than needing ~.
-
-TODO example of data arg
+Some ops use data by default (``D` and `#`). If used, they also prevent the data value from overwriting the first int input value. And after the end of the current root expression data is assumed to start rather than needing ~.
 
 Data can be handy for recreating large strings.
 
@@ -294,7 +290,7 @@ If your program is a quine (in the binary version). Then don't add on the (usual
 
 TODO I've delete mapaccum for now, so this needs to be updated, but the principles apply.
 
-I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/ops.hs).
+I haven't built a complete reference of all the built-ins. Most of the useful information is in the $QuickRef. But if you'd like more information, all the ops are defined in [ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 Let's see how we could use this to figure out how to use `ma` (`mapAccumL`) (without needing to look at the example).
 
@@ -321,7 +317,7 @@ This a function from the arg types to `ma` to the return type of `ma`. In this c
 
 So basically it is the same type as Haskell's `mapAccumL` with some things switched around. Yes Haskell's type system expresses this much cleaner...
 
-Often there are additional test cases provided in `ops.hs` which could provide insight into the edge cases of ops.
+Often there are additional test cases provided in `Ops.hs` which could provide insight into the edge cases of ops.
 
 Good luck.
 
