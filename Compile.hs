@@ -1,6 +1,6 @@
 {-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
 
-module Compile(compile,padToEvenNibbles) where
+module Compile(compile,padToEvenNibbles,charClassesDefs) where
 
 import Data.List(inits,intercalate)
 import Control.Monad (msum)
@@ -331,6 +331,8 @@ specialZips a@[a1,a2] = let
 		(a1p,ap1Fn) = promoteList (elemT a1)
 		(coercedType, coerceFnA, coerceFnB) = coerce [a1p] (elemT a2p)
 	in
+		-- if add then add to Quickref.hs !!!!!!!!!!
+	
 		[('~',getLambdaValue 1 flatT UnusedArg >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
 		,(':', createSpecialFn ([VList coercedType], "\\a1 b1->zipWith (\\a b->("++coerceFnA++"$ "++ap1Fn++"a)++"++coerceFnB++"b) a1 ("++ap2Fn++"b1)"))
 		,(',',createSpecialFn ([VList flatT], "\\a1 b1->zipWith (\\a b->"++flatten++" $ (a,b)) a1 ("++ap2Fn++"b1)"))
@@ -349,6 +351,9 @@ createFoldFromBinOp (c,initValue) (VList [t]) =
 specialFolds :: (?isSimple::Bool) => [VT] -> [(Char, ParseState Impl)]
 specialFolds [a1] =
 	(map (\deets->(fst deets,createFoldFromBinOp deets a1)) 
+
+		-- if add then add to Quickref.hs !!!!!!!!!!
+
 		[(']',-2^128)
 		,('[',2^128)
 		,('+',0)
@@ -367,7 +372,8 @@ specialFolds [a1] =
 		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
-charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs)))
+charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs))) charClassesDefs
+charClassesDefs =
 	[('a',"isAlpha") -- todo regular alpha (is letter)
 	,('A',"not.isAlpha")
 	,('n',"isAlphaNum")

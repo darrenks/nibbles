@@ -210,3 +210,5 @@ toLitCode (BinCodeRep (l,b)) = LitCode l
 toLitCode a = a
 toBinCode (BinCodeRep (l,b)) = BinCode b
 toBinCode a = a
+
+italic s = "<i>"++s++"</i>"

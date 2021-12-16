@@ -12,6 +12,7 @@ import Data.List (intercalate)
 
 import Ops
 import OpsHelper
+import Compile(charClassesDefs)
 import Expr
 import Types
 import Data.List.Split -- needs cabal install -lib split
@@ -21,6 +22,7 @@ import Data.Maybe
 import System.Environment
 import System.IO
 import Numeric (showHex)
+import Control.Monad (when)
 
 -- todo javascript show examples/source if hover over
 
@@ -43,7 +45,7 @@ main=do
 	
 	let ops = concatMap selectNonWarningOps $ rawOps -- the others are for invalid literate warnings
 	let opsInfo = map (\((a,b),c) -> (a,b,c)) $ zip (filter (\(o,d)->not $ isPrefixOf "hidden" d) $ zip ops descs) examples
-	let opsInfo2 = if isSimple then filter (\(a,_,_)->isOpSimple a) opsInfo else opsInfo
+	let opsInfo2 = if isSimple then map simplifyDesc $ filter (\(a,_,_)->isOpSimple a) opsInfo else opsInfo
 	hPutStrLn stderr $ show (length opsInfo2) ++ " " ++ show args ++ " ops"
 	let opsInfo3 = map (\(a,b,c)->(concatLit $ convertNullNib a,b,c)) opsInfo2
 	let opsTable = map convertToTdList $ sortOn (\(a,b,c)->isExtension isExtOptLite a) opsInfo3
@@ -63,6 +65,7 @@ main=do
 					ifNotSimple $ th "Autos"
 					th "Example"
 				forM_ opsTable $ (tr . mapM_ Prelude.id)
+			when (not isSimple) drawLegend
 -- 			toHtml $ do
 -- 				H.span "*" ! class_ "code"
 -- 				toHtml " = vectorizable, "
@@ -78,7 +81,7 @@ main=do
 		renameIntLit l = l
 
 toSubtable strs = do
-	table ! class_ "subtable" $ tr $ mapM_ (td . toHtml) strs
+	table ! class_ "subtable" $ tr $ mapM_ (td . preEscapedToHtml) strs
 
 toQuickRef isSimple ((types,_)) = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
@@ -102,15 +105,15 @@ prettyType VChr = "chr"
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v
 	AutoData _ -> Just "data"
-	AutoNot _ -> Just "not."
-	AutoOption desc -> Just desc
+	AutoNot _ -> Just $ "not&#8728;"
+	AutoOption desc -> Just $ italic desc
 	FakeAuto desc -> Just desc
 	OrAuto desc _ -> Just desc
 	otherwise -> Nothing
 
 showAuto i
 		| i == autoTodoValue = "tbd"
-		| i >= 2^128 = "inf"
+		| i >= 2^128 = "&infin;"
 		| otherwise = show i
 
 isBinOnly :: [ArgSpec] -> String
@@ -139,6 +142,11 @@ getDesc s | isPrefixOf "-- Desc: " s = Just (
 	)
 getDesc _ = Nothing
 
+simplifyDesc (a,desc,c) = (a, case elemIndex '(' desc of
+	Just i -> take i desc
+	Nothing -> desc
+	, c)
+
 getDescs = do
 	ops <- readFile "ops.hs"
 	return $ catMaybes $ map getDesc (lines ops)
@@ -152,3 +160,60 @@ selectNonWarningOps ops = if length ops > 1 then filter hasBin ops else ops
 
 concatLit :: (Bool, [String], [Int], Operation) -> (String, [Int], Operation)
 concatLit (b, lit, i, o) = (concat lit, i, o)
+
+drawLegend = do
+	p $ b "Legend:"
+	table $ do
+		tr $ do
+			th "symbol"
+			th "meaning"
+		tr $ td "{type}" >> td "parse a value of that type"
+		tr $ td "any*" >> td "any type or ~ for a tuple"
+		tr $ td ">type" >> td "this argument must be longer in length than the preceding (for commutative extensions)"
+		tr $ td "vec" >> td "same as \"any\" but used to denote that it will vectorize if a list is given"
+		tr $ td "num" >> td "int|chr"
+		tr $ td "[*]" >> td "list of any type"
+		tr $ td "[1]" >> td "list of non tuple"
+		tr $ td "[a]" >> td "list of type variable \"a\""
+		tr $ td "reqfn" >> td "fn but its argument must be used"
+		tr $ td "const" >> td "fn but its argument must not be used (for extensions)"
+		tr $ td "fn?" >> td "~ to denote take an extra fn argument here"
+		tr $ td (i "itatlic") >> td "auto specifies \"option present\" but does not replace the arg"
+	let chrows = flip map charClassesDefs $ \(symbol,meaning) -> td (toHtml symbol) ! class_ "code" >> td (toHtml meaning) ! class_ "code"
+	
+	let bothops = [
+		("]","max"),
+		("[","min"),
+		("+","add"),
+		("*","mult"),
+		("-","sub"),
+		("/","div"),
+		("%","mod"),
+		("^","pow"),
+		(":","cons")]
+	
+	let foldops = [
+		(">","max by fn"),
+		("<","min by fn")]
+		++ repeat ("","")
+	
+	let zipops = [
+		("~","by"),
+		(",","make tuple"),
+		("!","abs diff"),
+		("=","subscript"),
+		("?","index")]
+		
+	let opsrows = 
+		(flip map bothops $ \(sym,meaning) ->
+			td sym ! class_ "code" >> td meaning ! colspan "3" ! class_ "center") ++
+		(flip map (zip zipops foldops) $ \((zsym,zmean),(fsym,fmean)) ->
+			td zsym ! class_ "code" >> td zmean >> td fsym ! class_ "code" >> td fmean)
+		 ++ repeat (do;return())
+
+	p $ b "Special args"
+	table $ do	
+		tr $ th "chclass" ! colspan "2" >> th "zipop" ! colspan "2" >> th "foldop" ! colspan "2"
+		flip mapM_ (zip chrows opsrows) $ \(chrow,opsrow) -> tr $ do
+			chrow
+			opsrow

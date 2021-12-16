@@ -297,7 +297,7 @@ rawOps = [
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
-	op(subscriptRep, [FakeAuto "nowrap", num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
+	op(subscriptRep, [FakeAuto $ italic "nowrap", num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: hidden index by
 	-- hidden Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
@@ -510,7 +510,7 @@ rawOps = [
 	-- Desc: or
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	-- Test coerce: or "" 5 -> "5"
-	extendOp "or" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "todo", Fn ReqConst UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
+	extendOp "or" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "tbd", Fn ReqConst UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
 	-- FYI rep is used for hex extension too!
@@ -591,10 +591,10 @@ rawOps = [
 	-- Desc: list of 2 lists
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
 	extendOpHelper ["`-"] (shorterReason"just use -") ("`:", [14], [listToBeReferenced, BinCode 8, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
-	-- Desc: list difference
+	-- Desc: list difference [by]
 	-- Example: `- "aabd" 'a' -> "abd"
 	binarySetOp "`-" 8 "a-b",
-	-- Desc: list intersection
+	-- Desc: list intersection [by]
 	-- Example: `& "abaccd" "aabce" -> "abac"
 	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
 	-- Test coerce: `& ,3 1 -> [1]
@@ -602,10 +602,10 @@ rawOps = [
 	-- Test by: `& ,5 %$2 :1 1 -> [3,5]
 	-- Test true set by: `& ,5 ~ %$2 :1 1 -> [1]
 	binarySetOp "`&" 5 "a - (a - b)",
-	-- Desc: list union
+	-- Desc: list union [by]
 	-- Example: `| "abccd" "aabce" -> "abccdae"
 	binarySetOp "`|" 6 "a ++ (b - a)",
-	-- Desc: list xor
+	-- Desc: list xor [by]
 	-- Example: `^ "aabce" "abbde" -> "acbd"
 	binarySetOp "`^" 7 "(a-b) ++ (b-a)",
 	-- Desc: uniq
@@ -913,6 +913,6 @@ typeToStr (ParseArg desc _) = Just $ "{"++desc++"}"
 typeToStr (OptionalFn _) = Just $ "fn?"
 typeToStr (ZipMode) = Just "zipop"
 typeToStr (FoldMode) = Just "foldop"
-typeToStr (CharClassMode) = Just "chClass"
+typeToStr (CharClassMode) = Just "chclass"
 typeToStr AnyS = Just "any*"
 typeToStr _ = Just $ "unknown"
