@@ -1,6 +1,74 @@
 # Tutorial: Tour
 
-In this tutorial you will learn how to use some of the more complicate built ins that aren't immediately obvious from the $QuickRef
+In this tutorial you will learn how to use some of the more complicated built ins that aren't immediately obvious from the $QuickRef
+
+## Filter (not&#8728;)
+Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` of the function after `~`.
+
+## Zip With
+TODO
+
+## Foldr / Scanl
+TODO
+
+### Special Folds / Scans
+TODO
+
+## Drop / Take
+Note that `` ` turns them into ops that also return a list of the elements not selected (like split at in Haskell).
+
+If `~` is used for the first arg then take a 3rd arg and drop/take while that fn is truthy. It is compatible with `` `.
+
+## Subscript
+This is 1 indexed and wrapped. If you do not want wrapping (and instead want the default value for the element type if out of bounds), then precede the index with `~`.
+
+## Index
+Finds an element index (1 based) or returns 0. If you use `~` instead of an element, then take a fn and find the first index that makes that fn truthy.
+
+## Justify
+TODO
+
+## Char Class
+Returns a truthy value if a char satisfies that character class (see end of $QuickRef for a table of char classes. Note that syntax is a little different than you'd expect since we need to know the type of the argument before we parse the char class. E.g. you need to do `\'z'a` instead of `\a 'z'` to see if `'z'` is in the char class `a`.
+
+Also note that a list of the character is returned if true or empty list if false as a return value rather than something like 1 or 0 (this seemed potentially more useful).
+
+## If / Else
+-  If you do a length of a list for the condition there is a special hack here to check if the list is null rather than compute the length (which isn't lazy)
+-  True clause is a fn that is passed the condition as an argument (this is purely because it seems likely you'll use it.
+-	True clause can construct a tuple.
+-	False clause `~` will mean default value of the type of the true clause.
+-	False clause expects multiple arguments if a tuple was given in true clause.
+
+## Find indices
+If 2nd arg is a fn then find all element indices that make that fn truthy. If 2nd arg is a constant then find all indices of that value.
+
+## Transpose
+-  Can work on 1d lists.
+-  Can work on list of tuples (returns a tuple of lists). 
+
+## Subsequences
+-  0 means all lengths
+-  negative number means allow repeats
+
+## List Setwise Ops
+-  2nd arg `~` means to do a `uniq` on both args before the operation.
+-  2nd arg const means to do the operation normally.
+-  2nd arg fn means to take a 3rd arg and do the operation by mapping by the 2nd arg first. E.g. TODO 
+
+## Split By
+This is a quirky op intended to do things like gsub (but on constants instead of regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original string but with some modification to the true and/or false parts.
+
+Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that tuple.
+
+## Base conversion
+TODO
+
+## Iteration
+TODO
+
+## Hashing
+TODO
 
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
@@ -43,58 +111,14 @@ $EndSolution
 
 Unfortunately recursive functions (without type specifications) are difficult to implement because when we recurse we don't yet know the return type. Luckily there is a hacky way to get around this, that actually makes the code even shorter!
 
-Recursive functions always need a base case to terminate, and the base case is easy to deduce the type of. So recursive functions are implemented as a function that returns 3 things.
+Recursive functions always need a base case to terminate (actually that's not true for lazy evaluation, but you will probably not be using your functions like this), and the base case is easy to deduce the type of. So recursive functions are implemented as a function that returns 3 things.
 
-1.	the condition for when to use the base case
+1.	the condition for when to use the recursive case
 1.	the base case
 1. the recursive case
 
 The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).
 
-Create a recursive funciton with `;~`.
+Construct and call a recursive fn with ``;`. Note that you will need to do ```;` if the arg you are passing in is `$` `@` or `_` because this would cause a collision in the binary form for things like `;;$`.
 
 Check out the example in the $QuickRef
-
-## Append
-
-## Exponentiation
-
-## Filter (not)
-
-## Zip with
-
-## Foldr / Scanl
-
-### Special Folds / Scans
-
-## Drop / Take
-
-## Subscript
-
-## Index
-
-## Justify
-
-## Char Class
-
-## If / Else
-
-## Find indices
-
-## Transpose
-
-## Subsequences
-
-## List Setwise Ops
-
-## Bit Ops
-
-## Split By
-
-## Split List
-
-## Base conversion
-
-## Iteration
-
-## Hashing

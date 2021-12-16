@@ -175,7 +175,7 @@ rawOps = [
 	-- Test: % 7 ~ -> 1
 	-- Test mod 0: %7 0 -> 0
 	op(('%',12), [num, AutoDefault num 2], "safeMod" ~> VInt),
-	-- Desc: exponentiation
+	-- Desc: pow (negative for nth root)
 	-- Example: ^2 8 -> 256
 	-- Test: ^~ 1 -> 10
 	-- Test: ^8 ~ -> 64
@@ -649,7 +649,7 @@ rawOps = [
 	opM("%~", [14], [list, BinCode 0, AutoNot $ fn (elemT.a1)], \[a1,_]->
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
-	-- Desc: split list
+	-- Desc: split list (keep empties)
 	-- Example: /~ ,5 :3 4 -> [[1,2],[5]]
 	-- Test end splits: /~ "abca" "a" -> ["","bc",""]
 	-- Test promote: /~ ,5 3 -> [[1,2],[4,5]]
