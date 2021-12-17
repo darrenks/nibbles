@@ -126,7 +126,7 @@ rawOps = [
 	commutativeExtension [8]
 		-- Desc: max
 		-- Example: ]4 5 -> 5
-		-- Test: ]~ *~4 -> 0
+		-- Test: ]~ -4 -> 0
 		-- todo if change, update it's lit warning catchall at end
 		("]", [AutoDefault num 0, num], "max"~>orChr)
 		-- Desc: add
@@ -161,17 +161,17 @@ rawOps = [
 	op(subtractRep, [AutoDefault num 1, AutoDefault num 1], "-" ~> xorChr),
 	-- Desc: divide
 	-- Example: /7 2 -> 3
-	-- Test: / *~2 7 -> -1
-	-- Test: / *~2 *~7 -> 0
-	-- Test: / 2 *~7 -> -1
+	-- Test: / -2 7 -> -1
+	-- Test: / -2 -7 -> 0
+	-- Test: / 2 -7 -> -1
 	-- Test: / 7 ~ -> 3
 	-- Test div 0: /7 0 -> 340282366920938463463374607431768211456
 	op(('/',11), [num, AutoDefault num 2], "safeDiv" ~> VInt),	
 	-- Desc: modulus
 	-- Example: %7 2 -> 1
-	-- Test: % *~2 7 -> 5
-	-- Test: % *~2 *~7 -> -2
-	-- Test: % 2 *~7 -> -5
+	-- Test: % -2 7 -> 5
+	-- Test: % -2 -7 -> -2
+	-- Test: % 2 -7 -> -5
 	-- Test: % 7 ~ -> 1
 	-- Test mod 0: %7 0 -> 0
 	op(('%',12), [num, AutoDefault num 2], "safeMod" ~> VInt),
@@ -282,7 +282,7 @@ rawOps = [
 	extendOp "`," [reverseRep, consRep] equivalentOrderReason ([AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
 	-- Desc: range from 1 ( `, is from 0)
 	-- Example: ,3 -> [1,2,3]
-	-- Test: ,*~3 -> []
+	-- Test: ,-3 -> []
 	-- Test auto: <3 :0,~ -> [0,1,2]
 	op(rangeRep, [AutoDefault num (2^128)], "\\x->[1..x]" ~> vList1 .a1),
 	-- Desc: replicate
@@ -340,12 +340,12 @@ rawOps = [
 	-- Lists vectorize (and also maxes their length with n)
 	
 	-- Example: & " " 4 "hi" -> "  hi"
-	-- Test ljust: & " " *~4 "hi" -> "hi  "
+	-- Test ljust: & " " -4 "hi" -> "hi  "
 	-- Test center: & " " 5 ~"hi" -> " hi  "
-	-- Test center left: & " " *~5 ~"hi" -> "  hi "
+	-- Test center left: & " " -5 ~"hi" -> "  hi "
 	-- Test coerce: & " " 4 5 -> "   5"
 	-- Test list: & " " 0 >7,10 -> [" 8"," 9","10"]
-	-- Test ljust list: & " " *~1 >7,10 -> ["8 ","9 ","10"]
+	-- Test ljust list: & " " -1 >7,10 -> ["8 ","9 ","10"]
 	-- Test >1: & ". " 8 4 -> ". . . .4"
 	-- Test 0: & "" 8 4 -> "4"
 	op(('&',8), [str, int, AutoOption "center", vec], \[a1,a2,o1,a3] ->
@@ -393,11 +393,11 @@ rawOps = [
 	opM([">","~"], [14], [list, BinCode 14, AutoNot $ fn (elemT.a1)], "flip dropWhile" ~> \[a1,_]->a1::VT),
 	-- Desc: hidden take drop
 	-- hidden Example: `< 2 ,5 $ -> [1,2],[3,4,5]
-	-- Test negative: `< *~2 ,3 $ -> [1],[2,3]
+	-- Test negative: `< -2 ,3 $ -> [1],[2,3]
 	opM("`<", [14], [num, BinCode 11, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: hidden drop take
 	-- hidden Example: `> 2 ,5 $ -> [3,4,5],[1,2]
-	-- Test negative: `> *~2 ,3 $ -> [2,3],[1]
+	-- Test negative: `> -2 ,3 $ -> [2,3],[1]
 	opM("`>", [12,0], [num, list], "\\n a->swap$genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
 	-- Desc: ord
 	-- Example: o'd' -> 100
@@ -476,7 +476,7 @@ rawOps = [
 	extendOp "`\\" [lengthRep, repRep] "Multiply length by fst arg instead of replicating list." ([AutoDefault int 2, list], "\\a b->map (map fst) $ groupBy (onToBy $ \\e->a*(snd e + if a<0 then 1 else 0)`div`genericLength b) $ zip b [0..]" ~> vList1 . a2),
 	-- Desc: step
 	-- Example: `%2,5 -> [1,3,5]
-	-- Test: `% *~2,5 -> [5,3,1]
+	-- Test: `% -2,5 -> [5,3,1]
 	-- Test: `%~,5 -> [1,3,5]
 	-- Test: `% 1 ,0 -> []
 	-- Test lazy: <5 `%2,^10 100 -> [1,3,5,7,9]
@@ -650,11 +650,11 @@ rawOps = [
 		"\\a f->let r = chunksOf 2 $ (split.dropFinalBlank.condense.whenElt) f a \
 		\in map (\\c->let (a,b)=splitAt 1 c in (concat b,concat a)) r" ~> VList [a1,a1]),
 	-- Desc: split list (keep empties)
-	-- Example: /~ ,5 :3 4 -> [[1,2],[5]]
-	-- Test end splits: /~ "abca" "a" -> ["","bc",""]
-	-- Test promote: /~ ,5 3 -> [[1,2],[4,5]]
-	-- Test coerce: /~ "abc" 'b' -> ["a","c"]
-	extendOp "/~" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,any1], \[a1,a2]->
+	-- Example: `% ,5 :3 4 -> [[1,2],[5]]
+	-- Test end splits: `% "abca" "a" -> ["","bc",""]
+	-- Test promote: `% ,5 3 -> [[1,2],[4,5]]
+	-- Test coerce: `% "abc" 'b' -> ["a","c"]
+	extendOp "`%" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,any1], \[a1,a2]->
 		"\\a needle->splitOn ("++coerceTo [a1] [a2]++" needle) a" ~> vList1 a1),
 	-- Desc: strip
 	-- Example: -~ " bcd\n\n" -> "bcd"
@@ -682,7 +682,7 @@ rawOps = [
 	extendOp "`p" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([num], inspect.a1 ~> vstr),
 	-- Desc: to hex
 	-- Example: hex 31 -> "1f"
-	-- Test negative: hex *~31 -> "-1f"
+	-- Test negative: hex -31 -> "-1f"
 	-- [14,13], [int, BinCode 4]
 	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: to base from data

@@ -1,23 +1,38 @@
 # Tutorial: Tour
 
-In this tutorial you will learn how to use some of the more complicated built ins that aren't immediately obvious from the $QuickRef
+In this tutorial you will learn how to use some of the more complicated built ins that aren't immediately obvious from the $QuickRef.
+
+There aren't many example here [yet?], but there are many in [https://github.com/darrenks/nibbles/blob/main/Ops.hs](Ops.hs) of the source code.
 
 ## Filter (not&#8728;)
 Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` of the function after `~`.
 
 ## Zip With
-TODO
+See the zipop table at the bottom of the $QuickRef for all supported ops. `~` can be used to do a true zip with a custom fn.
+
+Note that the 2nd arg doesn't have to be a list, if a scalar it will cycle itself.
+
+TODO Note that there are a few loose ends that need tidying here with respect to tuples.
 
 ## Foldr / Scanl
-TODO
+If the second arg is a constant then it is treated as an initial value in the fold, otherwise the first (or last in the case of foldr) element of the list is the initial value.
+
+There are some special cases for when the list is of tuples and for creating tuples. TODO explain those.
 
 ### Special Folds / Scans
-TODO
+See the foldop table at the bottom of the $QuickRef for all supported ops. Note that if using `>` or `<` it will take an additional expression and do a max/min by that function.
+
+TODO Note that there are a few loose ends that need tidying here with respect to tuples and 2d+ lists.
+
+## Division
+It is safe, in that if you divide by 0 you will get a signed infinity, except that infinity = 2^128...
 
 ## Drop / Take
 Note that `` ` turns them into ops that also return a list of the elements not selected (like split at in Haskell).
 
 If `~` is used for the first arg then take a 3rd arg and drop/take while that fn is truthy. It is compatible with `` `.
+
+Negatives wrap once.
 
 ## Subscript
 This is 1 indexed and wrapped. If you do not want wrapping (and instead want the default value for the element type if out of bounds), then precede the index with `~`.
@@ -26,16 +41,20 @@ This is 1 indexed and wrapped. If you do not want wrapping (and instead want the
 Finds an element index (1 based) or returns 0. If you use `~` instead of an element, then take a fn and find the first index that makes that fn truthy.
 
 ## Justify
-TODO
+An obsure op for 1 nibble, but there aren't that many str int ops needed.
+
+-  negative number makes it ljust instead of rjust
+-  ~ before the 3rd arg means to center
+-  lists for the 3rd arg vectorize (additionally taking the max of length of any element into consideration)
 
 ## Char Class
-Returns a truthy value if a char satisfies that character class (see end of $QuickRef for a table of char classes. Note that syntax is a little different than you'd expect since we need to know the type of the argument before we parse the char class. E.g. you need to do `\'z'a` instead of `\a 'z'` to see if `'z'` is in the char class `a`.
+Returns a truthy value if a char satisfies that character class (see end of $QuickRef for a table of char classes). Note that syntax is a little different than you'd expect since we need to know the type of the argument before we parse the char class. E.g. you need to do `\'z'a` instead of `\a 'z'` to see if `'z'` is in the char class `a`.
 
 Also note that a list of the character is returned if true or empty list if false as a return value rather than something like 1 or 0 (this seemed potentially more useful).
 
 ## If / Else
 -  If you do a length of a list for the condition there is a special hack here to check if the list is null rather than compute the length (which isn't lazy)
--  True clause is a fn that is passed the condition as an argument (this is purely because it seems likely you'll use it.
+-  True clause is a fn that is passed the condition as an argument (this is purely because it seems likely you'll use it).
 -	True clause can construct a tuple.
 -	False clause `~` will mean default value of the type of the true clause.
 -	False clause expects multiple arguments if a tuple was given in true clause.
@@ -57,7 +76,7 @@ If 2nd arg is a fn then find all element indices that make that fn truthy. If 2n
 -  2nd arg fn means to take a 3rd arg and do the operation by mapping by the 2nd arg first. E.g. TODO 
 
 ## Split By
-This is a quirky op intended to do things like gsub (but on constants instead of regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original string but with some modification to the true and/or false parts.
+This is a quirky op intended to do things like gsub (but as sophisticated as with regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original list but with some modification to the true and/or false parts.
 
 Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that tuple.
 
