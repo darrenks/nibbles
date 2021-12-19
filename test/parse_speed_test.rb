@@ -5,7 +5,7 @@
 
 n=12000
 pass = true
-`ghc -O nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
+`ghc -O -package ghc -Wno-tabs nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
 t=Time.now
 

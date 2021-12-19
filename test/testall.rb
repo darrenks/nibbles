@@ -1,7 +1,7 @@
 pass = true
 
 # op tests
-puts `runhaskell --ghc-arg=-Wno-tabs test/test.hs`
+puts `ghc -Wno-tabs -package ghc test/test.hs && test/test`
 pass &&= $?.exitstatus==0
 
 # parse speed test
@@ -19,6 +19,9 @@ puts `ruby test/simple_integration_test.rb`
 pass &&= $?.exitstatus==0
 
 puts `ruby test/arg_io_integration_test.rb`
+pass &&= $?.exitstatus==0
+
+puts `ruby test/litonly_integration_test.rb`
 pass &&= $?.exitstatus==0
 
 # test generate quickref (not in distributed code)
