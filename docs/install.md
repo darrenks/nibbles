@@ -5,7 +5,7 @@ You will need **GHC 8.10.7** and **cabal 3.6.0.0** (or greater). I recommend usi
 
 ### Install some libs
 
-	> cabal install --lib dlist split pureMD5 memoize
+	> cabal install --lib dlist split murmur-hash memoize
 
 ### Install Nibbles
 Download the [latest stable version](https://nibbles.golf/nibbles-latest.tgz), unpack it then compile it.

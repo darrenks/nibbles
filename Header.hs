@@ -15,9 +15,8 @@ import qualified Data.Set as Set
 import System.Environment
 
 -- for Hash
-import qualified Data.ByteString.Lazy as B8
-import Data.Digest.Pure.MD5 -- needs cabal install --lib pureMD5
-import qualified Data.ByteString.Char8 as C8
+import qualified Data.ByteString as B8
+import qualified Data.Digest.Murmur64 as Murmur -- needs cabal install --lib murmur-hash
 
 newli = myOrd '\n'
 space = myOrd ' '
@@ -110,7 +109,7 @@ toBase :: (Integral a, Integral b) => b -> Integer -> [a]
 toBase b n = reverse $ map (fromIntegral.flip mod b) $ takeWhile (>0) $ iterate (flip div b) (fromIntegral n)
 
 hlist :: Integral i => [i] -> Integer
-hlist a = fromBase 256 $ map (fromIntegral.ord) $ C8.unpack $ md5DigestBytes $ md5 $ B8.pack $ map fromIntegral $ concatMap (toBase 256)
+hlist a = fromIntegral $ Murmur.asWord64 $ Murmur.hash64 $ B8.pack $ map fromIntegral $ concatMap (toBase 256)
 	 -- (map (\e->fromIntegral$ord$myChr e) a)
 	 (map fromIntegral a)
 

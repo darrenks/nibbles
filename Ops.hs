@@ -759,24 +759,24 @@ rawOps = [
 	-- Test not cond: `; 5 ~$ 1 0 -> 1
 	extendOp "`;" [setRep,setRep] (shorterReason"multiple assignments on the same thing is useless, just use 1") recursionDef,
 		
-	-- Desc: hashmod (md5)
-	-- untested example: ."Fizz""Buzz" `# $ 6   68 -> [3,5]
-	-- RawTest: p."Fizz""Buzz" `# $ 6   68 -> "[3,5]\n"
-	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[62,62]\n"
-	-- Test: hex `# "asdf" 0 -> "912ec803b2ce49e4a541068d495ab570"
+	-- Desc: hashmod
+	-- untested example: ."Fizz""Buzz" `# $ 6   26 -> [3,5]
+	-- RawTest: p."Fizz""Buzz" `# $ 6   26 -> "[3,5]\n"
+	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[55,55]\n"
+	-- Test: hex `# "asdf" 0 -> "7c5d107b463ef312"
 	opM("`#", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
 		let salt = o/=OptionYes
 		modify $ \s -> s { pdDataUsed = pdDataUsed s || salt }
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 
 	-- Desc: find salt by
-	-- Example: fsb"Fizz""Buzz"6~ ==$ :3 5 -> 68
+	-- Example: fsb"Fizz""Buzz"6~ ==$ :3 5 -> 26
 	opM ("fsb", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->\
 		\fromMaybe (-1) $ find (\\salt->goalChecker (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs)) [0..stopat] "~>VInt),
 	-- Desc: find salt
 	-- there is an option to provide lists of acceptables for each input
-	-- Example: fs "Fizz""Buzz"6~ :3 5 -> 68
-	-- Test: fs "Fizz""Buzz" 60 ~ :5 :,3~ -> 51
+	-- Example: fs "Fizz""Buzz"6~ :3 5 -> 26
+	-- Test: fs "Fizz""Buzz" 60 ~ :5 :,3~ -> 972
 	opM ("fs", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->\
 		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
 	
