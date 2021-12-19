@@ -17,38 +17,38 @@ end
 
 time {
 	`echo nested expressions 1>&2
-	echo #{'+'*n+'1 '*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
-	`nibbles -hs a.nbb` ; pass &&= $?.exitstatus==0
+	echo #{'+'*n+'1 '*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
+	`./nibbles -hs a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 time {
 	`echo flat expressions 1>&2
-	echo #{'-1'*n} 1 | nibbles -c` ; pass &&= $?.exitstatus==0
-	`nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+	echo #{'-1'*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
+	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 # todo fix these...
 # time {
 # 	`echo non first choice multi character op 1>&2
-# 	echo '#{'//'*n + '1 1 '*n} 1' | nibbles -c`; pass &&= $?.exitstatus==0
-# 	`nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+# 	echo '#{'//'*n + '1 1 '*n} 1' | ./nibbles -c`; pass &&= $?.exitstatus==0
+# 	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 # }
 # 
 # time {
 # 	`echo first choice multi character op 1>&2
-# 	echo '#{'`<'*n},3' | nibbles -c`; pass &&= $?.exitstatus==0
-# 	`nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+# 	echo '#{'`<'*n},3' | ./nibbles -c`; pass &&= $?.exitstatus==0
+# 	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 # }
 
 time {
 	`echo long string 1>&2
-	echo '"#{'a'*n}"' | nibbles -c` ; pass &&= $?.exitstatus==0
-	`nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+	echo '"#{'a'*n}"' | ./nibbles -c` ; pass &&= $?.exitstatus==0
+	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 time {
 	`echo long number 1>&2
-	echo '#{'1'*n}' | nibbles -c`; pass &&= $?.exitstatus==0
-	`nibbles -hs  a.nbb`; pass &&= $?.exitstatus==0
+	echo '#{'1'*n}' | ./nibbles -c`; pass &&= $?.exitstatus==0
+	`./nibbles -hs  a.nbb`; pass &&= $?.exitstatus==0
 }
 raise 'errors in runs' if !pass
 raise 'fail, parse too slow (in %f)' % (Time.now - t) if Time.now - t > 3

@@ -2,7 +2,7 @@
 
 In this tutorial you will learn how to use some of the more complicated built ins that aren't immediately obvious from the $QuickRef.
 
-There aren't many example here [yet?], but there are many in [https://github.com/darrenks/nibbles/blob/main/Ops.hs](Ops.hs) of the source code.
+There aren't many example here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 ## Filter (not&#8728;)
 Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` of the function after `~`.

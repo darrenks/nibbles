@@ -32,7 +32,7 @@ getExample _ = Nothing
 isErrorResult (_, _, output, _, _) = isPrefixOf "error" output
 
 getTestsFromAnnotations = do
-	ops1 <- readFile "ops.hs"
+	ops1 <- readFile "Ops.hs"
 	ops2 <- readFile "test/AdditionalTests.hs"
 	ops3 <- readFile "test/TutorialTests.hs"
 	return $ catMaybes $ map getExample (lines ops1 ++ lines ops2 ++ lines ops3)
