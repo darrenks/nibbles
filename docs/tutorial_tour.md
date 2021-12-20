@@ -2,6 +2,8 @@
 
 In this tutorial you will learn how to use some of the more complicated built ins that aren't immediately obvious from the $QuickRef.
 
+Note that the $QuickRef should print nicely in 3 pages in Chrome/Brave, if it doesn't, [here is a pdf](NibblesQuickRef.pdf). Also FYI you may sort by any column.
+
 There aren't many example here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 ## Filter (not&#8728;)
@@ -63,7 +65,7 @@ Also note that a list of the character is returned if true or empty list if fals
 -	False clause `~` will mean default value of the type of the true clause.
 -	False clause expects multiple arguments if a tuple was given in true clause.
 
-## Find indices
+## Find Indices
 If 2nd arg is a fn then find all element indices that make that fn truthy. If 2nd arg is a constant then find all indices of that value.
 
 ## Transpose
@@ -84,7 +86,7 @@ This is a quirky op intended to do things like gsub (but as sophisticated as wit
 
 Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that first tuple.
 
-## Base conversion
+## Base Conversion
 
 For an explanation of ``D` see [Minutiae:Data](tutorial_minutiae.html#data). Note that this is a 3 nibble op, but that the lit form is only 2 because we won't need to pay the price of a nibble to specify that the arg is an int (the op knows it will be a hard coded integer constant).
 
