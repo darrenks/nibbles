@@ -135,6 +135,9 @@ byType ft = ft . last . mtdTypes
 exactType :: VT -> MatchTestData -> Bool
 exactType t = byType (==t)
 int = Cond "int" $ exactType VInt
+specialInt = Cond "spec" $ \mtd -> error $ case (last $ mtdTypes mtd) of
+	(VList _) -> "here"
+	otherwise -> "there"
 char = Cond "chr" $ exactType VChr
 str = Cond "str" $ exactType vstr
 

@@ -3,7 +3,7 @@
 
 # I believe most time is spent building the hs/nib/lit code due to repeated concatenation of lists. This could be done more efficiently but it's still much faster than the Haskell compiler.
 
-n=12000
+n=9000
 pass = true
 `ghc -O -package ghc -Wno-tabs nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
@@ -27,18 +27,17 @@ time {
 	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 
-# todo fix these...
-# time {
-# 	`echo non first choice multi character op 1>&2
-# 	echo '#{'//'*n + '1 1 '*n} 1' | ./nibbles -c`; pass &&= $?.exitstatus==0
-# 	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
-# }
-# 
-# time {
-# 	`echo first choice multi character op 1>&2
-# 	echo '#{'`<'*n},3' | ./nibbles -c`; pass &&= $?.exitstatus==0
-# 	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
-# }
+time {
+	`echo non first choice multi character op 1>&2
+	echo '#{'/%'*(n/2) + '1 1 '*(n/2)} 1' | ./nibbles -c`; pass &&= $?.exitstatus==0
+	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+}
+
+time {
+	`echo first choice multi character op 1>&2
+	echo '#{'`$'*n},3' | ./nibbles -c`; pass &&= $?.exitstatus==0
+	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+}
 
 time {
 	`echo long string 1>&2

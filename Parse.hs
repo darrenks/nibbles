@@ -99,7 +99,7 @@ parseStr(Nib (a:s) cp)
 	where
 		a8=a`mod`8
 		c=a8*16+if null s
-			then 128 -- invalid binary string but where is "rest" being used that lazy eval even requests this?
+			then error "unterminated binary string with partial character"
 			else head s
 		cont ch used = if a>=8
 			then ([[ch]], after)
@@ -256,12 +256,12 @@ consumeWhitespace (Lit f (c:s) cp)
 
 intParser :: ParseState (VT, String)
 intParser = do
-	(_, hs) <- staticIntParser
+	~(_, hs) <- staticIntParser
 	return (VInt, hs)
 
 staticIntParser :: ParseState (VT, String)
 staticIntParser = do
-	(n, rest) <- gets $ parseInt . pdCode
+	~(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
 	genLit <- gets pdLit
 	appendRep (intToNib n," "++show n) -- only need to prepend " " if last was digit, but that would be expensive to check with dlist data structure
@@ -269,7 +269,7 @@ staticIntParser = do
 
 strParser :: ParseState (VT,String)
 strParser = do
-	(ss, rest) <- gets $ parseStr . pdCode
+	~(ss, rest) <- gets $ parseStr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (strToNib ss, tail $ concat $ map show ss)
 	
@@ -281,7 +281,7 @@ strParser = do
 
 chrParser :: ParseState (VT,String)
 chrParser = do
-	(s, rest) <- gets $ parseChr . pdCode
+	~(s, rest) <- gets $ parseChr . pdCode
 	modify $ \st -> st { pdCode=rest }
 	appendRep (chrToNib s,tail $ show s)
 	return (VChr, "myOrd " ++ show s)
