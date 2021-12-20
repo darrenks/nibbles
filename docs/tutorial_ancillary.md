@@ -146,6 +146,8 @@ $Output
 
 Outside of functions it would be pointless to create your own tuple, it would immediately be deconstructed, and so that opcode has been rebound to something else, making it invalid to even try.
 
+You may have multiple `~` in a row to create three tuples or higher.
+
 ## Vectorization
 
 Check out the full $QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.

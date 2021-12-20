@@ -240,7 +240,7 @@ rawOps = [
 	-- hidden Example: /,3 ~1 2 _ @  $ -> 2,1
 	-- Test triple: /,3 ~~1 2 3 ;$ _ @  $ @ -> 3,2,1
 	-- Test: / ,3 ~0 "" +@$ :$_ $ -> 6,"123"
-	op(('/',10), [nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
+	op(('/',10), [nonTupleList, FakeAuto "tuple", auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
 	
 	-- Desc: foldr
 	-- Example: /,3 1 +@$ -> 7
@@ -529,7 +529,7 @@ rawOps = [
 		),
 	-- Desc: hidden scanl1 tuple
 	-- hidden Example: =\,3 ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
+	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, FakeAuto "tuple", auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
 	
 	-- Desc: scanl
 	-- Example: =\,3 0 +@$ -> [0,1,3,6]
@@ -599,9 +599,9 @@ rawOps = [
 	-- Test ~ (true set): `& "aa" ~ "aa" -> "a"
 	-- Test coerce: `& ,3 1 -> [1]
 	--- Test tuple todo
-	-- Test by: `& ,5 %$2 :1 1 -> [3,5]
+	-- Test by: `& ,5 %$2 :1 1 -> [1,3]
 	-- Test true set by: `& ,5 ~ %$2 :1 1 -> [1]
-	binarySetOp "`&" 5 "a - (a - b)",
+	binarySetOp "`&" 5 "reverse $ reverse a - (a - b)",
 	-- Desc: list union [by]
 	-- Example: `| "abccd" "aabce" -> "abccdae"
 	binarySetOp "`|" 6 "a ++ (b - a)",

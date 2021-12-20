@@ -17,6 +17,10 @@ def removeLeadingTabs(s)
 	s.gsub(/^\t/,'')
 end
 
+def convertBT(s)
+	s.gsub('BT','`')
+end
+
 def show s
 	s.inspect.gsub('\\#','#')
 end
@@ -31,8 +35,8 @@ def convertTests(md)
 		end
 	}
 	md.gsub!(/`([^`]+)` ?-> ?`(.*?)`/) {
-		addTest("", $1, "", $2)
-		"`" + $1 + "`" + " &#x2907; " + "`" + $2 + "`"
+		addTest("", convertBT($1), "", $2)
+		"`" + convertBT($1) + "`" + " &#x2907; " + "`" + $2 + "`"
 	}
 end
 

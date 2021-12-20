@@ -5,27 +5,31 @@ In this tutorial you will learn how to use some of the more complicated built in
 There aren't many example here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 ## Filter (not&#8728;)
-Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` of the function after `~`.
+Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` composed with the function after `~`.
 
 ## Zip With
 See the zipop table at the bottom of the $QuickRef for all supported ops. `~` can be used to do a true zip with a custom fn.
 
 Note that the 2nd arg doesn't have to be a list, if a scalar it will cycle itself.
 
-TODO Note that there are a few loose ends that need tidying here with respect to tuples.
+Currently most of these ops will not support lists of tuples, but it's high on the todo list to support them.
 
 ## Foldr / Scanl
 If the second arg is a constant then it is treated as an initial value in the fold, otherwise the first (or last in the case of foldr) element of the list is the initial value.
 
-There are some special cases for when the list is of tuples and for creating tuples. TODO explain those.
+If `~` precedes the function it means it will be describing an initial value and that value is a tuple.
+
+If the list you are folding on is of a tuple, then `~` just means set initial value (and you would need another `~` to make that initial value a tuple). This is a bit annoying to have two conventions depending on the type of list, so that may change in the future.
 
 ### Special Folds / Scans
 See the foldop table at the bottom of the $QuickRef for all supported ops. Note that if using `>` or `<` it will take an additional expression and do a max/min by that function.
 
-TODO Note that there are a few loose ends that need tidying here with respect to tuples and 2d+ lists.
+Currently most of these ops will no support lists of tuples or lists of lists but it's high on the todo list to support them.
 
 ## Division
 It is safe, in that if you divide by 0 you will get a signed infinity, except that infinity = 2^128...
+
+Modding by 0 will always return 0.
 
 ## Drop / Take
 Note that `` ` turns them into ops that also return a list of the elements not selected (like split at in Haskell).
@@ -71,23 +75,36 @@ If 2nd arg is a fn then find all element indices that make that fn truthy. If 2n
 -  negative number means allow repeats
 
 ## List Setwise Ops
--  2nd arg `~` means to do a `uniq` on both args before the operation.
--  2nd arg const means to do the operation normally.
--  2nd arg fn means to take a 3rd arg and do the operation by mapping by the 2nd arg first. E.g. TODO 
+-  2nd arg `~` means to do a `uniq` on both args before the operation. `BT&"aasdf" ~"aa"` -> `"a"`
+-  2nd arg const means to do the operation normally. `BT&"aasdf" "aa"` -> `"aa"`
+-  2nd arg fn means to take a 3rd arg and do the operation by mapping by the 2nd arg first. `BT&"asdf" /$12 "aa"` -> `"ad"`
 
 ## Split By
 This is a quirky op intended to do things like gsub (but as sophisticated as with regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original list but with some modification to the true and/or false parts.
 
-Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that tuple.
+Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that first tuple.
 
 ## Base conversion
-TODO
+
+For an explanation of ``D` see [Minutiae:Data](tutorial_minutiae.html#data). Note that this is a 3 nibble op, but that the lit form is only 2 because we won't need to pay the price of a nibble to specify that the arg is an int (the op knows it will be a hard coded integer constant).
 
 ## Iteration
-TODO
+Iterate while uniq is an enhancement on Haskell's `iterate`. Why would you want to keep iterating once you've seen a repeat (besides not paying the computational cost of checking that)? Since the language is purely functional you are guaranteed to follow an already known cycle. In practice this is useful for skipping having to specify a termination condition. But incase you do want a repeating iteration, use `~` before the function.
+
+Append until null handles an awkward case of iteration, when you wish to iterate, appending to a sequence and being able to reference that entire sequence. There are some enhancements to make this as lazy as possible, but note that it is innately inefficient due to appending to a list repeatedly and Haskell lists can't do this efficiently. In the future I'd like to possibly change this behavior or use a different data structure.
 
 ## Hashing
-TODO
+Being able to deterministically map any value to a random integer in a range is frequently useful in code golf. Nibbles makes creating "magic functions" extremely easy and compact. In addition to hashing it also automatically adds salt. It uses the data (see [Minutiae:Data](tutorial_minutiae.html#data)) for salt by converting it to base 256 then adding it to the end of the value as a string. (If you do not want salt then use `~`). You do not need to actually provide data, it will default to empty.
+
+Finding the correct salt is typically done with brute force and Nibbles attempts to make this easy by providing two functions to do it for you. Both take the set of inputs you expect to see, followed by the range you would like answers to be in (0...n). The next arg is the max value you would allow your salt to be (or `~` if you want to let it search forever).
+
+`fs` finds salt that makes those inputs to exact outputs specified in the last arg.
+
+`fsb` finds salt by truthy values from the last arg as a function of the inputs.
+
+I have an idea for designing a hash function that would allow `fs` to not require brute force and be able to find extremely improbable mappings, but it is its own side project and hopefully to come in the future.
+
+FYI this could be a 1 char lit op because the second arg is a hard coded integer, but I like ``#` for now.
 
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
@@ -141,3 +158,5 @@ The recursive case doesn't technically have to recurse, but it does have its fix
 Construct and call a recursive fn with ``;`. Note that you will need to do ```;` if the arg you are passing in is `$` `@` or `_` because this would cause a collision in the binary form for things like `;;$`.
 
 Check out the example in the $QuickRef
+
+FYI Recursion is automatically memoized, you can write a naive fibonacci function and it will run in linear time instead of exponential!
