@@ -119,9 +119,10 @@ rawOps = [
 	op(consRep, [AnyS, FakeAuto "[]", AnyS], \[a,b]->
 		let
 			(ap,apFn) = promoteList (ret a)
-			(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
+			(bp,bpFn) = promoteList (ret b)
+			(coercedType, coerceFnA, coerceFnB) = coerce [ap] [bp]
 		in
-			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
+			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++("++coerceFnB++"$"++bpFn++"(b()))"~>coercedType
 		),		
 	commutativeExtension [8]
 		-- Desc: max
@@ -223,7 +224,7 @@ rawOps = [
 	-- Test tuple const: ! "abc" 1 , -> [('a',1),('b',1),('c',1)]
 	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
 	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
-	-- Test append coerce: ! ,3 "abc" : -> [[1,97],[2,98],[3,99]]
+	-- Test append coerce: ! ,3 "abc" : -> [["1","a"],["2","b"],["3","c"]]
 	-- Test append cons: ! ,3 4 : -> [[1,4],[2,4],[3,4]]
 	-- Test append cons coerce: ! "abc" 3 : -> ["a3","b3","c3"]
 	-- Test vec: ! "abc" .,3,3 + -> ["bdf","bdf","bdf"]

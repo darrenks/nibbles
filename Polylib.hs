@@ -86,6 +86,7 @@ app1 a b = "(" ++ a ++ b ++ ")"
 toStr VInt = inspect VInt
 toStr VChr = "(:[])"
 toStr (VList [VChr]) = " id "
+toStr a = error $ "(internal) can't to str from " ++ show a
 
 joinH t 0 = (vstr, "(const"++toStr t++")")
 joinH (VList [e]) 1 = (vstr, "(\\a b->intercalate a $ map "++toStr e++" b)")
@@ -123,8 +124,8 @@ isBaseElemChr _ = False
 
 coerce2 :: [VT] -> [VT] -> [VT]
 coerce2 [VChr] [VChr] = [VChr]
--- todo I don't like this vvv make it be a str instead, but promoteList logic in append is wrong then
-coerce2 [a] [b] | isNum a && isNum b = [VInt]
+coerce2 [VInt] [VInt] = [VInt]
+coerce2 [a] [b] | isNum a && isNum b = [vstr]
 coerce2 [a] [VList [VChr]]
 	| VChr == a || (not $ isBaseElemChr a) = [vstr]
 	| otherwise = [a]

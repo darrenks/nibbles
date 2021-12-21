@@ -6,35 +6,35 @@
 -- Test: %$=1"cde" -> 1
 
 -- Test: testCoerce2 1 1 -> "[VInt]"
--- Test: testCoerce2 1 'a' -> "[VInt]"
+-- Test: testCoerce2 1 'a' -> "[VList [VChr]]"
 -- Test: testCoerce2 1 ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 1 "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 1 ^3:,3~ -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 1 ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 1 :,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 1 :"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 'a' 'a' -> "[VChr]"
--- Test: testCoerce2 'a' ,3 -> "[VList [VInt]]"
+-- Test: testCoerce2 'a' ,3 -> "[VList [VList [VChr]]]"
 -- Test: testCoerce2 'a' "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 'a' ^3:,3~ -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 'a' ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 'a' :,3~ -> "[VList [VList [VList [VChr]]]]"
+-- Test: testCoerce2 'a' :"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 ,3 ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 ,3 ^3:,3~ -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 ,3 ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 ,3 :,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 ,3 :"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 "abc" "abc" -> "[VList [VChr]]"
--- Test: testCoerce2 "abc" ^3:,3~ -> "[VList [VChr]]"
--- Test: testCoerce2 "abc" ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 "abc" :,3~ -> "[VList [VChr]]"
+-- Test: testCoerce2 "abc" :"abc"~ -> "[VList [VList [VChr]]]"
 
--- Test: testCoerce2 ^3:,3~ ^3:,3~ -> "[VList [VList [VInt]]]"
--- Test: testCoerce2 ^3:,3~ ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 :,3~ :,3~ -> "[VList [VList [VInt]]]"
+-- Test: testCoerce2 :,3~ :"abc"~ -> "[VList [VList [VChr]]]"
 
--- Test: testCoerce2 ^3:"abc"~ ^3:"abc"~ -> "[VList [VList [VChr]]]"
+-- Test: testCoerce2 :"abc"~ :"abc"~ -> "[VList [VList [VChr]]]"
 
 -- Test: testCoerce2 z,3"abc" ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 z,3"abc" -> "[VList [VInt]]"
--- Test: testCoerce2 z,3"abc" z"abc",3 -> "[VList [VInt,VInt]]"
+-- Test: testCoerce2 z,3"abc" z"abc",3 -> "[VList [VList [VChr],VList [VChr]]]"
 ------------------------------------------------------------------	
 -- Test: testCoerceToInt 1 -> 1
 -- Test: testCoerceToInt 'a' -> 97

@@ -19,6 +19,6 @@ The .tgz file contains the source of the libraries it depends on. If you prefer 
 	> cabal install --lib dlist split murmur-hash memoize
 
 
-### Other version of Haskell
+### Other versions of Haskell
 
 Other versions of Haskell might work, I just haven't tried them yet. You may run all the nibbles tests to check compatibility with `ruby test/testall.rb`. Please let me know if you have any troubles with 8.0.2 - 8.10.7 or if you are able to get other versions to work and how.
