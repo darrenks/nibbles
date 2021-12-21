@@ -20,6 +20,9 @@ import Parse (toByte, fromByte)
 import Hs(flatHs)
 import ParseArgs
 
+-- if change, change downloads.md and install.md
+version = "nibbles 0.2"
+
 usage = "\
 \Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]*\n\
 \\n\
@@ -97,7 +100,7 @@ main=do
 			hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
 			writeFile outname nibBytes
 		["-e"] -> putStrLn lit
-		["-v"] -> putStrLn "nibbles alpha (unstable)"
+		["-v"] -> putStrLn version
 		e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
 
 estimateBinLength [] = 0

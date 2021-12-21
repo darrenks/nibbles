@@ -129,3 +129,5 @@ $Feedback
 ## News
 - **June 29, 2021**: Nibbles is in **Alpha**! If you post code please designate it as Nibbles Alpha so as not to be confusing later when it becomes broken by language changes.
 
+- **Dec 21, 2021**: Nibbles is in **Beta**. Happy solstice and golfing! The language should be mostly stable except for bug fixes and documentation for a while.
+
