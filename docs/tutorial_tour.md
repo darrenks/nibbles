@@ -7,7 +7,7 @@ Note that the $QuickRef should print nicely in 3 pages in Chrome/Brave, if it do
 There aren't many example here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 ## Filter (not&#8728;)
-Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` composed with the function after `~`.
+Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` composed with the function after `~`. Note that filter normally requires the function to use its argument (due to reqfn), but filter is special in that if you are using `~` for not, then the function doesn't have to use its argument.
 
 ## Zip With
 See the zipop table at the bottom of the $QuickRef for all supported ops. `~` can be used to do a true zip with a custom fn.

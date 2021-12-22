@@ -210,6 +210,12 @@ rawOps = [
 	-- Test tuple: .,3~$*$$ -> [(1,1),(2,4),(3,9)]
 	-- Test doesnt zip: ."ab".,2 :$ %@+$~ -> [[[1,1],[2,1]],[[1,0],[2,2]]]
 	op(mapRep, [list, fn (elemT.a1)], mapFn ~> VList .ret.a2),
+	
+	-- Desc: hidden filter not (done here rather than using AutoNot to allow for a const expression. There isn't a useful behavior for ~ in zipWith
+	-- Test: |"Fizz" ~1 -> ""
+	-- Test: |"Fizz" ~0 -> "Fizz"
+	op(filterRep, [list, auto, AutoNot $ fn (elemT.a1)], "\\a f->filter (not.f) a" ~> a1),
+	
 	-- Desc: filter
 	-- Example: |,5%$2 -> [1,3,5]
 	-- Test chr truthy: |"a b\nc"$ -> "abc"
