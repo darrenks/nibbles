@@ -214,7 +214,7 @@ tryArg (BinCode b) _ _ memoArgs = do
 	code <- gets pdCode
 	context <- gets pdContext
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
-	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg bincode mismatch"
+	return $ if matched then Success (if isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg bincode mismatch"
 
 tryArg (NotEOF) _ _ memoArgs = do
 	code <- gets pdCode
@@ -227,7 +227,7 @@ tryArg (LitCode l) _ _ memoArgs = do
 	code <- gets pdCode
 	context <- gets pdContext
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
-	return $ if matched then Success regenedArgs [] else FailTypeMismatch "arg litcode mismatch"
+	return $ if matched then Success (if not $ isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg litcode mismatch"
 
 tryArg AnyS prevTs _ _ =
 	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) prevTs undefined undefined

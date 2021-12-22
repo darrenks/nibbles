@@ -119,7 +119,7 @@ Also check out the [Why page](why.html) if you're interested in the ideas behind
 
 Good places to use Nibbles for competing online are:
 
--	<s>[Anarchy Golf](http://golf.shinh.org/) (my old favorite)</s> (Not yet, let's get more stable first).
+-	[Anarchy Golf](http://golf.shinh.org/) (my old favorite and still good)
 -	[Code Golf Stack Exchange](https://codegolf.stackexchange.com) (most active)
 
 ### Feedback?

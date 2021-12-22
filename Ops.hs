@@ -665,13 +665,13 @@ rawOps = [
 	-- Example: `$ -2 `$ 0 `$ 2 -> -1,0,1
 	extendOp "`$" [lengthRep, consRep] (shorterReason"just add 1 to the length") ([autoTodo {- -1? -} num], "signum" ~> VInt),
 	-- Desc: to uppercase
-	-- Example: `> 'a' -> 'A'
-	-- Test: ."Hi there!"`>$ -> "HI THERE!"
-	opM(["`",">"], [12], [char, BinCode 2], "myOrd.toUpper.myChr"~>a1),
+	-- Example: `) 'a' -> 'A'
+	-- Test: ."Hi there!"`)$ -> "HI THERE!"
+	opM(["`",")"], [12], [char, BinCode 2], "myOrd.toUpper.myChr"~>a1),
 	-- Desc: to lowercase
-	-- Example: `< 'A' -> 'a'
-	-- Test: ."Hi there!"`<$ -> "hi there!"
-	opM(["`","<"], [12], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
+	-- Example: `( 'A' -> 'a'
+	-- Test: ."Hi there!"`($ -> "hi there!"
+	opM(["`","("], [12], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
 	-- Desc: chr
 	-- Example: ch 100 -> 'd'
 	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([AutoDefault int 126], "id" ~> xorChr.(VChr:)),
