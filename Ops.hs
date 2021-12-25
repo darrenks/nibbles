@@ -593,8 +593,8 @@ rawOps = [
 	opM("`*",[9,0],[listOf list],"sequence"~>a1),
 	-- Desc: permutations
 	-- Example: ``p "ab" -> ["ab","ba"]
-	-- Test: ``p "abc" -> ["abc","bac","cba","bca","cab","acb"]
-	extendOp "``p" [dropRep,intRep,('0',8)] (shorterReason"drop 0 is a no op") ([list], "permutations"~>vList1.a1),
+	-- Test: ``p "abc" -> ["abc","acb","bac","bca","cab","cba"]
+	extendOp "``p" [dropRep,intRep,('0',8)] (shorterReason"drop 0 is a no op") ([list], "permutationsSaneOrder"~>vList1.a1),
 	-- Desc: list of 2 lists
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
 	extendOpHelper ["`-"] (shorterReason"just use -") ("`:", [14], [listToBeReferenced, BinCode 8, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),

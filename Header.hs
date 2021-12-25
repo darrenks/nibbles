@@ -169,3 +169,12 @@ nthRoot n x = nthRootGuess n x x
 nthRootGuess n guess x = case ((x `div` guess^(n-1)) + guess*(n-1)) `div` n of
 	r | r>=guess -> guess
 	  | otherwise -> nthRootGuess n r x
+
+-- from https://stackoverflow.com/questions/40097116/get-all-permutations-of-a-list-in-haskell
+permutationsSaneOrder :: Eq a => [a] -> [[a]]
+permutationsSaneOrder [] = [[]]
+permutationsSaneOrder as = do
+	a <- as
+	let l = delete a as
+	ls <- permutationsSaneOrder l
+	return $ a : ls
