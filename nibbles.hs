@@ -86,7 +86,7 @@ main=do
 				when (parseMode == FromLit) $ do
 					checkWouldExtractCorrectly binLit lit
 					hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $ 
-						"size = " ++ (show $ length bRaw) ++ " nibbles"
+						"size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ div (length bRaw + 1) 2) ++ " bytes)"
 				return nibBytes
  			fullHs <- toFullHs impl maybeNibBytes reader
  			writeFile "out.hs" fullHs

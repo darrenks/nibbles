@@ -263,7 +263,6 @@ staticIntParser :: ParseState (VT, String)
 staticIntParser = do
 	~(n, rest) <- gets $ parseInt . pdCode
 	modify $ \st -> st { pdCode=rest }
-	genLit <- gets pdLit
 	appendRep (intToNib n," "++show n) -- only need to prepend " " if last was digit, but that would be expensive to check with dlist data structure
 	return (StaticInt n, flatHs $ i n)
 
@@ -271,7 +270,7 @@ strParser :: ParseState (VT,String)
 strParser = do
 	~(ss, rest) <- gets $ parseStr . pdCode
 	modify $ \st -> st { pdCode=rest }
-	appendRep (strToNib ss, tail $ concat $ map show ss)
+	appendRep (strToNib ss, (tail $ concat $ map show ss) ++ " ") -- add an extra space so that expand of two strings in a row doesn't become a list of strings
 	
 	-- Set element type rather than total type so that lazy evaluation can deduce either way is not a num
 	let (et,val) = case ss of
