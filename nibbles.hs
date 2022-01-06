@@ -125,6 +125,7 @@ checkWouldExtractCorrectly binLit lit = do
 		hPutStrLn stderr binLit
 		hPutStrLn stderr "instead of:"
 		hPutStrLn stderr lit
+		hPutStrLn stderr "Please report this as it is a bug (there is supposed to be a more clear accidental extension detection, this is just a fail safe)"
 
 
 isOpt = isPrefixOf "-"

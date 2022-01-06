@@ -35,6 +35,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 		, ("secondLine", vstr, "fromMaybe [] $ at strLines 1")
 		, ("allInput", vstr, "input")
 		, ("intListList", VList [VList [VInt]], "intMatrix")
+		, ("allLines", VList [vstr], "strLines")
 		]
 	letArgs = zipWith (\(name, vt, _) ind -> noArgsUsed {
 		implType=vt, implCode=hsAtom name, implName=Just name, implUsed=if ind>length cArgs then OptionalArg else UnusedArg
@@ -51,14 +52,14 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 		lit <- gets getLit
 		dataUsed <- gets pdDataUsed
 
-		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts] =
+		let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts,allInputUsedAsLines] =
 			drop (length cArgs) $ getInputsUsedness context
 		
 		let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
 
 		-- todo idea: only auto map on snd (first is like a header)
 		let autoMap = if ?isSimple then "" else
-			if allInputUsed || allInputUsedAsInts then ""
+			if allInputUsed || allInputUsedAsInts || allInputUsedAsLines then ""
 			else if sndLineUsed then "let autoMapList = (listOr [[]] (chunksOf 2 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
 			else if fstLineUsed then "let autoMapList = (listOr [[]] (chunksOf 1 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
 			-- todo could also set a customer inner seperator

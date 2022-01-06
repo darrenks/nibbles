@@ -129,6 +129,7 @@
 -- RawTest "1\n2a\n3": ;@ -> "2a\n"
 -- RawTest "ab\ncd": ;_ -> "ab\ncd\n"
 -- RawTest "1 2\n3": p;;$ -> "[[1,2],[3]]\n"
+-- RawTest "1 2\n3": p;;@ -> "[\"1 2\",\"3\"]\n"
 
 -- RawTest odd nibble data (size 3): $~5 -> "5\n"
 -- RawTest empty nibble data (size 2): $~0 -> "0\n"

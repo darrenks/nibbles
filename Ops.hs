@@ -123,7 +123,18 @@ rawOps = [
 			(coercedType, coerceFnA, coerceFnB) = coerce [ap] [bp]
 		in
 			"\\a b->("++coerceFnA++"$"++apFn++"(a()))++("++coerceFnB++"$"++bpFn++"(b()))"~>coercedType
-		),		
+		),
+	
+	-- FYI these must be before the things they override so that their lit warning out prioritizes
+	-- Desc: divmod
+	-- Example: `/7 2 $ -> 3,1
+	-- Test: `/7 ~ $ -> 3,1
+	extendOp "`/" [subscriptRep] (shorterReason"this could be accomplished with mod after length") ([num, BinCodeRep rangeRep,AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
+	-- Desc: moddiv
+	-- Example : `%7 2 $ -> 1,3
+	-- Test: `%7 ~ $ -> 1,3
+	extendOp "`%" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
+
 	commutativeExtension [8]
 		-- Desc: max
 		-- Example: ]4 5 -> 5
@@ -438,14 +449,6 @@ rawOps = [
 	-- todo there are some type combinations that are unused for bin 15
 	-- diff could work with non matching tuples too, aka diff by?
 
-	-- Desc: divmod
-	-- Example: `/7 2 $ -> 3,1
-	-- Test: `/7 ~ $ -> 3,1
-	extendOp "`/" [subscriptRep] (shorterReason"this could be accomplished with mod after length") ([num, BinCodeRep rangeRep,AutoDefault num 2], "safeDivMod" ~> [VInt, VInt]),
-	-- Desc: moddiv
-	-- Example : `%7 2 $ -> 1,3
-	-- Test: `%7 ~ $ -> 1,3
-	extendOp "`%" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: tail
 	-- Example: >>,5 -> [2,3,4,5]
 	opM([">",">"], [12,0] {- if change, then change hidden warning for map on tail -}, [list], "tail" ~> a1),
@@ -910,6 +913,7 @@ typeToStr (Cond desc _) = Just desc
 typeToStr Auto = Just "~"
 typeToStr (FakeAuto _) = Nothing
 typeToStr (BinCode b) = Nothing
+typeToStr (LitCode b) = Nothing
 typeToStr (AutoOption _) = Nothing
 typeToStr (AutoNot s) = typeToStr s
 typeToStr (OrAuto _ a) = typeToStr a

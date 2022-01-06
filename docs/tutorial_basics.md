@@ -180,6 +180,7 @@ All programs actually start off with args available for use.
 - `;@` is the second line of STDIN (`str`)
 - `;_` is the entire STDIN (`str`)
 - `;;$` is the entire STDIN as a list of list of ints (`[[int]]`)
+- `;;@` is the entire STDIN as lines (`[str]`)
 
 For example, if the input is a list of integers we could find the sum as so:
 
