@@ -2,9 +2,13 @@
 
 $Intro
 
-### FizzBuzz
+Currently there are 86 ops which is far fewer than other competitive competitive golf languages which are all typically around 400 ops. There are some special rules explained in [minutiae](tutorial_minutiae.html), but overall the core language is simple too. The implementation comes in at 1600 lines with comments removed, but quite a bit of this is doing static type analysis, error handling, and managing the automatic conversion between the literate and binary form so that it is easier to write.
 
-Although this program appears as 28 characters here, characters (except for the digits and string text) take only half a byte in binary form. It is trivially encoded as **18 bytes**. That's pretty decent considering 8 of those bytes are for the text FizzBuzz.
+In my experience on [golf.shinh.org](http://golf.shinh.org) nibbles is about 25% shorter than GS2 on non trivial problems. I don't yet know how it will compare to Jelly/etc, but I suspect it will highly depend on what percentage of the problems involve prime factors...
+
+### Example: FizzBuzz
+
+This program appears as 28 characters here, but each takes only half a byte in the binary form (except for the digits and string text). It is trivially encoded as **18 bytes**. That's pretty decent considering 8 of those bytes are for the text FizzBuzz.
 
 	$?,:^-~%$3"Fizz"^-~%$5"Buzz"
 $HiddenOutput

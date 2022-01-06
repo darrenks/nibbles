@@ -391,8 +391,8 @@ charClassesDefs =
 	,('P',"not.isPrint") -- aka isControl
 	,('d',"isDigit")
 	,('D',"not.isDigit")
-	,('$',"\\c->isPunctuation c || isSymbol c")
-	,('!',"\\c->not $ isPunctuation c || isSymbol c")]
+	,('$',"isSym")
+	,('!',"not.isSym")]
 
 -- If using BinCode, add some checks to the argument before BinCode to ensure there isn't an EOF in the lit there, if there was then the binary code would be invalid since the BinCode would be 1 arg too early.
 addEofChecks (a:BinCode c:as) = a:NotEOF:BinCode c:addEofChecks as

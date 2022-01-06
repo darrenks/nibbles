@@ -164,7 +164,8 @@ concatLit :: (Bool, [String], [Int], Operation) -> (String, [Int], Operation)
 concatLit (b, lit, i, o) = (concat lit, i, o)
 
 drawLegend = do
-	p $ b "Legend:"
+	br
+	b "Legend:"
 	table $ do
 		tr $ do
 			th "symbol"
@@ -213,9 +214,40 @@ drawLegend = do
 			td zsym ! class_ "code" >> td zmean >> td fsym ! class_ "code" >> td fmean)
 		 ++ repeat (do;return())
 
-	p $ b "Special args:"
-	table $ do	
-		tr $ th "chclass" ! colspan "2" >> th "zipop" ! colspan "2" >> th "foldop" ! colspan "2"
-		flip mapM_ (zip chrows opsrows) $ \(chrow,opsrow) -> tr $ do
-			chrow
-			opsrow
+	H.div ! class_ "wrapper" $ do
+		section ! class_ "left" $ do
+			br
+			b "Special args:"
+			table $ do	
+				tr $ th "chclass" ! colspan "2" >> th "zipop" ! colspan "2" >> th "foldop" ! colspan "2"
+				flip mapM_ (zip chrows opsrows) $ \(chrow,opsrow) -> tr $ do
+					chrow
+					opsrow
+		
+		section ! class_ "right" $ do
+			br
+			b "Inputs:"
+			table $ do
+				tr $ do; th "sym*";th "type";th "meaning";th "default"
+				-- remind you can use args
+				tr $ do;td "$" ! class_ "code";td "int";td "first int";td "100"
+				tr $ do;td "@" ! class_ "code";td "str";td "first line";td "printable chars"
+				tr $ do;td "_" ! class_ "code";td "[int]";td "int list";td "[]"
+				tr $ do;td ";$" ! class_ "code";td "int";td "second int";td "1000"
+				tr $ do;td ";@" ! class_ "code";td "str";td "second line";td "\"\""
+				tr $ do;td ";_" ! class_ "code";td "str";td "all stdin";td "\"\""
+				tr $ do;td ";;$" ! class_ "code";td "[[int]]";td "int matrix";td "[]"
+				tr $ do;td ";;@" ! class_ "code";td "[str]";td "all lines";td "[]"
+				tr $ do;td ! colspan "4" $ do
+					"* command args can be of any type"
+					br
+					" and precede these (use Haskell syntax)"
+			br
+			b "Implicit Ops (top level multiple expressions):"
+			table $ do
+				tr $ do; th "1st type"; th "arg used"; th "meaning"
+				tr $ do; td "int"; td "$ or @"; td "range"
+				tr $ do; td "list"; td "@"; td "foldl"
+				tr $ do; td "list"; td "$"; td "map"
+				tr $ do; td "~"; td ""; td "encode data"
+				

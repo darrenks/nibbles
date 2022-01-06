@@ -178,3 +178,5 @@ permutationsSaneOrder as = do
 	let l = delete a as
 	ls <- permutationsSaneOrder l
 	return $ a : ls
+
+isSym c = isPunctuation c || isSymbol c

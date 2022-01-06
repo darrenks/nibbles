@@ -34,3 +34,11 @@ table.subtable, table.subtable th, table.subtable td  {
 table tr th {
 	cursor: pointer;
 }
+
+.left {
+	float: left;
+}
+.right {
+	padding: 0px 10px;
+	float: left;
+}
