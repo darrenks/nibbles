@@ -216,9 +216,10 @@ tryArg (BinCode b) _ _ memoArgs = do
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success (if isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg bincode mismatch"
 
-tryArg (NotEOF) _ _ memoArgs = do
+tryArg NotEOF _ _ memoArgs = do
 	code <- gets pdCode
-	return $ if not (isBinary code) && empty code
+	implicitArgUsed <- gets pdImplicitArgUsed
+	return $ if not (isBinary code) && empty code && implicitArgUsed
 		then FailTypeMismatch "EOF cannot be here since this op needs part of its binary representation after the arg (try not using implicit args)"
 		else Success memoArgs []
 
@@ -236,6 +237,7 @@ tryArg AnyS prevTs _ _ =
 tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 	let (nRets, argT) = f prevTs
 	-- todo make fn0 cleaner here?
+	-- fn0 doesn't use memoArgs but could, this makes things like ::::1 1 1 1 1 exponentially slow, because singleton needs to parse fully before seeing that second arg is ~
 	(impl,used) <- getLambdaValue nRets argT argUsedness
 	let success = Success (error"memoized args cannot be used after fn")
 	return $ case reqArgUse of
@@ -392,7 +394,7 @@ charClassesDefs =
 	,('!',"\\c->not $ isPunctuation c || isSymbol c")]
 
 -- If using BinCode, add some checks to the argument before BinCode to ensure there isn't an EOF in the lit there, if there was then the binary code would be invalid since the BinCode would be 1 arg too early.
-addEofChecks (a:BinCode c:as) = NotEOF:a:BinCode c:addEofChecks as
+addEofChecks (a:BinCode c:as) = a:NotEOF:BinCode c:addEofChecks as
 addEofChecks (a:as) = a:addEofChecks as
 addEofChecks [] = []
 

@@ -29,6 +29,7 @@ import Control.Monad (when)
 main=do
 	args <- getArgs
 	let isSimple = args == ["simple"]
+	let isFull = args == ["full"]
 	let ifNotSimple f = if not isSimple then f else return ()
 	let ifNotSimpleL l = if not isSimple then l else []
 	descs <- getDescs
@@ -44,7 +45,8 @@ main=do
 				toHtml exO]
 	
 	let ops = concatMap selectNonWarningOps $ rawOps -- the others are for invalid literate warnings
-	let opsInfo = map (\((a,b),c) -> (a,b,c)) $ zip (filter (\(o,d)->not $ isPrefixOf "hidden" d) $ zip ops descs) examples
+	let (visibleOpsAndDescs,hiddenOpsAndDescs) = partition (\(o,d)->not $ isPrefixOf "hidden" d) $ zip ops descs
+	let opsInfo = map (\((a,b),c) -> (a,b,c)) $ zip (visibleOpsAndDescs++if isFull then hiddenOpsAndDescs else []) (examples++repeat ["",""])
 	let opsInfo2 = if isSimple then map simplifyDesc $ filter (\(a,_,_)->isOpSimple a) opsInfo else opsInfo
 	hPutStrLn stderr $ show (length opsInfo2) ++ " " ++ show args ++ " ops"
 	let opsInfo3 = map (\(a,b,c)->(concatLit $ convertNullNib a,b,c)) opsInfo2

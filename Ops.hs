@@ -448,7 +448,7 @@ rawOps = [
 	extendOp "`%" [takeRep] (shorterReason"this could be done by doing a range on the min of the two num values") ([num,BinCodeRep rangeRep,AutoDefault num 2], "(swap.).safeDivMod" ~> [VInt,VInt]),
 	-- Desc: tail
 	-- Example: >>,5 -> [2,3,4,5]
-	opM([">",">"], [12,0], [list], "tail" ~> a1),
+	opM([">",">"], [12,0] {- if change, then change hidden warning for map on tail -}, [list], "tail" ~> a1),
 	-- Desc: init
 	-- Example: <<"asdf" -> "asd"
 	opM(["<","<"], [11,0], [list], "init" ~> a1),
@@ -576,6 +576,8 @@ rawOps = [
 	opM("`*", [9,0], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
+	-- Desc: hidden warning for map on tail
+	opM([".",">>"], [],[list],""~>errorWithoutStackTrace "instead of .>> use >>. to avoid accidental extension use in the binary form" :: ([VT]->[VT],String)),
 	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat
@@ -594,7 +596,7 @@ rawOps = [
 	-- Desc: permutations
 	-- Example: ``p "ab" -> ["ab","ba"]
 	-- Test: ``p "abc" -> ["abc","acb","bac","bca","cab","cba"]
-	extendOp "``p" [dropRep,intRep,('0',8)] (shorterReason"drop 0 is a no op") ([list], "permutationsSaneOrder"~>vList1.a1),
+	extendOp "``p" [repRep,intRep,('1',9)] (shorterReason"replicate 1 is a no op") ([list], "permutationsSaneOrder"~>vList1.a1),
 	-- Desc: list of 2 lists
 	-- Example: `: ,2 ,1 -> [[1,2],[1]]
 	extendOpHelper ["`-"] (shorterReason"just use -") ("`:", [14], [listToBeReferenced, BinCode 8, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
@@ -812,7 +814,7 @@ rawOps = [
 	opM("testFinish", [], [any1], flip finish False . a1 ~> vstr),
 	
 	--- Desc: old zip
-	-- Example: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
+	-- Test old examp: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
 	-- Test: .z,3,3+@$ -> [2,4,6]
 	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
 	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
