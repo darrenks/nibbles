@@ -77,9 +77,10 @@ iff :: Bool -> a -> b -> Either a b
 iff c b1 b2 = if c then Left b1 else Right b2
 
 finishLn :: String -> String
-finishLn "\n" = "\n"
-finishLn "" = "\n"
-finishLn (x:xs) = x:finishLn xs
+finishLn = finishLnHelper True
+finishLnHelper _ (x:xs) = x:finishLnHelper (x=='\n') xs
+finishLnHelper True "" = ""
+finishLnHelper False "" = "\n"
 
 lazyAtMod :: Integral i => [a] -> i -> a
 lazyAtMod a i = fromMaybe
