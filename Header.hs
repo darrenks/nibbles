@@ -117,8 +117,8 @@ listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult
 listOr _ nonEmpty = nonEmpty
 
-parseNum :: [Integer] -> Integer -> Integer
-parseNum strI base = if base > 36 then error "parseNum base must be <= 36" else
+parseNum :: Integer -> [Integer] -> Integer
+parseNum base strI = if base > 36 then error "parseNum base must be <= 36" else
 	case findIndex isJust digitIndices of
 		Just i -> let value = fromBase base $ catMaybes $ takeWhile isJust $ drop i digitIndices
 		              sign = if isSuffixOf "-" (take i str) then -1 else 1 in 

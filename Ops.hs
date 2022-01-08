@@ -420,15 +420,15 @@ rawOps = [
 	-- Desc: ord
 	-- Example: o'd' -> 100
 	op(('o',14), [char], "id"~>VInt),
-	-- Desc: read str at base
+	-- Desc: read int
 	-- todo also consider returning the stuff after the parsed number...
 	-- note negative base does nothing useful
-	-- Example: r"1f" 16 -> 31
-	-- Test negative: r"-1f" 16 -> -31
-	-- test uppercase: r"1F" 16 -> 31
-	-- Test empty: r"" 16 -> 0
-	-- Test invalids: r"z1fz2" 16 -> 31
-	op(('r',15), [str, int], "parseNum" ~> VInt),
+	-- Example: `r"12" -> 12
+	-- Test negative: `r"-12" -> -12
+	--- test uppercase: r"1F" 16 -> 31
+	-- Test empty: `r"" -> 0
+	-- Test invalids: `r"z12z2" -> 12
+	opM(["`r"], [15], [str, BinCode 1], "parseNum 10" ~> VInt),
 	-- Desc: hidden if nonnull (lazy) todo alias to regular if/else
 	-- hidden Example: ?,>+0 0:5 5 1 0 -> 1
 	-- Test: ?,>+0 0:"" "" 1 0 -> 0
