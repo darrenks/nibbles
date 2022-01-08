@@ -180,3 +180,4 @@ permutationsSaneOrder as = do
 	return $ a : ls
 
 isSym c = isPunctuation c || isSymbol c
+toHex = sToA . flip showHex ""

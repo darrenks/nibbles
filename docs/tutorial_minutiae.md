@@ -239,11 +239,11 @@ $Output "1 2"
 
 Because string and ints are optimized for typical values, they aren't good at storing data. Ints use 1/4 of their bits to terminate or not, strings 1/8. And this is reasonable because most ints are small, and most strings don't need chars >= 128. However sometimes we just need to store data efficiently!
 
-To do that use `~` after your program and proceed it with a number. This number will consume the rest of your program, but it is stored optimally in the binary format (each nibble now makes up part of a base 16 number). To use this number the first DeBruijn index (`$`) now has the data value instead of the first int of input.
+To do that use `~` after your program and proceed it with a hex number. This number will consume the rest of your program, but it is stored optimally in the binary format. To use this number the first DeBruijn index (`$`) now has the data value instead of the first int of input.
 
 This program is only 14 nibbles instead of 17 encoded in octal.
 
-	$ ~239234902394023 
+	$ ~d995376004a7 
 $HiddenOutput
 	239234902394023
 
@@ -253,7 +253,7 @@ Some ops use data by default (``D` and `#`). If used, they also prevent the data
 
 Data can be handy for recreating large strings.
 
-	`D -41 905456382897869687253
+	`D -41 3115bb46ee9d9a09d5
 $Output
 	Hello, world!
 

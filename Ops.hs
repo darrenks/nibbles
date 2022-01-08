@@ -699,9 +699,9 @@ rawOps = [
 	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
 	-- Desc: to base from data
 	-- untested example: `D 2   10 -> [1,0,1,0]
-	-- RawTest: p `D 2 10 -> "[1,0,1,0]\n"
-	-- RawTest: `D -5 1934 -> "c bad\n"
-	-- RawTest: `D -150 19178 -> "\DEL\128\n"
+	-- RawTest: p `D 2 a -> "[1,0,1,0]\n"
+	-- RawTest: `D -5 78e -> "c bad\n"
+	-- RawTest: `D -150 4aea -> "\DEL\128\n"
 	extendOp "`D" [addRep,tildaRep,tildaRep] (shorterReason"+~~ = 3") ([ParseArg "int" staticIntParser], ((\[StaticInt v1]->do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ (if v1<0 then "map ((\\c->if c<128 then (printables++unprintables)!!fromIntegral c else c).fromIntegral)." else "") ++ "(\\base->toBase (abs base) dat)"~>vList1 (if v1<0 then VChr else VInt))::[VT]->ParseState (VT, String))),
@@ -772,9 +772,9 @@ rawOps = [
 	extendOp "`;" [setRep,setRep] (shorterReason"multiple assignments on the same thing is useless, just use 1") recursionDef,
 		
 	-- Desc: hashmod
-	-- untested example: ."Fizz""Buzz" `# $ 6   26 -> [3,5]
-	-- RawTest: p."Fizz""Buzz" `# $ 6   26 -> "[3,5]\n"
-	-- RawTest: p:`# ~"5a" 100 `# "5" 100 97 -> "[55,55]\n"
+	-- untested example: ."Fizz""Buzz" `# $ 6   1a -> [3,5]
+	-- RawTest: p."Fizz""Buzz" `# $ 6   1a -> "[3,5]\n"
+	-- RawTest: p:`# ~"5a" 100 `# "5" 100 61 -> "[55,55]\n"
 	-- Test: hex `# "asdf" 0 -> "7c5d107b463ef312"
 	opM("`#", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
 		let salt = o/=OptionYes
@@ -782,15 +782,15 @@ rawOps = [
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 
 	-- Desc: find salt by
-	-- Example: fsb"Fizz""Buzz"6~ ==$ :3 5 -> 26
-	opM ("fsb", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->\
-		\fromMaybe (-1) $ find (\\salt->goalChecker (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs)) [0..stopat] "~>VInt),
+	-- Example: fsb"Fizz""Buzz"6~ ==$ :3 5 -> "1a"
+	opM ("fsb", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->toHex $\
+		\fromMaybe (-1) $ find (\\salt->goalChecker (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs)) [0..stopat] "~>vstr),
 	-- Desc: find salt
 	-- there is an option to provide lists of acceptables for each input
-	-- Example: fs "Fizz""Buzz"6~ :3 5 -> 26
-	-- Test: fs "Fizz""Buzz" 60 ~ :5 :,3~ -> 972
-	opM ("fs", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->\
-		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>VInt),
+	-- Example: fs "Fizz""Buzz"6~ :3 5 -> "1a"
+	-- Test: fs "Fizz""Buzz" 60 ~ :5 :,3~ -> "3cc"
+	opM ("fs", [], [list, int, AutoDefault int (2^128), list], \[a1,_,_,a4]->"\\inputs modn stopat goal->toHex $\
+		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>vstr),
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"

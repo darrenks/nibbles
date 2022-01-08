@@ -30,12 +30,12 @@ import Hs
 import Header (at,fromBase,toBase)
 
 import Data.Char
-import Numeric (showOct)
+import Numeric (showOct,showHex)
 import Data.Maybe (fromMaybe)
 import State
 
 import Text.ParserCombinators.ReadP (gather, readP_to_S)
-import Text.Read.Lex as Lex (readDecP, lex, Lexeme(String), Lexeme(Char))
+import Text.Read.Lex as Lex (readDecP, readHexP, lex, Lexeme(String), Lexeme(Char))
 
 import Data.List
 
@@ -66,6 +66,10 @@ parseInt (Lit f ('-':s) cp) = let (n, rest) = parseInt $ Lit f s (cp+1) in
 	(-n, rest)
 -- Thanks Jon Purdy for the readP info!
 parseInt (Lit f s cp) = case readP_to_S (gather readDecP) s of
+	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
+	_ -> error $ "unparsable int: " ++ s
+
+parseInt16 (Lit f s cp) = case readP_to_S (gather readHexP) s of
 	[((used, n), rest)] -> (n, sLit f rest (cp+length used))
 	_ -> error $ "unparsable int: " ++ s
 
@@ -170,7 +174,7 @@ chrToNib c =
 -- Consume rest of program as an integer (efficient binary packing)
 parseData :: Code -> Integer
 parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data. See https://nibbles.golf/tutorial_minutiae.html#data " where
-	(n,rest)=parseInt l
+	(n,rest)=parseInt16 l
 	
 parseData (Nib b _) = fromBase 16 (map fromIntegral $ padSafeDat b)
 
@@ -290,7 +294,7 @@ parseDataExpr = do
 	dat <- gets $ parseData . pdCode
 	let datNibs = map fromIntegral (toBase 16 dat)
 	progNibs <- gets pdNib
-	appendRep (padSafeDat datNibs,show dat)
+	appendRep (padSafeDat datNibs,showHex dat "")
 	return dat
 
 -- reverse (so leading digit is last) and swap useless op with 0 so that when it is padded to even nibbles the value isn't changed
