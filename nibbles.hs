@@ -140,18 +140,16 @@ toFullHs impl nibBytes reader = do
  	\main=do\n\
  	\ args <- getArgs \n\
 	\ "++reader++"\n\
- 	\ interact ((\\input->let output=aToS$"++ flatHs (implCode impl) ++ "\n\
+ 	\ interact ((\\input->let output=" ++ flatHs (implCode impl) ++ "\n\
  	\  -- don't print a newline to a quine! \n\
- 	\  in if output == progSource\n\
+ 	\  in aToS $ if output == sToA progSource\n\
  	\    then output else finishLn output).sToA)"
 
+runHs :: String -> [String] -> IO ()
 runHs filename args = do
 	-- Compile with -O for full laziness rather than using runhaskell
 	(_, _, _, p) <- createProcess (proc "ghc" ["-O", "-Wno-tabs", filename]){ std_out = CreatePipe }
 	ex <- waitForProcess p
 	case ex of
-		ExitSuccess -> do
-			(_, Just hout, _, _) <- createProcess (proc "out" args){ std_out = CreatePipe }
-			hGetContents hout >>= putStr
-		ExitFailure _ -> do
-			error "failed to compile hs (likely an internal nibbles bug, please report it!)"
+		ExitSuccess -> callProcess "out" args
+		ExitFailure _ -> error "failed to compile hs (likely an internal nibbles bug, please report it!)"

@@ -76,11 +76,10 @@ step n a = map fst $ filter ((==0).(`mod`n).snd) (zip (if n<0 then reverse a els
 iff :: Bool -> a -> b -> Either a b
 iff c b1 b2 = if c then Left b1 else Right b2
 
-finishLn :: String -> String
 finishLn = finishLnHelper True
-finishLnHelper _ (x:xs) = x:finishLnHelper (x=='\n') xs
-finishLnHelper True "" = ""
-finishLnHelper False "" = "\n"
+finishLnHelper _ (x:xs) = x:finishLnHelper (x==newli) xs
+finishLnHelper True [] = []
+finishLnHelper False [] = [newli]
 
 lazyAtMod :: Integral i => [a] -> i -> a
 lazyAtMod a i = fromMaybe

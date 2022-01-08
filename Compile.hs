@@ -57,15 +57,17 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 		
 		let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
 
+		let autoMapCode = (if separator == "," then "in intercalate [newli]" else "in concat $ map finishLn")++" $ flip map autoMapList $ \\"
+
 		-- todo idea: only auto map on snd (first is like a header)
 		let autoMap = if ?isSimple then "" else
 			if allInputUsed || allInputUsedAsInts || allInputUsedAsLines then ""
-			else if sndLineUsed then "let autoMapList = (listOr [[]] (chunksOf 2 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
-			else if fstLineUsed then "let autoMapList = (listOr [[]] (chunksOf 1 strLines)) in intercalate [newli] $ flip map autoMapList $ \\strLines -> "
+			else if sndLineUsed then "let autoMapList = (listOr [[]] (chunksOf 2 strLines)) "++autoMapCode++"strLines -> "
+			else if fstLineUsed then "let autoMapList = (listOr [[]] (chunksOf 1 strLines)) "++autoMapCode++"strLines -> "
 			-- todo could also set a customer inner seperator
-			else if intsUsed then "let autoMapList = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] in intercalate [newli] $ flip map autoMapList $ \\intList -> "
-			else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
-			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) in intercalate [newli] $ flip map autoMapList $ \\intList -> "
+			else if intsUsed then "let autoMapList = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] "++autoMapCode++"intList -> "
+			else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) "++autoMapCode++"intList -> "
+			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) "++autoMapCode++"intList -> "
 			else ""
 		let finalImpl = app1Hs ("let intMatrix=filter (not . null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\

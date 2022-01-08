@@ -43,7 +43,7 @@ runHs prog = do
 	hGetContents hout
 
 toTest(origLit, stdin, expect, size, isRaw) =
-	if null litWarnings then ("\n\tlet input=sToA"++show stdin++"\n\t"++(if isRaw then "print$finishLn" else "putStrLn")++"$aToS$"++testHs, (expect,
+	if null litWarnings then ("\n\tlet input=sToA"++show stdin++"\n\t"++(if isRaw then "print$aToS$finishLn" else "putStrLn$aToS")++testHs, (expect,
 		outLit, origLit,
 		length nib, if any (==16) nib then -1 else size, -- ignore only lit for bin rep
 		flatHs (implCode implFromNib), testHs))
