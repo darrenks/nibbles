@@ -193,6 +193,9 @@ drawLegend = do
 		(":","cons")]
 	
 	let foldops = [
+		("|","or"),
+		("&","and"),
+		(";","tails"),
 		(">","max by fn"),
 		("<","min by fn")]
 		++ repeat ("","")

@@ -361,6 +361,8 @@ specialFolds [a1] =
 
 		[(']',minForType $ elemT a1)
 		,('[',maxForType $ elemT a1)
+		,('|',defaultValue $ elemT a1)
+		,('&',maxForType $ elemT a1)
 		,('+',"0")
 		,('*',"1")
 		,('-',"0")
@@ -369,8 +371,8 @@ specialFolds [a1] =
 		,('^',"1")])++
 		[('>', takeAnotherOrderBy ">")
 		,('<', takeAnotherOrderBy "<")
-		,(':', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> tail $ inits a")
-		)
+		,(':', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> tail $ inits a"))
+		,(';', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> init $ tails a"))
 		-- todo add more. bit ops? flipped ops?
 		] where
 	takeAnotherOrderBy fName = do

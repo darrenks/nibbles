@@ -520,7 +520,7 @@ rawOps = [
 	-- Desc: or
 	-- Example: or"" "b" or "a" "c" -> "b","a"
 	-- Test coerce: or "" 5 -> "5"
-	extendOp "or" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "tbd", Fn ReqConst UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,a2]->"\\a b->if "++truthy [a1]++" a then a else "++coerceTo [a1] (ret a2)++"b" ~> a1),
+	extendOp "or" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "tbd", Fn ReqConst UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,a2]->lazyOr [a1] (ret a2)),
 	-- Desc: sort
 	-- Example: `<"asdf" -> "adfs"
 	-- FYI rep is used for hex extension too!
@@ -563,6 +563,7 @@ rawOps = [
 	-- Test: `\ ,0 + -> []
 	-- Test commutative order: `\ :2 :6 9 / -> [2,3,3]
 	-- Test cons: `\ ,3 : -> [[1],[1,2],[1,2,3]]
+	-- Test tails: `\ ,3 ; -> [[1,2,3],[2,3],[3]]
 	opM("`\\", [14], [list, BinCode 12, FoldMode], \[a1,rt]->"\\a f->f (scanl1.flip,const[]) a" ~> VList (ret rt)),
 	-- Desc: special folds
 	-- Example: `/ "asdf" ] -> 's'
@@ -577,6 +578,8 @@ rawOps = [
 	-- Test: `/ "bca""asdf" > $ -> "bca"
 	-- Test: `/ "bca""asdf" ] -> "bca"
 	-- Test: `/ <0"bca""asdf" ] -> ""
+	-- Test: `/ " bc" | -> 'b'
+	-- Test: `/ "b\n c" & -> '\n'
 	opM("`/", [14], [list, BinCode 11, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
 	-- Desc: product
 	-- Example: `*,4 -> 24
@@ -910,16 +913,21 @@ binOp ']' a = ([unvecOrChr a], "max")
 binOp '[' a = ([unvecOrChr a], "min")
 binOp '!' a = ([VInt], "(abs.).(-)")
 
+-- todo this code is unused
 binOp ':' [a,b] = let
 		(ap,apFn) = promoteList (ret a)
 		(coercedType, coerceFnA, coerceFnB) = coerce [ap] (ret b)
 	in
 		"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 
--- todo consider adding these
+-- todo consider adding these for zip
 -- binOp '|' a = (orChr a, ".|.", (0,0))
 -- binOp '&' a = (xorChr a, ".&.", (0,0))
 -- binOp 'x' a = (xorChr a, "xor", (0,0))
+
+-- logical (only viable for fold for now)
+binOp '|' [a1,a2] = lazyOr [a1] [a2]
+binOp '&' [a1,a2] = lazyAnd [a1] [a2]
 
 -- todo handle tuples...
 binOp '=' [a1,a2] = (elemT a1, "\\a i->if null a then "++defaultValue (elemT a1)++"else lazyAtMod a (fromIntegral i - 1)")

@@ -25,7 +25,8 @@ module Polylib(
 	cidim,
 	tupleLambda,
 	minForType,
-	maxForType) where
+	maxForType,
+	lazyOr,lazyAnd) where
 
 import Types
 import Data.List
@@ -233,3 +234,8 @@ fillAccums c n = "(\\f "++parenNonNothing (intercalate","varNames)++"->f "++pare
 		rhs = varNames ++ replicate c "()"
 		parenNonNothing "" = ""
 		parenNonNothing a = "("++a++")"
+
+lazyOr :: [VT] -> [VT] -> ([VT], String)
+lazyOr a1 a2 = (a1, "\\a b->if "++truthy a1++" a then a else "++coerceTo a1 a2++"b")
+lazyAnd :: [VT] -> [VT] -> ([VT], String)
+lazyAnd a1 a2 = (a2, "\\a b->if "++truthy a1++" a then b else "++coerceTo a2 a1++"a")
