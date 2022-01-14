@@ -425,7 +425,6 @@ rawOps = [
 	-- note negative base does nothing useful
 	-- Example: `r"12" -> 12
 	-- Test negative: `r"-12" -> -12
-	--- test uppercase: r"1F" 16 -> 31
 	-- Test empty: `r"" -> 0
 	-- Test invalids: `r"z12z2" -> 12
 	opM(["`r"], [15], [str, BinCode 1], "parseNum 10" ~> VInt),
@@ -453,8 +452,9 @@ rawOps = [
 	-- Example: >>,5 -> [2,3,4,5]
 	opM([">",">"], [12,0] {- if change, then change hidden warning for map on tail -}, [list], "tail" ~> a1),
 	-- Desc: init
-	-- Example: <<"asdf" -> "asd"
-	opM(["<","<"], [11,0], [list], "init" ~> a1),
+	-- untested example: <<"asdf" -> "asd"
+	-- Test: << >0"asdf" -> "asd"
+	opM(["<","<"], [11,0 {- if change then change hex -}], [list], "init" ~> a1),
 	-- Desc: uncons
 	-- Example: `( ,3 $ -> 1,[2,3]
 	-- Test empty: `( ,0 $ -> 0,[]
@@ -694,11 +694,20 @@ rawOps = [
 	-- Desc: int to str
 	-- Example: `p 5 -> "5"
 	extendOp "`p" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([num], inspect.a1 ~> vstr),
-	-- Desc: to hex
+	-- Desc: to/from hex
 	-- Example: hex 31 -> "1f"
 	-- Test negative: hex -31 -> "-1f"
-	-- [14,13], [int, BinCode 4]
-	extendOpHelper ["`<",","]  (shorterReason"range is already sorted") ("hex", [14,snd rangeRep],  [num,BinCode 13], "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr),
+	-- Test read hex: hex "1f" -> 31
+	-- Test uppercase: hex"1F" -> 31
+	-- Test chr: hex 'F' -> 15
+	-- Test intlist: hex :2 2 -> 34
+	extendOp "hex" [(takeRep),('<',0),(strRep)] (shorterReason"init of a constant string can just be hardcoded") ([any1], \[a1]->case a1 of
+		VInt -> "\\i -> sToA $ (if i < 0 then \"-\" else []) ++ showHex (abs i) []" ~> vstr
+		VList [VChr] -> "parseNum 16" ~> VInt
+		VChr -> "parseNum 16 . (:[])" ~> VInt
+		VList [VInt] -> "fromBase 16" ~> VInt
+		otherwise -> "hex is undefined for " ++ show a1 ~> VInt
+		),
 	-- Desc: to base from data
 	-- untested example: `D 2   10 -> [1,0,1,0]
 	-- RawTest: p `D 2 a -> "[1,0,1,0]\n"
