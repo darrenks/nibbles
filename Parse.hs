@@ -294,7 +294,7 @@ parseDataExpr = do
 	dat <- gets $ parseData . pdCode
 	let datNibs = map fromIntegral (toBase 16 dat)
 	progNibs <- gets pdNib
-	appendRep (padSafeDat datNibs,showHex dat "")
+	appendRep (padSafeDat datNibs," "++showHex dat "")
 	return dat
 
 -- reverse (so leading digit is last) and swap useless op with 0 so that when it is padded to even nibbles the value isn't changed

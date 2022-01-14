@@ -581,6 +581,8 @@ rawOps = [
 		),
 	-- Desc: hidden warning for map on tail
 	opM([".",">>"], [],[list],""~>errorWithoutStackTrace "instead of .>> use >>. to avoid accidental extension use in the binary form" :: ([VT]->[VT],String)),
+	-- Desc: hidden warning for reverse tail
+	opM(["\\",">>"], [],[list],""~>errorWithoutStackTrace "instead of \\>> use <<\\ to avoid accidental extension use in the binary form" :: ([VT]->[VT],String)),
 	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat
