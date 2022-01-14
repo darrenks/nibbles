@@ -232,8 +232,7 @@ $Output "1 2"
 	2
 	1
 
-
-
+Note that while auto mapping if your program returns nothing for a value, no newline is printed.
 
 ## Data
 
@@ -244,7 +243,7 @@ To do that use `~` after your program and proceed it with a hex number. This num
 This program is only 14 nibbles instead of 17 encoded in octal.
 
 	$ ~d995376004a7 
-$HiddenOutput
+$Output
 	239234902394023
 
 You can easily convert it to lists of a desired radix with `to base` (``@`).
@@ -272,9 +271,9 @@ $Output
 
 Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
 
-	`@ -41 "Hello, world!"
+	hex `@ -41 "Hello, world!"
 $Output
-	905456382897869687253
+	3115bb46ee9d9a09d5
 
 FYI data will always be shorter if you are getting it from the auto value of a fn, but for use with `$` it will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 

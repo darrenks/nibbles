@@ -21,7 +21,7 @@ import Hs(flatHs)
 import ParseArgs
 
 -- if change, change downloads.md and install.md
-version = "nibbles 0.22"
+version = "nibbles 0.22+ (unstable)"
 
 usage = "\
 \Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]*\n\

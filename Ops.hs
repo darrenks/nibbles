@@ -696,7 +696,8 @@ rawOps = [
 	opM(["`","("], [12], [char, BinCode 7], "myOrd.toLower.myChr"~>a1),
 	-- Desc: chr
 	-- Example: ch 100 -> 'd'
-	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([AutoDefault int 126], "id" ~> xorChr.(VChr:)),
+	-- Test: ch ~ -> '\256'
+	extendOp "ch" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([AutoDefault int 256], "id" ~> xorChr.(VChr:)),
 	-- Desc: hidden tbd
 	-- hidden Example: 0 -> 0
 	extendOp "tbd" [lengthRep, rangeRep] (shorterReason"use max ~ (0) if you wanted that") ([autoTodo char], undefinedImpl),
