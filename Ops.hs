@@ -631,8 +631,8 @@ rawOps = [
 		-- Desc: bit intersection
 		-- Example: `& 6 3 -> 2
 		-- Test chr: `& 'q' 'e' -> 'a'
-		-- Test auto: `& 3 ~ -> 1
-		("`&", [num,AutoDefault num 1],".&."~>orChr),
+		-- Test auto: `& 3 ~ -> 2
+		("`&", [num,AutoDefault num (-2)],".&."~>orChr),
 	commutativeExtension [11,0]
 		-- Desc: bit union
 		-- Example: `| 3 6 -> 7

@@ -38,7 +38,7 @@ main=do
 			[td $ styleCode $ renameIntLit lit]
 			++ifNotSimpleL[td $ styleCode $ toHex nib ++ isBinOnly (fst impl)]
 			++[td $ toHtml desc] ++
-			toQuickRef isSimple impl ++
+			toQuickRef isSimple impl lit ++
 			[td $ styleCode $ do
 				toHtml exI
 				preEscapedToHtml " &#8594; "
@@ -85,24 +85,21 @@ main=do
 toSubtable strs = do
 	table ! class_ "subtable" $ tr $ mapM_ (td . preEscapedToHtml) strs
 
-toQuickRef isSimple ((types,_)) = [
+toQuickRef isSimple ((types,_)) name = [
 	td ! customAttribute "sorttable_customkey" sort_type $ H.div ! class_ (if length types < 2 then "center code" else "stretch code") $ do
-		toSubtable $ map (replaceComplexType isSimple) typeStrs]++
+		toSubtable $ map (replaceComplexType isSimple name) typeStrs]++
 		if not isSimple then [
 	td $ H.div ! class_ (if length autos < 2 then "center" else "stretch") $ toSubtable autos] else []
 	where
 		autos = getAutos types
-		replaceComplexType True "vec" = "num"
-		replaceComplexType True "fn1" = "fn"
-		replaceComplexType True "reqfn" = "fn"
-		replaceComplexType True "any*" = "any"
-		replaceComplexType _ s = s
+		replaceComplexType True _ "vec" = "num"
+		replaceComplexType True _ "fn1" = "fn"
+		replaceComplexType _ "`?" "reqfn" = "fn|const"
+		replaceComplexType True _ "reqfn" = "fn"
+		replaceComplexType True _ "any*" = "any"
+		replaceComplexType _ _ s = s
 		typeStrs = catMaybes $ map typeToStr types
 		sort_type = if null types then "" else rootType $ Data.List.head typeStrs
-
-prettyType VInt = "int"
-prettyType (VList [VChr]) = "str"
-prettyType VChr = "chr"
 
 getAutos args = catMaybes $ flip map args $ \arg -> case arg of
 	AutoDefault _ v -> Just $ showAuto v
