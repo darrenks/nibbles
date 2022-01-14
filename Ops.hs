@@ -570,7 +570,13 @@ rawOps = [
 	-- Test: `/,3] `/,3[ `/,3+ `/,3* `/,3- `/,3% `/,3^ -> 3,1,6,6,2,1,1
 	-- Test commutative order: `/ :9 :6 2 / -> 3
 	-- Test by: `/ "asdf" >$ -> 's'
-	-- Test by empty: `/ ,0 <$ -> 340282366920938463463374607431768211456
+	-- Test by empty: `/ ,0 <$ -> 0
+	-- Test max empty: `/ ,0 ] -> -340282366920938463463374607431768211456
+	-- Test: `/ "bca""asdf" > ,$ -> "asdf"
+	-- Test: `/ <0"bca""asdf" > $ -> ""
+	-- Test: `/ "bca""asdf" > $ -> "bca"
+	-- Test: `/ "bca""asdf" ] -> "bca"
+	-- Test: `/ <0"bca""asdf" ] -> ""
 	opM("`/", [14], [list, BinCode 11, FoldMode], \[a1,rt]->"\\a f->f (foldr1,id) a" ~> ret rt),
 	-- Desc: product
 	-- Example: `*,4 -> 24
@@ -887,6 +893,11 @@ addHigherValueDeBruijnOps ops = concat [opM(
 	, symb <- [(1,"$"),(2,"@"),(3,"_")]
 	] ++ map convertNullNib ops
 
+-- use OrChr for scalar, otherwise first type (this will only happen in special folds)
+unvecOrChr [a1,a2] | a1==a2 = a1
+unvecOrChr [a1,a2] | a1/=a2 = error "unhandled, should be impossible 28"
+unvecOrChr a = orChr a
+
 -- todo replace code in ops table
 binOp :: Char -> [VT] -> ([VT], String)
 binOp '+' a = ([xorChr a], "+")
@@ -895,8 +906,8 @@ binOp '-' a = ([xorChr a], "-")
 binOp '/' a = ([VInt], "safeDiv")
 binOp '%' a = ([VInt], "safeMod")
 binOp '^' a = ([xorChr a], "^")
-binOp ']' a = ([orChr a], "max")
-binOp '[' a = ([orChr a], "min")
+binOp ']' a = ([unvecOrChr a], "max")
+binOp '[' a = ([unvecOrChr a], "min")
 binOp '!' a = ([VInt], "(abs.).(-)")
 
 binOp ':' [a,b] = let
@@ -905,7 +916,7 @@ binOp ':' [a,b] = let
 	in
 		"\\a b->("++coerceFnA++"$"++apFn++"(a()))++"++coerceFnB++"(b())"~>coercedType
 
--- don't need these since they will auto vec already
+-- todo consider adding these
 -- binOp '|' a = (orChr a, ".|.", (0,0))
 -- binOp '&' a = (xorChr a, ".&.", (0,0))
 -- binOp 'x' a = (xorChr a, "xor", (0,0))

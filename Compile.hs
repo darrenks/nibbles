@@ -9,7 +9,7 @@ import Data.Maybe
 import State
 import qualified Data.Set as Set
 
-import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,   promoteListRepeat,promoteList,coerce)
+import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,promoteListRepeat,promoteList,coerce,minForType,maxForType,defaultValue)
 import Ops
 import Types
 import Expr
@@ -346,11 +346,11 @@ specialZips a@[a1,a2] = let
 		map (\c->(c,createZipFromBinOp c a 1 0)) "=?"
 		-- two more possible
 
-createFoldFromBinOp :: (Char,Integer) -> VT -> ParseState Impl
+createFoldFromBinOp :: (Char,String) -> VT -> ParseState Impl
 -- todo handle tuples
 createFoldFromBinOp (c,initValue) (VList [t]) =
 	let (vt,hs)=binOp c [t,t]
-	in createImplMonad (VFn undefined vt) (hsParen $ hsAtom $ "\\(foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (" ++ hs ++ ") a")
+	in createImplMonad (VFn undefined vt) (hsParen $ hsAtom $ "\\(foldType,initFn) a->if null a then initFn $ "++initValue++" else foldType (" ++ hs ++ ") a")
 
 -- todo vectorize
 specialFolds :: (?isSimple::Bool) => [VT] -> [(Char, ParseState Impl)]
@@ -359,22 +359,22 @@ specialFolds [a1] =
 
 		-- if add then add to Quickref.hs !!!!!!!!!!
 
-		[(']',-2^128)
-		,('[',2^128)
-		,('+',0)
-		,('*',1)
-		,('-',0)
-		,('/',1)
-		,('%',1)
-		,('^',1)])++
-		[('>', takeAnotherOrderBy ">" (-2^128))
-		,('<', takeAnotherOrderBy "<" (2^128))
+		[(']',minForType $ elemT a1)
+		,('[',maxForType $ elemT a1)
+		,('+',"0")
+		,('*',"1")
+		,('-',"0")
+		,('/',"1")
+		,('%',"1")
+		,('^',"1")])++
+		[('>', takeAnotherOrderBy ">")
+		,('<', takeAnotherOrderBy "<")
 		,(':', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> tail $ inits a")
 		)
 		-- todo add more. bit ops? flipped ops?
 		] where
-	takeAnotherOrderBy fName initValue = do
-		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++show initValue++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
+	takeAnotherOrderBy fName = do
+		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++defaultValue (elemT a1)++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
 charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs))) charClassesDefs

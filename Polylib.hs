@@ -23,7 +23,9 @@ module Polylib(
 	fullVectorize,
 	baseElem,
 	cidim,
-	tupleLambda) where
+	tupleLambda,
+	minForType,
+	maxForType) where
 
 import Types
 import Data.List
@@ -32,6 +34,14 @@ truthy [VInt] = "(>0)"
 truthy [VChr] = "(\\c->c>0 && not (isSpace$myChr c))"
 truthy [VList _] = "(not.null)"
 truthy (xs@(x:_)) = "("++truthy [x]++"."++firstOf xs++")" 
+
+minForType ts | length ts > 1 = "("++intercalate "," (map (minForType.(:[])) ts) ++ ")"
+minForType [VList _] = "[]"
+minForType _ = "(-2^128)"
+
+maxForType ts | length ts > 1 = "("++intercalate "," (map (maxForType.(:[])) ts) ++ ")"
+maxForType [VList a] = "(repeat " ++ maxForType a ++ ")"
+maxForType _ = "(2^128)"
 
 inspect VInt = "(sToA.show.confirmInt)"
 inspect VChr = "(sToA.show.myChr.confirmInt)"
