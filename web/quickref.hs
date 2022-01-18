@@ -56,6 +56,7 @@ main=do
 		H.head $ do
 			H.title (if isSimple then "Nibbles Simple Ref" else if isFull then "Nibbles Full Ref" else "Nibbles Quick Ref")
 			link ! rel "stylesheet" ! href "quickref.css"
+			link ! rel "icon" ! href "favicon.ico"
 		body $ do
 			script "" ! src "sorttable.js"
 			table ! class_ "sortable" $ do
