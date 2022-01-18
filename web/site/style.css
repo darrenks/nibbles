@@ -13,14 +13,15 @@ code {
 	background-color: #c9a6ed;
 	border:none;
 }
-pre code {
+div.prog code {
 	display: block;
 	padding: 5px;
 	background-color: #d1b2f0;
 	border:1px dashed black;
 }
 
-code.result {
+div.prog code.result {
+	margin-top: 10px;
 	border:1px solid black;
 }
 

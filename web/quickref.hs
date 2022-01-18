@@ -177,7 +177,7 @@ drawLegend = do
 		tr $ td "[a]" >> td "list of type variable \"a\""
 		tr $ td "reqfn" >> td "fn but its argument must be used"
 		tr $ td "const" >> td "fn but its argument must not be used (for extensions)"
-		tr $ td "fn?" >> td "~ to denote take an extra fn argument here"
+		tr $ td "fn?" >> td "~ denotes: take an extra fn argument here"
 		tr $ td (i "itatlic") >> td "auto specifies \"option present\" but does not replace the arg"
 	let chrows = flip map charClassesDefs $ \(symbol,meaning) -> td (toHtml symbol) ! class_ "code" >> td (toHtml meaning) ! class_ "code"
 	
@@ -195,7 +195,7 @@ drawLegend = do
 	let foldops = [
 		("|","or"),
 		("&","and"),
-		(";","tails"),
+		(";","rev cons"),
 		(">","max by fn"),
 		("<","min by fn")]
 		++ repeat ("","")
@@ -247,7 +247,7 @@ drawLegend = do
 			table $ do
 				tr $ do; th "1st type"; th "arg used"; th "meaning"
 				tr $ do; td "int"; td "$ or @"; td "range"
-				tr $ do; td "list"; td "@"; td "foldl"
+				tr $ do; td "list"; td "@"; td "foldl/r"
 				tr $ do; td "list"; td "$"; td "map"
 				tr $ do; td "~"; td ""; td "encode data"
 				

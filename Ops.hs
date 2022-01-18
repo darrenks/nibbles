@@ -342,6 +342,8 @@ rawOps = [
 		(if a2==OptionYes then "\\a->map sToA $ words (aToS a)" else
 		let (ap2, apf) = promoteList [a2]
 		in "(\\a b->filter (/=[])$splitOn ("++apf++"b) a)") ~> vList1 a1),
+	-- Desc: hidden join str str error
+	opM("*", [],[str,str],parseError "* str str is mapped to % str str in binary form" :: ParseState Impl),
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" "^2:,3~ -> ["1 2 3","1 2 3"]
@@ -589,9 +591,9 @@ rawOps = [
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: hidden warning for map on tail
-	opM([".",">>"], [],[list],""~>errorWithoutStackTrace "instead of .>> use >>. to avoid accidental extension use in the binary form" :: ([VT]->[VT],String)),
+	opM([".",">>"], [],[list],parseError "instead of .>> use >>. to avoid accidental extension use in the binary form" :: ParseState Impl),
 	-- Desc: hidden warning for reverse tail
-	opM(["\\",">>"], [],[list],""~>errorWithoutStackTrace "instead of \\>> use <<\\ to avoid accidental extension use in the binary form" :: ([VT]->[VT],String)),
+	opM(["\\",">>"], [],[list],parseError "instead of \\>> use <<\\ to avoid accidental extension use in the binary form" :: ParseState Impl),
 	-- Desc: subsequences
 	-- 0 means all
 	-- - allow repeat

@@ -56,6 +56,10 @@ def convertMd(filename)
 	markdown.gsub!(/\<p\>\$Solution\<\/p\>(.*?)\<p\>\$EndSolution\<\/p\>/m,
 		'<details><summary>Solution</summary>\\1<hr></details>')
 	markdown.gsub!("<p>$Gives</p>\n\n<pre><code>",'<pre><code class="result">')
+
+	# pre shows up too small on mobile...
+	markdown.gsub!("<pre>",'<div class="prog">')
+	markdown.gsub!("</pre>",'</div>')
 	
 	title = markdown[/<h1>(.*?)<\/h1>/,1]
 	

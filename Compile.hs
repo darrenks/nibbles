@@ -371,6 +371,7 @@ specialFolds [a1] =
 		,('^',"1")])++
 		[('>', takeAnotherOrderBy ">")
 		,('<', takeAnotherOrderBy "<")
+		-- todo: these only work in scan (would be useless in fold though) better error message at least
 		,(':', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> tail $ inits a"))
 		,(';', createImplMonad (VFn undefined [a1]) (hsAtom $ "\\foldType a -> init $ tails a"))
 		-- todo add more. bit ops? flipped ops?
