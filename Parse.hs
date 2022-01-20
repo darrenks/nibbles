@@ -22,7 +22,8 @@ module Parse(
 	fromByte,
 	toByte,
 	parse1Nibble,
-	errorUnderLine) where
+	errorUnderLine,
+	getLitParseCoordinates) where
 
 import Expr
 import Types
@@ -243,6 +244,11 @@ literateError s cp =
 	"at line: " ++ show lineno
 		++ ", char: " ++ show (charno+1)
 		++ errorUnderLine line charno
+	where
+		(lineno,charno) = getLitParseCoordinates s cp
+		line = lines s !! (lineno-1)
+
+getLitParseCoordinates s cp = (lineno,charno)
 	where
 		prev = take (cp+1) s
 		lineno = length $ lines prev

@@ -15,8 +15,8 @@ import qualified Data.Set as Set
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 
-newLambdaArg :: [VT] -> ArgUsedness -> ParseState Arg
-newLambdaArg argT argUsedness = do
+newLambdaArg :: [VT] -> ArgUsedness -> String -> ParseState Args
+newLambdaArg argT argUsedness from = do
 	context <- gets pdContext
 	let depth = 1 + length context
 	let impls = zipWith (\t tn -> Impl {
@@ -26,15 +26,15 @@ newLambdaArg argT argUsedness = do
 		implName = Nothing,
 		implUsed = argUsedness
 		} ) argT [1..]
-	let newArg = Arg impls LambdaArg
+	let newArg = Args impls LambdaArg from
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
 
-newLetArg :: ArgUsedness -> [Arg] -> Impl -> [VT] -> Arg
-newLetArg argUsedness context (Impl _ defHs defDepth _ usedness) defTypes = newArg where
+newLetArg :: ArgUsedness -> [Args] -> Impl -> [VT] -> String -> Args
+newLetArg argUsedness context (Impl _ defHs defDepth _ usedness) defTypes from = newArg where
 	depth = 1 + length context
 	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing argUsedness) defTypes [1..]
-	newArg = Arg impls $ LetArg defHs
+	newArg = Args impls (LetArg defHs) from
 
 argn :: Int -> ParseState Impl
 argn deBruijnIndex = do
@@ -47,7 +47,7 @@ argn deBruijnIndex = do
 setUsed :: Impl -> ParseState Impl
 setUsed impl = do
 	context <- gets pdContext
-	let newContext = map (\arg -> arg { argImpls=setUsedImpl (argImpls arg) } ) context
+	let newContext = map (\arg -> arg { argsImpls=setUsedImpl (argsImpls arg) } ) context
 	modify $ \s -> s { pdContext=newContext }
 	return impl where
 	
@@ -66,13 +66,13 @@ argImplicit = do
 		modify $ \s -> s { pdImplicitArgUsed = True }
 		argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
 
-flattenArg (Arg impls (LambdaArg)) = impls
-flattenArg (Arg impls (LetArg _)) = tail impls
+flattenArg (Args impls (LambdaArg) _) = impls
+flattenArg (Args impls (LetArg _) _) = tail impls
 
-addLambda :: Arg -> Impl -> Impl
+addLambda :: Args -> Impl -> Impl
 addLambda arg (Impl t body d _ _) = Impl {
 	implType = t,
-	implCode = hsFn (map implCode $ argImpls arg) body,
+	implCode = hsFn (map implCode $ argsImpls arg) body,
 	implDeps = Set.difference d (getArgDeps arg),
 	implName = Nothing,
 	implUsed = UsednessDoesntMatter }
@@ -85,28 +85,28 @@ popArg depth impl = do
 	modify $ \s -> s { pdContext=concat finalContext }
 	return finalImpl where
 	
-	maybePopIt :: Impl -> Arg -> (Impl, [Arg])
+	maybePopIt :: Impl -> Args -> (Impl, [Args])
 	maybePopIt impl eachArg
 		| Set.member depth (getArgDeps eachArg) = (popIt eachArg impl, [])
 		| otherwise = (impl, [eachArg])
 
-	popIt :: Arg -> Impl -> Impl
-	popIt (Arg _ LambdaArg) impl = impl
-	popIt (Arg varImpls (LetArg refHs)) (Impl retT bodyHs dep _ _) =
+	popIt :: Args -> Impl -> Impl
+	popIt (Args _ LambdaArg _) impl = impl
+	popIt (Args varImpls (LetArg refHs) _) (Impl retT bodyHs dep _ _) =
 		Impl retT (hsLet (map implCode varImpls) refHs bodyHs) dep Nothing UsednessDoesntMatter
 
-getArgDeps (Arg (impl : _) _) = implDeps impl -- They should all be the same
-getArgDeps (Arg [] _) = implDeps noArgsUsed
+getArgDeps (Args (impl : _) _ _) = implDeps impl -- They should all be the same
+getArgDeps (Args [] _ _) = implDeps noArgsUsed
 --------- for debugging // errors -----------
 
-debugContext :: [Arg] -> String
+debugContext :: [Args] -> String
 debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg ->
 	let args = flattenArg arg in
 	(count+length args, unlines $ showArgType arg : zipWith (\n a->("  "++showArg n a)) [count..] args)
 	) 0 $ filter (not.null.flattenArg) context)
 
-showArgType (Arg _ LambdaArg) = "LambdaArg"
-showArgType (Arg _ (LetArg _)) = "LetArg"
+showArgType (Args _ LambdaArg from) = "LambdaArg " ++ from
+showArgType (Args _ (LetArg _) from) = "LetArg " ++ from
 
 showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " " ++ show (implUsed impl) ++ " deps: " ++ show (Set.toList $ implDeps impl)
 

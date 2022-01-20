@@ -25,16 +25,16 @@ compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> [(String, VT
 compile finishFn separator cArgs input = evalState doCompile $ blankRep (consumeWhitespace input) args where
 	
 	args =
-		[ Arg (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
-			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")")]
+		[ Args (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
+			(LetArg $ hsAtom $ "(undefined," ++ intercalate "," letDefs ++ ")") "inputs"]
 	mainLets = cArgs ++
-		[ ("firstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")
-		, ("firstLine", vstr, "fromMaybe printables $ at strLines 0")
+		[ ("fstInt", VInt, "if datOverride then dat else fromMaybe 100 $ at intList 0")
+		, ("fstLine", vstr, "fromMaybe printables $ at strLines 0")
 		, ("ints", VList [VInt], "intList")
-		, ("secondInt", VInt, "fromMaybe 1000 $ at intList 1")
-		, ("secondLine", vstr, "fromMaybe [] $ at strLines 1")
+		, ("sndInt", VInt, "fromMaybe 1000 $ at intList 1")
+		, ("sndLine", vstr, "fromMaybe [] $ at strLines 1")
 		, ("allInput", vstr, "input")
-		, ("intListList", VList [VList [VInt]], "intMatrix")
+		, ("intMatrix", VList [VList [VInt]], "intMatrix_")
 		, ("allLines", VList [vstr], "strLines")
 		]
 	letArgs = zipWith (\(name, vt, _) ind -> noArgsUsed {
@@ -65,13 +65,13 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 			else if sndLineUsed then "let autoMapList = (listOr [[]] (chunksOf 2 strLines)) "++autoMapCode++"strLines -> "
 			else if fstLineUsed then "let autoMapList = (listOr [[]] (chunksOf 1 strLines)) "++autoMapCode++"strLines -> "
 			-- todo could also set a customer inner seperator
-			else if intsUsed then "let autoMapList = if length intMatrix > 1 && (any ((>1).length) intMatrix) then intMatrix else [intList] "++autoMapCode++"intList -> "
+			else if intsUsed then "let autoMapList = if length intMatrix_ > 1 && (any ((>1).length) intMatrix_) then intMatrix_ else [intList] "++autoMapCode++"intList -> "
 			else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) "++autoMapCode++"intList -> "
 			else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) "++autoMapCode++"intList -> "
 			else ""
-		let finalImpl = app1Hs ("let intMatrix=filter (not . null) (map (asInts.sToA) (lines $ aToS input));\
+		let finalImpl = app1Hs ("let intMatrix_=filter (not . null) (map (asInts.sToA) (lines $ aToS input));\
 			\strLines=map sToA $ lines $ aToS input;\
-			\intList=concat intMatrix;\
+			\intList=concat intMatrix_;\
 			\datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
 			\dat="++show (fromMaybe 0 dat) ++";\
 			\autoMapList=[];\
@@ -103,7 +103,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 				let changeFoldrToFoldl = intercalate "(foldl1.flip)" . splitOn "foldr1"
 				result <- case implType prev of
 					VInt | not ?isSimple -> do
-						(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg
+						(impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg "implicit op int"
 						if last argsUsed then do
 							return $ (applyImpl (app1Hs (changeFoldrToFoldl $ "("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
 						else if argsUsed == [True,False] then do
@@ -113,7 +113,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 							afterCode <- gets pdCode
 							return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
 					VList e | not ?isSimple && e /= [VChr] -> do
-						(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg
+						(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg "implicit op list"
 						if or $ drop (length e) argsUsed then do
 							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
 						else if or $ take (length e) argsUsed then do
@@ -141,7 +141,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 			case impl1 of -- stupid work around because laziness causes infinite loop on error if
 				(Impl _ _ _ _ _) -> testCombiner (join2 prev (finishIt impl1 False))
 	
-	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argImpls $ last context
+	getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argsImpls $ last context
 
 applyImpl :: Impl -> Impl -> Impl
 applyImpl impl1 impl2 | elem (implType impl2) [OptionYes, OptionNo] = impl1
@@ -170,10 +170,10 @@ putAddRep (ParseData code context nib lit dataUsed implicitArgUsed warnings) = d
 	warnings1 <- gets pdLitWarnings
 	modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1, pdImplicitArgUsed=implicitArgUsed }
 
-unionUsed :: [Arg] -> [Arg] -> [Arg]
+unionUsed :: [Args] -> [Args] -> [Args]
 unionUsed lhs rhs =
 	let (newOnes,oldOnes) = splitAt (length rhs - length lhs) rhs
-	in newOnes ++ (zipWith (\a b->b { argImpls=zipWith unionUsed1 (argImpls a) (argImpls b) } ) lhs oldOnes)
+	in newOnes ++ (zipWith (\a b->b { argsImpls=zipWith unionUsed1 (argsImpls a) (argsImpls b) } ) lhs oldOnes)
 	where unionUsed1 lhs rhs =
 		rhs { implUsed = if implUsed rhs==UsedArg then implUsed rhs else implUsed lhs }
 
@@ -184,12 +184,13 @@ data ArgAttemptResult =
 	| FailConstFn Impl -- a constant resulting from unused args of a fn
 	| FailTypeMismatch String -- reason for failure (aka "arg 2 is int")
 
-tryArg :: (?isSimple::Bool) => ArgSpec ->
-		[VT] -- prev types
+tryArg :: (?isSimple::Bool) => ArgSpec
+		-> String -- op being tried (for debug purposes only)
+		-> [VT] -- prev types
 		-> [SmartList Int] -- nib reps of args (for commutative order check)
 		-> [(Impl, ParseData)] -- memoized args, parsedata after arg
 		-> ParseState ArgAttemptResult
-tryArg (Cond desc c) prevTypes nibs memoArgs = do
+tryArg (Cond desc c) _ prevTypes nibs memoArgs = do
 	let (impl,nextState) = head memoArgs
 	state <- get
 	code <- gets pdCode
@@ -201,47 +202,47 @@ tryArg (Cond desc c) prevTypes nibs memoArgs = do
 		return $ Success (tail memoArgs) [impl]
 	else return $ FailTypeMismatch $ "arg " ++ show (length prevTypes+1) ++ " is " ++ show (implType impl)
 
-tryArg (ParseArg _ parser) _ _ _ = do
+tryArg (ParseArg _ parser) _ _ _ _ = do
 	(t,code) <- parser
 	return $ Success (error"todo memo args") [noArgsUsed { implType=t, implCode=hsAtom code }]
 
-tryArg Auto _ _ memoArgs = do
+tryArg Auto _ _ _ memoArgs = do
 	matched <- match tildaOp
 	return $ if matched then Success (tail memoArgs) [] else FailTypeMismatch "arg isn't ~"
 
-tryArg (FakeAuto _) _ _ memoArgs = do
+tryArg (FakeAuto _) _ _ _ memoArgs = do
 	return $ Success memoArgs []
 
-tryArg (BinCode b) _ _ memoArgs = do
+tryArg (BinCode b) _ _ _ memoArgs = do
 	matched <- match ([b], [])
 	code <- gets pdCode
 	context <- gets pdContext
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success (if isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg bincode mismatch"
 
-tryArg NotEOF _ _ memoArgs = do
+tryArg NotEOF _ _ _ memoArgs = do
 	code <- gets pdCode
 	implicitArgUsed <- gets pdImplicitArgUsed
 	return $ if not (isBinary code) && empty code && implicitArgUsed
 		then FailTypeMismatch "EOF cannot be here since this op needs part of its binary representation after the arg (try not using implicit args)"
 		else Success memoArgs []
 
-tryArg (LitCode l) _ _ memoArgs = do
+tryArg (LitCode l) _ _ _ memoArgs = do
 	matched <- match ([], [[l]])
 	code <- gets pdCode
 	context <- gets pdContext
 	let regenedArgs = head $ exprsByOffset $ Thunk code context
 	return $ if matched then Success (if not $ isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg litcode mismatch"
 
-tryArg AnyS prevTs _ _ =
-	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) prevTs undefined undefined
+tryArg AnyS from prevTs _ _ =
+	tryArg (Fn ReqDontCare UnusedArg (const (1,[]))) from prevTs undefined undefined
 
 -- todo create another one called UnusedLeftOver which acts more like a normal Cond
-tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
+tryArg (Fn reqArgUse argUsedness f) from prevTs _ _ = do
 	let (nRets, argT) = f prevTs
 	-- todo make fn0 cleaner here?
 	-- fn0 doesn't use memoArgs but could, this makes things like ::::1 1 1 1 1 exponentially slow, because singleton needs to parse fully before seeing that second arg is ~
-	(impl,used) <- getLambdaValue nRets argT argUsedness
+	(impl,used) <- getLambdaValue nRets argT argUsedness from
 	let success = Success (error"memoized args cannot be used after fn")
 	return $ case reqArgUse of
 		ReqArg | not (or used) && not ?isSimple -> FailConstFn impl
@@ -250,9 +251,9 @@ tryArg (Fn reqArgUse argUsedness f) prevTs _ _ = do
 			else success [app1Hs (fillAccums (length argT) (length argT)) impl]
 		otherwise -> success [impl]
 
-tryArg (OptionalFn f) prevTs _ memoArgs = do
+tryArg (OptionalFn f) from prevTs _ memoArgs = do
 	let (nRets, argT) = f prevTs
-	(impl,used) <- getLambdaValue nRets argT UnusedArg
+	(impl,used) <- getLambdaValue nRets argT UnusedArg from
 	code <- gets pdCode
 	context <- gets pdContext
 	if not (or used) then
@@ -260,16 +261,16 @@ tryArg (OptionalFn f) prevTs _ memoArgs = do
 	else
 		return $ Success (head $ exprsByOffset $ Thunk code context) [impl]
 
-tryArg (OrAuto _ nonAutoSpec) prevTs nibs memoArgs = do
+tryArg (OrAuto _ nonAutoSpec) from prevTs nibs memoArgs = do
 	matched <- match tildaOp
 	if matched 
 	then return $ Success (tail memoArgs) [noArgsUsed { implType=OptionYes }]
-	else tryArg nonAutoSpec prevTs nibs memoArgs
+	else tryArg nonAutoSpec from prevTs nibs memoArgs
 
 
-tryArg (AutoNot fn) prevTs _ _ = do
+tryArg (AutoNot fn) from prevTs _ _ = do
 	matched <- match tildaOp
-	afterArg <- tryArg fn prevTs (error"impossible 43") (error"impossible 44")
+	afterArg <- tryArg fn from prevTs (error"impossible 43") (error"impossible 44")
 	return $ case afterArg of
 		Success memo [impl] -> 
 			let
@@ -278,35 +279,35 @@ tryArg (AutoNot fn) prevTs _ _ = do
 			in Success memo [modifiedImpl]
 		FailConstFn impl -> FailConstFn impl
 
-tryArg (AutoOption desc) prevTs nibs memoArgs = do
+tryArg (AutoOption desc) _ prevTs nibs memoArgs = do
 	matched <- match tildaOp
 	return $ if matched
 		then Success (tail memoArgs) [noArgsUsed { implType=OptionYes }]
 		else Success       memoArgs  [noArgsUsed { implType=OptionNo }]
 
-tryArg (AutoDefault tspec v) prevTypes nibs memoArgs = do
+tryArg (AutoDefault tspec v) from prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
 	then return $ Success (tail memoArgs) [noArgsUsed { implType=VInt, implCode=i v }]
-	else tryArg tspec prevTypes nibs memoArgs
+	else tryArg tspec from prevTypes nibs memoArgs
 
-tryArg (AutoData tspec) prevTypes nibs memoArgs = do
+tryArg (AutoData tspec) from prevTypes nibs memoArgs = do
 	matched <- match tildaOp
 	if matched
 	then do
 		modify $ \s -> s { pdDataUsed = True }
 		return $ Success (tail memoArgs) [noArgsUsed { implType=VInt, implCode=hsAtom"dat" }]
-	else tryArg tspec prevTypes nibs memoArgs
+	else tryArg tspec from prevTypes nibs memoArgs
 
-tryArg CharClassMode _ _ memoArgs = do
+tryArg CharClassMode _ _ _ memoArgs = do
 	impl <- parse1Nibble "char class mode" $ zip [0..] charClasses
 	return $ Success (error"memoized args cannot be used after char class mode (but could be)") [impl]
 
-tryArg ZipMode [t1,VFn _ [t2]] _ memoArgs = do
+tryArg ZipMode _ [t1,VFn _ [t2]] _ memoArgs = do
 	impl <- parse1Nibble "zip mode" $ zip [0..] (specialZips [t1,t2])
 	return $ Success (error"memoized args cannot be used after zip mode (but could be)") [impl]
 
-tryArg FoldMode prevTypes _ memoArgs = do
+tryArg FoldMode _ prevTypes _ memoArgs = do
 	impl <- parse1Nibble "fold mode" $ zip [0..] (specialFolds prevTypes)
 	return $ Success (error"memoized args cannot be used after fold mode (but could be)") [impl]
 
@@ -338,7 +339,7 @@ specialZips a@[a1,a2] = let
 	in
 		-- if add then add to Quickref.hs !!!!!!!!!!
 	
-		[('~',getLambdaValue 1 flatT UnusedArg >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
+		[('~',getLambdaValue 1 flatT UnusedArg "zip with by" >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
 		,(':', createSpecialFn ([VList coercedType], "\\a1 b1->zipWith (\\a b->("++coerceFnA++"$ "++ap1Fn++"a)++"++coerceFnB++"b) a1 ("++ap2Fn++"b1)"))
 		,(',',createSpecialFn ([VList flatT], "\\a1 b1->zipWith (\\a b->"++flatten++" $ (a,b)) a1 ("++ap2Fn++"b1)"))
 		] ++ -- ,('z',toImpl $ zipImpl a)] ++ 
@@ -377,7 +378,7 @@ specialFolds [a1] =
 		-- todo add more. bit ops? flipped ops?
 		] where
 	takeAnotherOrderBy fName = do
-		getLambdaValue 1 (elemT a1) UnusedArg >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++defaultValue (elemT a1)++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
+		getLambdaValue 1 (elemT a1) UnusedArg ("special fold "++fName) >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++defaultValue (elemT a1)++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
 charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs))) charClassesDefs
@@ -405,31 +406,31 @@ addEofChecks (a:as) = a:addEofChecks as
 addEofChecks [] = []
 
 -- get the args (possibly fail with string reason), ok to modify parse state and fail
-getArgs :: (?isSimple::Bool) => [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
+getArgs :: (?isSimple::Bool) => [ArgSpec] -> String -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
 getArgs argSpecs = getArgsH [] [] (addEofChecks argSpecs)
-getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
-getArgsH prevArgs _ [] _ = return $ Left prevArgs
-getArgsH prevArgs prevNibs (spec:s) memoArgs = do
-	arg <- tryArg spec prevArgTypes nibs memoArgs
+getArgsH :: (?isSimple::Bool) => [Impl] -> [SmartList Int] -> [ArgSpec] -> String -> [(Impl, ParseData)] -> ParseState (Either [Impl] String)
+getArgsH prevArgs _ [] from _ = return $ Left prevArgs
+getArgsH prevArgs prevNibs (spec:s) from memoArgs = do
+	arg <- tryArg spec from prevArgTypes nibs memoArgs
 	case arg of
 		FailConstFn _ -> return $ Right "lambda fn does not use its argument but is required to"
 		FailTypeMismatch reason -> return $ Right reason
-		Success nextMemoizedArgs impl -> getArgsH (prevArgs++impl) nibs s nextMemoizedArgs
+		Success nextMemoizedArgs impl -> getArgsH (prevArgs++impl) nibs s from nextMemoizedArgs
 	where
 		afterState = snd $ head memoArgs
 		theseNibs = pdNib $ afterState -- this could cause a bug if true args after parsed arg aren't the memoized one, i.e. if you use BinCode arg type, but for now just avoid this, if really needed we could refactor code to return the actual bin rep.
 		nibs = (prevNibs++if pdImplicitArgUsed afterState then [newSmartList []] else [theseNibs])
 		prevArgTypes = map implType prevArgs
 
-getLambdaValue numRets argType argUsedness = do
-	(newArg,body) <- pushLambdaArg argType argUsedness $ \newArg -> do
+getLambdaValue numRets argType argUsedness from = do
+	(newArg,body) <- pushLambdaArg argType argUsedness from $ \newArg -> do
 		-- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
 		-- with its real Fn type which can only be known after 2nd arg type is determined.
 		-- It would very tricky to allow the the 3rd argument to do things like auto pair
 		-- without this (and do things like only add the recursive function to args for it.
 		if numRets == 0 then do
-			let nonRecImpls = init $ argImpls newArg
-			modify $ \s -> s { pdContext=Arg nonRecImpls LambdaArg : tail (pdContext s) }
+			let nonRecImpls = init $ argsImpls newArg
+			modify $ \s -> s { pdContext=Args nonRecImpls LambdaArg "recursive fn args" : tail (pdContext s) }
 			match <- match tildaOp
 			aaa <- getValuesMemo 1
 			let aa = head aaa
@@ -440,19 +441,19 @@ getLambdaValue numRets argType argUsedness = do
 			let from = map implType nonRecImpls
 			let toType = map implType b
 			let recType = VFn from toType
-			let recImpl = (last $ argImpls newArg) { implType=recType }
-			let recArg = Arg (nonRecImpls ++ [recImpl]) LambdaArg
+			let recImpl = (last $ argsImpls newArg) { implType=recType }
+			let recArg = Args (nonRecImpls ++ [recImpl]) LambdaArg "recurse fn"
 			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
 			c <- getNArgs toType
 			return $ [a]++[makePairs argType b]++[makePairs argType c]
 		else do
 			bonus <- parseCountTuple
 			getValuesMemo (bonus + numRets)
-	return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argImpls newArg)
+	return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argsImpls newArg)
 
-pushLambdaArg :: [VT] -> ArgUsedness -> (Arg -> ParseState [Impl]) -> ParseState (Arg, Impl)
-pushLambdaArg argType argUsedness f = do
-	newArg <- newLambdaArg argType argUsedness
+pushLambdaArg :: [VT] -> ArgUsedness -> String -> (Args -> ParseState [Impl]) -> ParseState (Args, Impl)
+pushLambdaArg argType argUsedness from f = do
+	newArg <- newLambdaArg argType argUsedness from
 	depth <- gets pdContext >>= return.length
 	rets <- f newArg
 	let body = makePairs argType rets
@@ -476,7 +477,7 @@ getValuesMemo n = do
 	mapM (putAddRep.snd) exprs
 	return $ map fst exprs
 
-data Thunk = Thunk Code [Arg]
+data Thunk = Thunk Code [Args]
 
 -- Gets the arg list (given an arg from each possible offset after this one)
 getValues :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
@@ -526,7 +527,7 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
 	else do
 		afterOpCode <- gets pdCode
 		let valList = head (drop (cp afterOpCode - cp code - 1) memoArgOffsets)
-		attempt <- convertOp valList op code
+		attempt <- convertOp valList (concat lit) op code
 		case attempt of
 			OpMatch impl -> return impl
 			OpLitWarn msg -> do
@@ -542,9 +543,9 @@ getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
 data OpMatchResult = OpMatch Impl | OpTypeMismatch String | OpLitWarn String
 
 -- returns impl or arg types that caused no match
-convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> Operation -> Code -> ParseState OpMatchResult
-convertOp memoizedArgList (ats,behavior) preOpCode = do
-	maybeArgs <- getArgs ats memoizedArgList
+convertOp :: (?isSimple::Bool) => [(Impl, ParseData)] -> String -> Operation -> Code -> ParseState OpMatchResult
+convertOp memoizedArgList opName (ats,behavior) preOpCode = do
+	maybeArgs <- getArgs ats opName memoizedArgList
 	case (maybeArgs, behavior) of
 		(Right reason,_) -> return $ OpTypeMismatch reason
 		(Left args, LitWarn msg) -> do
@@ -587,6 +588,16 @@ convertPairToLet :: ArgUsedness -> Impl -> [VT] -> ParseState Impl
 convertPairToLet _ (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined
 convertPairToLet argUsedness impl implTypes = do
 	context <- gets pdContext
-	let letArg = newLetArg argUsedness context impl implTypes
+	parseCoordinates <- getParseCoordinates
+	let letArg = newLetArg argUsedness context impl implTypes parseCoordinates
 	modify $ \s -> s { pdContext=letArg:context }
-	return $ head $ argImpls letArg
+	return $ head $ argsImpls letArg
+
+getParseCoordinates :: ParseState String
+getParseCoordinates = do
+	c <- gets pdCode
+	return $ case c of
+		(Nib _ _) -> ""
+		(Lit f _ cp) ->
+			let (lineno,charno) = getLitParseCoordinates f cp in
+				"(line:"++show lineno++",char:"++show charno++")"

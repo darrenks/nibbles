@@ -18,13 +18,13 @@ data OptionalLets = OptionalLets [VT] -- used to denote that the extra rets shou
 data Impl = Impl { implType::VT
                  , implCode::HsCode
                  , implDeps::Set.Set Int
-                 , implName::Maybe String
-                 , implUsed::ArgUsedness
+                 , implName::Maybe String -- to go into arg
+                 , implUsed::ArgUsedness -- to go into arg
                  } deriving (Eq, Show)
 noArgsUsed = Impl (error "undefined impl type") (hsAtom "(error \"undefined impl code\")") (Set.singleton 0) Nothing UnusedArg
 
 data ArgKind = LambdaArg | LetArg { argKindDef::HsCode } deriving (Show, Eq)
-data Arg = Arg { argImpls::[Impl], argKind::ArgKind } deriving Show
+data Args = Args { argsImpls::[Impl], argsKind::ArgKind, argsFrom::String } deriving Show
 
 -- cp is the number of characters consumed so far
 data Code = Lit { fullLit::String, codeLit::String, litcp::Int }
@@ -38,7 +38,7 @@ app1Hs :: String -> Impl -> Impl
 app1Hs s impl = impl { implCode=hsApp (hsAtom s) (implCode impl) }
 
 data ParseData = ParseData { pdCode :: Code
-                           , pdContext :: [Arg]
+                           , pdContext :: [Args]
                            , pdNib :: SmartList Int
                            , pdLit :: DList.DList Char
                            , pdDataUsed :: Bool -- (used directly, not through $)
@@ -99,7 +99,7 @@ appendRep (nib2,lit2) = appendRepH (newSmartList nib2, DList.fromList lit2)
 appendRepA :: ([Int],[String]) -> ParseState ()
 appendRepA (nib,lit) = appendRep (nib,concat lit)
 
-blankRep :: Code -> [Arg] -> ParseData
+blankRep :: Code -> [Args] -> ParseData
 blankRep code context =
 	ParseData code context (newSmartList []) (DList.fromList "") False False []
 
