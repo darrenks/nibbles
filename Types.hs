@@ -24,6 +24,7 @@ elemT (VList e) = e
 elemT s = error $ "is not a list: " ++ show s
 
 toTuple :: [String] -> String
+toTuple [t] = t
 toTuple s = "(" ++ intercalate "," s ++ ")"
 
 toHsType :: VT -> Maybe String
@@ -45,6 +46,17 @@ toHsTypes ts =
 
 -- won't work since sometimes its curried and others not?
 --toHsType (VFn a b) = "((" ++ (intercalate "->" $ map toHsType a) ++ ")->"++(toTuple $ map toHsType b)++ ")"
+
+-- todo remove and use toHsType when Strings use Char internally instead of Integer
+toHsReadType :: VT -> String
+toHsReadType VInt = "Integer"
+toHsReadType VChr = "Char"
+toHsReadType (VList [VChr]) = "String"
+toHsReadType (VList ts) = "["++toHsReadTypes ts++"]"
+toHsReadType (VFn from to) = toHsReadTypes from ++ " -> " ++ toHsReadTypes to
+toHsReadType e = error $ "cant toHsReadType " ++ show e
+toHsReadTypes ts = toTuple $ map toHsReadType ts
+toParser t = "read::String->"++toHsReadTypes t
 
 xorChr [VInt, VChr] = VChr
 xorChr [VChr, VInt] = VChr

@@ -109,13 +109,13 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 						else if argsUsed == [True,False] then do
 							return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
 						else do
-							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1)
+							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1) "tuple in possible implicit op"
 							afterCode <- gets pdCode
 							return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
 					VList e | not ?isSimple && e /= [VChr] -> do
 						(impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg "implicit op list"
 						if or $ drop (length e) argsUsed then do
-							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e
+							convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e "tuple in implicit op foldl"
 						else if or $ take (length e) argsUsed then do
 							return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
 						-- this is moderately annoying
@@ -124,7 +124,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 -- 							let (rt,f) = Polylib.join (VList e)
 -- 							return $ (applyImpl (app1Hs f jstr) prev) { implType = rt }
 						else do
-							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1)
+							rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1) "tuple in possible implicit op"
 							afterCode <- gets pdCode
 							return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
 					otherwise -> do
@@ -430,7 +430,7 @@ getLambdaValue numRets argType argUsedness from = do
 		-- without this (and do things like only add the recursive function to args for it.
 		if numRets == 0 then do
 			let nonRecImpls = init $ argsImpls newArg
-			modify $ \s -> s { pdContext=Args nonRecImpls LambdaArg "recursive fn args" : tail (pdContext s) }
+			modify $ \s -> s { pdContext=Args nonRecImpls LambdaArg "recursive fn" : tail (pdContext s) }
 			match <- match tildaOp
 			aaa <- getValuesMemo 1
 			let aa = head aaa
@@ -442,7 +442,7 @@ getLambdaValue numRets argType argUsedness from = do
 			let toType = map implType b
 			let recType = VFn from toType
 			let recImpl = (last $ argsImpls newArg) { implType=recType }
-			let recArg = Args (nonRecImpls ++ [recImpl]) LambdaArg "recurse fn"
+			let recArg = Args (nonRecImpls ++ [recImpl]) LambdaArg "recursive fn"
 			modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
 			c <- getNArgs toType
 			return $ [a]++[makePairs argType b]++[makePairs argType c]
@@ -508,10 +508,10 @@ getValue memoArgOffsets = do
 	if empty code
 	then argImplicit
 	else getValueH ops memoArgOffsets []
-getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ attempts
+getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ if null attempts then " (no matching indentifier)" else ", tried: " ++ attempts
 	where attempts = flip concatMap failedMatches $
 		\(FailedMatch opName matchFailureReason expectedTypes) ->
-			"\nnot "++opName++" "++unwords expectedTypes++", "++matchFailureReason
+			"\n"++opName++" "++unwords expectedTypes++", "++matchFailureReason
 getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
 	code <- gets pdCode
 	let tryRest newFailedMatches = getValueH otherOps memoArgOffsets newFailedMatches
@@ -555,6 +555,7 @@ convertOp memoizedArgList opName (ats,behavior) preOpCode = do
 		
 			-- Temporarily put the code pointer back for useful op error messages
 			modify $ \s -> s { pdCode=preOpCode }
+			parseCoordinates <- getParseCoordinates
 			(rt, initImpl) <- impl $ map implType args
 			afterImplCode <- gets pdCode
 			if (cp preOpCode) /= (cp afterImplCode)
@@ -563,7 +564,7 @@ convertOp memoizedArgList opName (ats,behavior) preOpCode = do
 		
 			let fullImpl = foldl applyImpl initImpl args
 			-- todo, might need to do swapping elsewhere if the first arg could have been a tuple too, this assumes it was 1 that is why rotating is a true swap
-			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt
+			unpairedFirst <- convertPairToLet (implUsed initImpl) fullImpl rt $ opName ++ " " ++ parseCoordinates
 			result <- applyFirstClassFn unpairedFirst
 			return $ OpMatch result
 
@@ -573,7 +574,7 @@ convertOp memoizedArgList opName (ats,behavior) preOpCode = do
 applyFirstClassFn :: (?isSimple::Bool) => Impl -> ParseState Impl
 applyFirstClassFn (Impl (VFn from to) hs dep _ _) = getNArgs from >>= \impls -> do
 	let initImpl = Impl undefined hs dep undefined undefined
-	convertPairToLet UnusedArg (foldl applyImpl (app1Hs (curryN (length impls)) initImpl) impls) to
+	convertPairToLet UnusedArg (foldl applyImpl (app1Hs (curryN (length impls)) initImpl) impls) to "first class fn application"
 applyFirstClassFn x = return x
 
 getNArgs :: (?isSimple::Bool) => [VT] -> ParseState [Impl]
@@ -584,12 +585,11 @@ getNArgs argTypes = do
 coerceImpl :: Impl -> VT -> Impl
 coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo [t] [et]) hs) dep undefined undefined
 
-convertPairToLet :: ArgUsedness -> Impl -> [VT] -> ParseState Impl
-convertPairToLet _ (Impl _ hs dep _ _) [t] = return $ Impl t hs dep undefined undefined
-convertPairToLet argUsedness impl implTypes = do
+convertPairToLet :: ArgUsedness -> Impl -> [VT] -> String -> ParseState Impl
+convertPairToLet _ (Impl _ hs dep _ _) [t] _ = return $ Impl t hs dep undefined undefined
+convertPairToLet argUsedness impl implTypes from = do
 	context <- gets pdContext
-	parseCoordinates <- getParseCoordinates
-	let letArg = newLetArg argUsedness context impl implTypes parseCoordinates
+	let letArg = newLetArg argUsedness context impl implTypes from
 	modify $ \s -> s { pdContext=letArg:context }
 	return $ head $ argsImpls letArg
 

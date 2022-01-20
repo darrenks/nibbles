@@ -315,7 +315,7 @@ rawOps = [
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
-	op(subscriptRep, [FakeAuto $ italic "nowrap", num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++"else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
+	op(subscriptRep, [FakeAuto $ italic "nowrap", num, list], \[a1,a2]->"\\i a->if null a then "++defaultValue (elemT a2)++" else lazyAtMod a (fromIntegral i - 1)" ~> elemT a2),
 	-- Desc: hidden index by
 	-- hidden Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
@@ -817,7 +817,7 @@ rawOps = [
 	
 	-- Desc: debug arg type
 	-- Example: pt 5 -> error "VInt"
-	opM("pt", [], [any1], "" ~> errorWithoutStackTrace.show.a1 :: ([VT]->[VT],String)),
+	opM("pt", [], [any1], "" ~> errorWithoutStackTrace.toHsReadType.a1 :: ([VT]->[VT],String)),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	opM("p", [], [any1], inspect.a1 ~> vstr),
@@ -933,7 +933,7 @@ binOp '|' [a1,a2] = lazyOr [a1] [a2]
 binOp '&' [a1,a2] = lazyAnd [a1] [a2]
 
 -- todo handle tuples...
-binOp '=' [a1,a2] = (elemT a1, "\\a i->if null a then "++defaultValue (elemT a1)++"else lazyAtMod a (fromIntegral i - 1)")
+binOp '=' [a1,a2] = (elemT a1, "\\a i->if null a then "++defaultValue (elemT a1)++" else lazyAtMod a (fromIntegral i - 1)")
 binOp '?' [a1,a2] = ([VInt], "\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e a)")
 
 allOps = sortOn opSpecificity $ addHigherValueDeBruijnOps $ concat rawOps

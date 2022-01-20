@@ -108,7 +108,16 @@ debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg 
 showArgType (Args _ LambdaArg from) = "LambdaArg " ++ from
 showArgType (Args _ (LetArg _) from) = "LetArg " ++ from
 
-showArg n impl = indexToOp n ++ " " ++ show (implType impl) ++ " " ++ fromMaybe "" (implName impl) ++ " " ++ show (implUsed impl) ++ " deps: " ++ show (Set.toList $ implDeps impl)
+showArg n impl = indexToOp n ++ " " ++ fromMaybe "" (implName impl) ++ " :: " ++ (toHsReadType $ implType impl) ++ " " ++ explainUsedness (implUsed impl) 
+
+explainUsedness OptionalArg = "" -- "(optionally used, equivalent to used in priority)"
+explainUsedness UnusedArg = "(unused so far, prioritized for implicit args)"
+explainUsedness UsedArg = "" -- ""
+explainUsedness UsednessDoesntMatter = "usedness doesn't matter, should be impossible"
+
+
+-- only really useful for debugging code that checks where let statements go
+-- ++ " deps: " ++ show (Set.toList $ implDeps impl)
 
 indexToOp :: Int -> String
 indexToOp = fromMaybe "<truncated>" . (at indexOps) where

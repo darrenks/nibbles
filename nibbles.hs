@@ -9,7 +9,8 @@ import System.FilePath
 import System.Process
 import System.Exit
 import Control.Monad
-import Data.List.Split (chunksOf) -- needs cabal install --lib split
+import Data.List(intercalate)
+import Data.List.Split (chunksOf,splitOn) -- needs cabal install --lib split
 
 import FileQuoter
 import Compile
@@ -70,7 +71,8 @@ main=do
 	let (cargs, reader) = toLetArgs progArgs
 	let compileFn = compile finish "" cargs
 	let (impl, bRaw, lit, litWarnings)  = compileFn $ case parseMode of
-		FromLit -> Lit contents contents 0
+		FromLit -> let litSrc = intercalate "   " $ splitOn "\t" contents in
+			Lit litSrc litSrc 0
 		FromBytes -> Nib (concatMap fromByte contents) 0
 	let paddedNibs = padToEvenNibbles bRaw
 	let nibBytes = toBytes paddedNibs

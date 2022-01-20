@@ -235,14 +235,14 @@ parseError :: String -> ParseState a
 parseError msg = do
 	generateErrorMsg msg >>= errorWithoutStackTrace
 
-errorUnderLine line charno = let arrows = replicate charno ' ' in
+errorUnderLine line charno = let arrows = replicate (charno-1) ' ' in
 	"\n" ++ arrows ++ "v"
 	++ "\n" ++ line
 	++ "\n" ++ arrows ++ "^"
 
 literateError s cp =
 	"at line: " ++ show lineno
-		++ ", char: " ++ show (charno+1)
+		++ ", char: " ++ show charno
 		++ errorUnderLine line charno
 	where
 		(lineno,charno) = getLitParseCoordinates s cp
@@ -253,7 +253,7 @@ getLitParseCoordinates s cp = (lineno,charno)
 		prev = take (cp+1) s
 		lineno = length $ lines prev
 		line = lines s !! (lineno-1)
-		charno = (fromMaybe (cp+1) $ elemIndex '\n' $ reverse prev) - 1
+		charno = 1+(fromMaybe (cp+1) $ elemIndex '\n' $ reverse prev) - 1
 
 consumeWhitespace :: Code -> Code
 consumeWhitespace n@(Nib _ _) = n

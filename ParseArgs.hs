@@ -70,15 +70,6 @@ getArgTypes s = case getArgTypesH [EofBracket] s of
 	parseMultipleH (TupleBracket:_) typesSoFar (')':rest) allowMult = (typesSoFar, rest)
 	parseMultipleH rbrackets _ rest _ = argError rest $ "mismatched brackets, expecting \"" ++ rBracketStr (head rbrackets) ++ "\""
 
--- todo remove and use toHsType when Strings use Char internally instead of Integer
-toHsReadType :: VT -> String
-toHsReadType VInt = "Integer"
-toHsReadType VChr = "Char"
-toHsReadType (VList ts) = "["++toHsReadTypes ts++"]"
-toHsReadType e = error $ "cant toHsReadType " ++ show e
-toHsReadTypes ts = toTuple $ map toHsReadType ts
-toParser t = "read::String->"++toHsReadTypes t
-
 convertToNibblesType :: [VT] -> String
 convertToNibblesType [VChr] = "myOrd"
 convertToNibblesType [VList et] = "(map "++convertToNibblesType et++")"
