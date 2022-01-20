@@ -20,13 +20,12 @@ import Parse (toByte, fromByte)
 import Hs(flatHs)
 import ParseArgs
 
--- if change, change downloads.md and install.md
-version = "nibbles 0.22+ (unstable)"
-
 usage = "\
 \Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]*\n\
 \\n\
 \Nibbles - a functional code golf language for mortals.\n\
+\\n\
+\Documentation at https://nibbles.golf\n\
 \\n\
 \Modes:\n\
 \  default = compile the nibbles program to out.hs and run it\n\

@@ -108,6 +108,16 @@ I have an idea for designing a hash function that would allow `fs` to not requir
 
 FYI this could be a 1 char lit op because the second arg is a hard coded integer, but I like ``#` for now.
 
+## Debugging
+
+`error` Let's you print a custom error message. This can be useful to see if a value is ever lazily used or not. This also prints the nibbles version which could be useful if you are attempting to run code on a server where you do not have access to command line args and are unsure what version they are running.
+
+The value doesn't have to be a constant either, so you could use it to inspect some inner computation without having to drastically rearrange the code.
+
+`pt` Prints the type of a value and terminates at compile time.
+
+`ct` Prints the current context of all DeBruijn indices and terminates at compile time.
+
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
 

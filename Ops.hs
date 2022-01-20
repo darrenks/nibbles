@@ -825,8 +825,8 @@ rawOps = [
 	-- Example: ;5 ct -> error "$ LetArg VInt ..."
 	opM("ct", [], [], gets pdContext >>= parseError . debugContext :: ParseState Impl),
 	-- Desc: error
-	-- Example: error p +2 1 -> error "3"
-	opM("error", [], [str], "errorWithoutStackTrace.aToS" ~> vstr),
+	-- Example: error +2 1 -> error "3"
+	extendOp "error" [diffRep, rangeRep, tildaRep, strRep] "- ,~ str is invalidly typed" ([any1], \[a1]->"\\s->errorWithoutStackTrace $ \"Error: \"++aToS ("++(if a1==vstr then "" else inspect a1)++" s)++\" (\"++"++ show version++"++\")\"" ~> vstr),
 
 
 	opM("testCoerce2", [], [any1, any1], testCoerce2 ~> vstr),

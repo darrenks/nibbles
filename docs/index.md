@@ -2,7 +2,7 @@
 
 $Intro
 
-Currently there are 86 ops which is far fewer than other competitive competitive golf languages which are all typically around 400 ops. There are some special rules explained in [minutiae](tutorial_minutiae.html), but overall the core language is simple too. The implementation comes in at 1600 lines with comments removed, but quite a bit of this is doing static type analysis, error handling, and managing the automatic conversion between the literate and binary form so that it is easier to write.
+Currently there are 86 ops which is far fewer than other competitive competitive golf languages which are typically around 400 ops. There are some special rules explained in [minutiae](tutorial_minutiae.html), but overall the core language is simple too. The implementation comes in at 1600 lines with comments removed, but quite a bit of this is doing static type analysis, error handling, and managing the automatic conversion between the literate and binary form so that it is easier to write.
 
 In my experience on [golf.shinh.org](http://golf.shinh.org) nibbles is about 25% shorter than GS2 on non trivial problems. I don't yet know how it will compare to Jelly/etc, but I suspect it will highly depend on what percentage of the problems involve prime factors...
 
