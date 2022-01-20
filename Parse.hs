@@ -12,6 +12,7 @@ module Parse(
 	cp,
 	tildaOp,
 	onlyCheckMatch,
+	litMatch,
 	match,
 	parseError,
 	parseLitWarning,
@@ -210,6 +211,12 @@ match1Lit lit@(Lit f s cp) needle
 	| needle == "\'" && '\'' == head s = Just lit
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
+
+litMatch :: [String] -> ParseState Bool
+litMatch s = do
+	code <- gets pdCode
+	if isBinary code then return False
+	else match ([],s)
 
 match :: ([Int],[String]) -> ParseState Bool
 match (nib,lit) = do

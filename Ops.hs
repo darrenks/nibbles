@@ -890,14 +890,10 @@ binarySetOp name binrep code =
 		\b="++maybeNub++"$"++zipBy++"$"++coerceFnB++bcode++" in \
 		\map fst $ "++maybeNub++"$"++replaceMinus code~>coercedType)
 
-addHigherValueDeBruijnOps ops = concat [opM(
-		replicate unary (fst setRep) ++ snd symb,
-		replicate unary (snd setRep) ++ [2+fst symb],
-		[],
-		argn (unary*3+fst symb))
-	| unary <- [1..10]
-	, symb <- [(1,"$"),(2,"@"),(3,"_")]
-	] ++ map convertNullNib ops
+addHigherValueDeBruijnOps ops = concat (zipWith (\(nib,lit) n->
+		opM(lit, nib, [], argn n))
+	deBruijnArgReps [1..])
+		++ map convertNullNib ops
 
 -- use OrChr for scalar, otherwise first type (this will only happen in special folds)
 unvecOrChr [a1,a2] | a1==a2 = a1

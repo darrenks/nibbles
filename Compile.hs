@@ -3,7 +3,6 @@
 module Compile(compile,padToEvenNibbles,charClassesDefs) where
 
 import Data.List(inits,intercalate)
-import Control.Monad (msum)
 import Data.List.Split(splitOn)
 import Data.Maybe
 import State
@@ -505,10 +504,12 @@ getValue :: (?isSimple::Bool) => [[(Impl, ParseData)]] -> ParseState Impl
 getValue memoArgOffsets = do
 	let ops = if ?isSimple then simpleOps else allOps
 	code <- gets pdCode
+	identifier <- getArgByName
 	if empty code
 	then argImplicit
+	else if isJust $ identifier then return $ fromMaybe undefined identifier
 	else getValueH ops memoArgOffsets []
-getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ if null attempts then " (no matching indentifier)" else ", tried: " ++ attempts
+getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ if null attempts then " (no matching identifier)" else ", tried: " ++ attempts
 	where attempts = flip concatMap failedMatches $
 		\(FailedMatch opName matchFailureReason expectedTypes) ->
 			"\n"++opName++" "++unwords expectedTypes++", "++matchFailureReason

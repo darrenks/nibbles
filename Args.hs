@@ -1,13 +1,13 @@
 {-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
 
-module Args(argn, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit) where
+module Args(argn, getArgByName, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit, deBruijnArgReps) where
 
 import Expr
 import Types
 import Header
 import Hs
+import Parse (parseError,litMatch)
 
-import Parse (parseError)
 import Data.List
 import Data.Maybe
 import State
@@ -41,8 +41,24 @@ argn deBruijnIndex = do
 	context <- gets pdContext
 	let flattenedArgs = concatMap flattenArg context
 	case at flattenedArgs (deBruijnIndex-1) of
-		Nothing -> parseError $ "Attempt to access " ++ indexToOp (deBruijnIndex-1) ++ debugContext context
+		Nothing -> parseError $ "Attempt to access " ++ (snd $ indexToOp (deBruijnIndex-1)) ++ debugContext context
 		Just impl -> setUsed impl
+
+getArgByName :: ParseState (Maybe Impl)
+getArgByName = do
+	context <- gets pdContext
+	getArgByNameH 0 (concatMap flattenArg context)
+	where
+		getArgByNameH :: Int -> [Impl] -> ParseState (Maybe Impl)
+		getArgByNameH _ [] = return Nothing
+		getArgByNameH n (impl:rest) =
+			if isJust (implName impl) then do
+				matched <- litMatch [fromMaybe undefined $ implName impl]
+				if matched then do
+					appendRep $ (fst $ indexToOp n, " ")
+					return $ Just impl
+				else getArgByNameH (n+1) rest
+			else getArgByNameH (n+1) rest
 
 setUsed :: Impl -> ParseState Impl
 setUsed impl = do
@@ -108,17 +124,18 @@ debugContext context = "\nContext:\n" ++ (unlines $ snd $ mapAccumL (\count arg 
 showArgType (Args _ LambdaArg from) = "LambdaArg " ++ from
 showArgType (Args _ (LetArg _) from) = "LetArg " ++ from
 
-showArg n impl = indexToOp n ++ " " ++ fromMaybe "" (implName impl) ++ " :: " ++ (toHsReadType $ implType impl) ++ " " ++ explainUsedness (implUsed impl) 
+showArg n impl = snd (indexToOp n) ++ " " ++ fromMaybe "" (implName impl) ++ " :: " ++ (toHsReadType $ implType impl) ++ " " ++ explainUsedness (implUsed impl) 
+-- only really useful for debugging code that checks where let statements go
+-- ++ " deps: " ++ show (Set.toList $ implDeps impl)
 
 explainUsedness OptionalArg = "" -- "(optionally used, equivalent to used in priority)"
 explainUsedness UnusedArg = "(unused so far, prioritized for implicit args)"
 explainUsedness UsedArg = "" -- ""
 explainUsedness UsednessDoesntMatter = "usedness doesn't matter, should be impossible"
 
+indexToOp :: Int -> ([Int], String)
+indexToOp = fromMaybe (error "deBruijn index too high") . (at deBruijnArgReps) where
 
--- only really useful for debugging code that checks where let statements go
--- ++ " deps: " ++ show (Set.toList $ implDeps impl)
-
-indexToOp :: Int -> String
-indexToOp = fromMaybe "<truncated>" . (at indexOps) where
-	indexOps = [replicate unary ';' ++ sym | unary <- [0..11], sym <- ["$","@","_"]]
+deBruijnArgReps :: [([Int], String)]
+deBruijnArgReps = [(replicate unary 6 ++ [nib], replicate unary ';' ++ sym)
+	           | unary <- [0..11], (sym,nib) <- [("$",3),("@",4),("_",5)]]
