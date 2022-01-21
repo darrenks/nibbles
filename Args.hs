@@ -6,7 +6,7 @@ import Expr
 import Types
 import Header
 import Hs
-import Parse (parseError,onlyCheckMatch)
+import Parse (parseError,onlyCheckMatchIdentifier)
 
 import Data.List
 import Data.Maybe
@@ -60,10 +60,10 @@ getArgByName = do
 		getArgByNameH _ [] = return Nothing
 		getArgByNameH n (impl:rest) =
 			case implName impl of
-				Just impln -> do
+				Just argName -> do
 					code <- gets pdCode
-					case onlyCheckMatch code ([-1],[impln]) of
-						Just nextCode -> do
+					case onlyCheckMatchIdentifier code of
+						Just (name, nextCode) | name == argName -> do
 							modify $ \s -> s { pdCode = nextCode }
 							appendRep $ indexToOp n
 							argn (n+1) >>= return.Just

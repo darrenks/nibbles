@@ -9,6 +9,7 @@ import System.FilePath
 import System.Process
 import System.Exit
 import Control.Monad
+import Data.Char(isDigit)
 import Data.List(intercalate)
 import Data.List.Split (chunksOf,splitOn) -- needs cabal install --lib split
 
@@ -129,7 +130,7 @@ checkWouldExtractCorrectly binLit lit = do
 		hPutStrLn stderr "Please report this as it is a bug (there is supposed to be a more clear accidental extension detection, this is just a fail safe)"
 
 
-isOpt = isPrefixOf "-"
+isOpt arg = isPrefixOf "-" arg && null (takeWhile isDigit $ tail arg)
 toBytes = map toByte . chunksOf 2
 isOtherOption = flip elem ["-simple"]
 isSimple = elem "-simple"
