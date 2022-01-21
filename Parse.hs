@@ -12,7 +12,6 @@ module Parse(
 	cp,
 	tildaOp,
 	onlyCheckMatch,
-	litMatch,
 	match,
 	parseError,
 	parseLitWarning,
@@ -24,6 +23,8 @@ module Parse(
 	toByte,
 	parse1Nibble,
 	errorUnderLine,
+	onlyCheckMatchIdentifier,
+	isIdentifierChar,
 	getLitParseCoordinates) where
 
 import Expr
@@ -212,12 +213,6 @@ match1Lit lit@(Lit f s cp) needle
 	| isPrefixOf needle s = Just $ sLit f (drop (length needle) s) (cp+length needle)
 	| otherwise = Nothing
 
-litMatch :: [String] -> ParseState Bool
-litMatch s = do
-	code <- gets pdCode
-	if isBinary code then return False
-	else match ([],s)
-
 match :: ([Int],[String]) -> ParseState Bool
 match (nib,lit) = do
 	code <- gets pdCode
@@ -227,6 +222,22 @@ match (nib,lit) = do
 			appendRep (nib,concat lit)
 			return True
 		Nothing -> return False
+
+onlyCheckMatchIdentifier :: Code -> Maybe (String, Code)
+onlyCheckMatchIdentifier rawCode@(Lit f code cp) =
+	if not (empty rawCode)
+		&& isIdentifierChar (head code)
+		&& not (isDigit $ head code) then
+			let (name,rest) = span isIdentifierChar code in
+				Just $ (name, sLit f rest (cp+length name))
+	else Nothing
+onlyCheckMatchIdentifier _ = Nothing
+
+-- also includes digits since this is a superset
+isIdentifierChar :: Char -> Bool
+isIdentifierChar c | isAlphaNum c = True
+isIdentifierChar '_' = True
+isIdentifierChar c = False
 
 generateErrorMsg :: String -> ParseState String
 generateErrorMsg msg = do

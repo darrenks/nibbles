@@ -2,7 +2,7 @@
 
 module Compile(compile,padToEvenNibbles,charClassesDefs) where
 
-import Data.List(inits,intercalate)
+import Data.List(inits,intercalate,nub)
 import Data.List.Split(splitOn)
 import Data.Maybe
 import State
@@ -452,14 +452,49 @@ getLambdaValue numRets argType argUsedness from = do
 
 pushLambdaArg :: [VT] -> ArgUsedness -> String -> (Args -> ParseState [Impl]) -> ParseState (Args, Impl)
 pushLambdaArg argType argUsedness from f = do
-	newArg <- newLambdaArg argType argUsedness from
+	code <- gets pdCode
+	namedArgs <- if not (null argType) then case onlyCheckMatch code ([-1],["\\"]) of
+		Just nextCode -> do
+			maybeName <- getNewIdentifier nextCode
+			case maybeName of
+				Just (name,nextCode2) -> do
+					modify $ \s -> s { pdCode = nextCode2 }
+					rest <- consumeNIdentifiers (length argType-1)
+					return $ Just $ name : rest
+				otherwise -> return Nothing
+		otherwise -> return Nothing
+	else return Nothing
+
+	newArg <- newLambdaArg argType namedArgs argUsedness from
 	depth <- gets pdContext >>= return.length
 	rets <- f newArg
 	let body = makePairs argType rets
 	finalContext <- gets pdContext
 	let newArgFinal = reverse finalContext !! (depth - 1) -- todo inefficient
 	bodyWithLets <- popArg depth body
-	return (newArgFinal, bodyWithLets)
+	return (newArgFinal, bodyWithLets) where
+		consumeNIdentifiers 0 = return []
+		consumeNIdentifiers n = do
+			code <- gets pdCode
+			maybeName <- getNewIdentifier code
+			case maybeName of
+				Just (name, nextCode) -> do
+					modify $ \s -> s { pdCode = nextCode }
+					rest <- consumeNIdentifiers (n-1)
+					return $ name:rest
+				otherwise -> parseError "expecting another new identifier for lambda"
+
+getNewIdentifier :: Code -> ParseState (Maybe (String,Code))
+getNewIdentifier code = do
+	allArgs <- getAllArgs
+	let maybeName = onlyCheckMatchIdentifier code
+	return $ case maybeName of
+		Just (name, nextCode)
+			| not (any (==Just name) $ map implName allArgs)
+			  && notElem name opsWithIdentiferNames
+			-> Just (name, nextCode)
+		otherwise -> Nothing
+	where opsWithIdentiferNames = nub $ filter (all isIdentifierChar) $ flip map allOps (\(_,lit,_,_)->concat lit)
 
 get1Value :: (?isSimple::Bool) => ParseState Impl
 get1Value = do

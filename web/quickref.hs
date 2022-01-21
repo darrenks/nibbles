@@ -229,16 +229,16 @@ drawLegend = do
 			br
 			b "Inputs:"
 			table $ do
-				tr $ do; th "sym*";th "type";th "meaning";th "default"
+				tr $ do; th "sym*";th "type";th "name";th "default"
 				-- remind you can use args
-				tr $ do;td "$" ! class_ "code";td "int";td "first int";td "100"
-				tr $ do;td "@" ! class_ "code";td "str";td "first line";td "printable chars"
-				tr $ do;td "_" ! class_ "code";td "[int]";td "int list";td "[]"
-				tr $ do;td ";$" ! class_ "code";td "int";td "second int";td "1000"
-				tr $ do;td ";@" ! class_ "code";td "str";td "second line";td "\"\""
-				tr $ do;td ";_" ! class_ "code";td "str";td "all stdin";td "\"\""
-				tr $ do;td ";;$" ! class_ "code";td "[[int]]";td "int matrix";td "[]"
-				tr $ do;td ";;@" ! class_ "code";td "[str]";td "all lines";td "[]"
+				tr $ do;td "$" ! class_ "code";td "int";td "fstInt";td "100"
+				tr $ do;td "@" ! class_ "code";td "str";td "fstLine";td "printable chars"
+				tr $ do;td "_" ! class_ "code";td "[int]";td "ints";td "[]"
+				tr $ do;td ";$" ! class_ "code";td "int";td "sndInt";td "1000"
+				tr $ do;td ";@" ! class_ "code";td "str";td "sndLine";td "\"\""
+				tr $ do;td ";_" ! class_ "code";td "str";td "allInput";td "\"\""
+				tr $ do;td ";;$" ! class_ "code";td "[[int]]";td "intMatrix";td "[]"
+				tr $ do;td ";;@" ! class_ "code";td "[str]";td "allLines";td "[]"
 				tr $ do;td ! colspan "4" $ do
 					"* command args can be of any type"
 					br

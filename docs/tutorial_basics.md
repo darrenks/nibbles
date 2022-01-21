@@ -143,6 +143,13 @@ This corresponds to the Haskell code:
 
 **Note:** If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
+**Note:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. They are automatically converted to their equivalent DeBruijn indices. Just put a `\` followed by the names of the identifiers you wish to use. For example:
+
+	/,3 \element accum
+		+accum element
+$Output
+	6
+
 ### Exercise
 Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
 

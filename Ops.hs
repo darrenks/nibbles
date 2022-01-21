@@ -112,8 +112,8 @@ rawOps = [
 	-- Example: :"abc" "def" -> "abcdef"
 	-- Test coerce: :"abc"1 -> "abc1"
 	-- Test coerce: :1"abc" -> "1abc"
-	-- Test tuple: : z,1"a" z,1"d" -> [(1,'a'),(1,'d')]
-	-- Test tuple ~ happy path: :~1'a' z,3"abc" -> [(1,'a'),(1,'a'),(2,'b'),(3,'c')]
+	-- Test tuple: : old_zip_,1"a" old_zip_,1"d" -> [(1,'a'),(1,'d')]
+	-- Test tuple ~ happy path: :~1'a' old_zip_,3"abc" -> [(1,'a'),(1,'a'),(2,'b'),(3,'c')]
 	--- todo make work Test: ~1'a' 2'b' -> [(1,'a'),(2,'b')]
 	-- Test promoting to list: :1 2 -> [1,2]
 	op(consRep, [AnyS, FakeAuto "[]", AnyS], \[a,b]->
@@ -149,7 +149,7 @@ rawOps = [
 		-- Test 2d vectorized: +1 ^2 :,2~ -> [[2,3],[2,3]]
 		-- Test string vectorized: +1"abc" -> "bcd"
 		-- Test char vectorized: +'a' :1 2 -> "bc"
-		-- Test vectorized tuple: +1 z,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
+		-- Test vectorized tuple: +1 old_zip_,3"abc" -> [(2,'b'),(3,'c'),(4,'d')]
 		-- Test: +3 ~ -> 4
 		-- Test: +3 3 -> 6
 		("+", [AutoDefault num 1, AutoDefault vec 1], vectorize "+" xorChr),
@@ -198,15 +198,15 @@ rawOps = [
 	-- Desc: sum
 	-- Example: +,3 -> 6
 	-- Test empty: +,0 -> 0
-	-- Test tuple: +z ,3 "abc" $ -> 6,"abc"
+	-- Test tuple: +old_zip_ ,3 "abc" $ -> 6,"abc"
 	op(sumRep, [listOf int], \[a1]->
 		let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "sum" ++ "." ++ uzF ~> VInt : tail uzT
 		),
 	-- Desc: concat
 	-- Example: +.,3,$ -> [1,1,2,1,2,3]
-	-- Test tuple: +^2:z ,2 "ab"~ -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
-	-- Test tuple2: +z ^2:,2~ "ab" $ -> [1,2,1,2],"ab"
+	-- Test tuple: +^2:old_zip_ ,2 "ab"~ -> [(1,'a'),(2,'b'),(1,'a'),(2,'b')]
+	-- Test tuple2: +old_zip_ ^2:,2~ "ab" $ -> [1,2,1,2],"ab"
 	-- \a -> (concat (map fst a), map snd a)
 	op(sumRep, [listOf list], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "concat" ++ "." ++ uzF ~> head (elemT (head uzT)) : tail uzT
@@ -231,16 +231,16 @@ rawOps = [
 	-- Example: |,5%$2 -> [1,3,5]
 	-- Test chr truthy: |"a b\nc"$ -> "abc"
 	-- Test list truthy: |"""b"$ -> ["b"]
-	-- Test tuple: | z,3 "abc" /$2 -> [(2,'b'),(3,'c')]
+	-- Test tuple: | old_zip_,3 "abc" /$2 -> [(2,'b'),(3,'c')]
 	-- Test auto not: |,5~%$2 -> [2,4]
 	op(filterRep, [list, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\a f->filter f a" ~> a1),
 	-- Desc: zip with
 	-- Example: ! ,3"abc" + -> "bdf"
 	-- Test: ! ,3"abc" , -> [(1,'a'),(2,'b'),(3,'c')]
-	-- Test 3tuple: ! z,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
+	-- Test 3tuple: ! old_zip_,3"abc" ,3 , -> [(1,'a',1),(2,'b',2),(3,'c',3)]
 	-- Test tuple const: ! "abc" 1 , -> [('a',1),('b',1),('c',1)]
 	-- Test arbitrary fn: ! ,3 "abc" ~ ++1@$ -> "ceg"
-	-- Test arbitrary fn tuple: ! ,3 z,3"abc" ~ ++_@$ -> "cfi"
+	-- Test arbitrary fn tuple: ! ,3 old_zip_,3"abc" ~ ++_@$ -> "cfi"
 	-- Test append coerce: ! ,3 "abc" : -> [["1","a"],["2","b"],["3","c"]]
 	-- Test append cons: ! ,3 4 : -> [[1,4],[2,4],[3,4]]
 	-- Test append cons coerce: ! "abc" 3 : -> ["a3","b3","c3"]
@@ -272,12 +272,12 @@ rawOps = [
 		"\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(x,y)) i a" ~> ret a2)),
 
 	-- Desc: hidden foldr list tuple
-	-- hidden Example: / z ,3 ,3 ~ 1 ++_@$ -> 13
+	-- hidden Example: / old_zip_ ,3 ,3 ~ 1 ++_@$ -> 13
 	op(('/',10), [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
 	-- Desc: hidden foldr1 list tuple
-	-- hidden Example: /z"acb" ,3 ]$_ +;$@  $ -> 'c',6
-	-- Test coerce: / z "acb" ,3 100 99 $ -> 'd',99
-	-- Test empty: / z "" ,3 ]$_ +;$@  $ -> ' ',0
+	-- hidden Example: /old_zip_"acb" ,3 ]$_ +;$@  $ -> 'c',6
+	-- Test coerce: / old_zip_ "acb" ,3 100 99 $ -> 'd',99
+	-- Test empty: / old_zip_ "" ,3 ]$_ +;$@  $ -> ' ',0
 	op(('/',10), [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
 	-- Desc: reverse
 	-- Example: \,3 -> [3,2,1]
@@ -323,7 +323,7 @@ rawOps = [
 	-- Desc: index. Or 0 if not found.
 	-- Example: ? "abc" 'b' -> 2
 	-- Test not found: ? ,3 4 -> 0
-	-- Test tuple: ? z ,3 "abc" 2 -> 2
+	-- Test tuple: ? old_zip_ ,3 "abc" 2 -> 2
 	op(('?',15), [listToBeReferenced, FakeAuto "by", elemOfA1], \[a1,a2]->"\\a e->fromIntegral$1+(fromMaybe (-1) $ elemIndex e (map "++firstOf (elemT a1)++" a))" ~> VInt),
 	-- Desc: diff
 	-- Example: -"abcd" "bd" -> "ac"
@@ -347,9 +347,9 @@ rawOps = [
 	-- Desc: join
 	-- Example: *" ",3 -> "1 2 3"
 	-- Test 2d: *" "^2:,3~ -> ["1 2 3","1 2 3"]
-	-- Test tuple: *" "z,3"abc" -> ["1 a","2 b","3 c"]
-	-- Test lopsided tuple: *" "z^2:,2~"ab" -> [("1 2",'a'),("1 2",'b')]
-	-- Test: *" "z^2:,2~ ^2:,2~ -> [("1 2","1 2"),("1 2","1 2")]
+	-- Test tuple: *" "old_zip_,3"abc" -> ["1 a","2 b","3 c"]
+	-- Test lopsided tuple: *" "old_zip_^2:,2~"ab" -> [("1 2",'a'),("1 2",'b')]
+	-- Test: *" "old_zip_^2:,2~ ^2:,2~ -> [("1 2","1 2"),("1 2","1 2")]
 	op(('*',8), [str, list], Polylib.join.a2),
 
 	-- words steals the auto value from int, but justify doesn't need it
@@ -460,14 +460,14 @@ rawOps = [
 	-- Desc: uncons
 	-- Example: `( ,3 $ -> 1,[2,3]
 	-- Test empty: `( ,0 $ -> 0,[]
-	-- Test tuple: `( z ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
-	-- Test tuple empty: `( z ,0"a" $ @ -> 0,' ',[]
+	-- Test tuple: `( old_zip_ ,3 "abc" $ @ -> 1,'a',[(2,'b'),(3,'c')]
+	-- Test tuple empty: `( old_zip_ ,0"a" $ @ -> 0,' ',[]
 	opM(["`","("], [14], [list, BinCode 1], \[a1]->flattenTuples (length$elemT a1) 1++".fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> elemT a1++[a1]),
 	-- Desc: swapped uncons
 	-- Example: `) ,3 $ -> [2,3],1
 	-- Test empty: `) ,0 $ -> [],0
-	-- Test tuple: `) z ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
-	-- Test tuple empty: `) z ,0"a" $ @ -> [],0,' '
+	-- Test tuple: `) old_zip_ ,3 "abc" $ @ -> [(2,'b'),(3,'c')],1,'a'
+	-- Test tuple empty: `) old_zip_ ,0"a" $ @ -> [],0,' '
 	opM(["`",")"], [14], [list, BinCode 2], \[a1]->flattenTuples 1 (length$elemT a1)++".swap.fromMaybe("++defaultValue(elemT a1)++",[]).uncons" ~> a1:elemT a1),
 	-- Desc: chunks of
 	-- Example: `/2,5 -> [[1,2],[3,4],[5]]
@@ -532,7 +532,7 @@ rawOps = [
 	-- Test mismatch dims: `' "hi""y" -> ["hy","i"]
 	-- Test mismatch dims: `' "h""yo" -> ["hy","o"]
 	-- Test 1 dim: `' "abc" -> ["a","b","c"]
-	-- Test tuple, unzip it: `' z,3"abc" $ -> [1,2,3],"abc"
+	-- Test tuple, unzip it: `' old_zip_,3"abc" $ -> [1,2,3],"abc"
 	opM("`'",[14],[list, BinCode 3], \[a1] ->
 		case a1 of
 			VList [VList _] -> "transpose" ~> [a1]
@@ -554,10 +554,10 @@ rawOps = [
 		"\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(y,x)) i a" ~> VList (ret a2))),
 	
 	-- Desc: hidden scanl list tuple
-	-- hidden Example: =\ z ,3 "abc" ~0 ++_@$ -> [0,98,198,300]
+	-- hidden Example: =\ old_zip_ ,3 "abc" ~0 ++_@$ -> [0,98,198,300]
 	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
 	-- Desc: hidden scanl1 list tuple
-	-- hidden Example: =\ z ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
+	-- hidden Example: =\ old_zip_ ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
 	extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
 
 	-- Desc: special scans
@@ -586,7 +586,7 @@ rawOps = [
 	-- Desc: product
 	-- Example: `*,4 -> 24
 	-- Test: `*,0 -> 1
-	-- Test tuple: `* z,4 "abcd" $ -> 24,"abcd"
+	-- Test tuple: `* old_zip_,4 "abcd" $ -> 24,"abcd"
 	opM("`*", [9,0], [listOf int], \[a1]->let (uzT,uzF)=unzipTuple a1 in
 			appFst uzT "product" ++ "." ++ uzF ~> VInt : tail uzT
 		),
@@ -840,11 +840,11 @@ rawOps = [
 	opM("testFinish", [], [any1], flip finish False . a1 ~> vstr),
 	
 	--- Desc: old zip
-	-- Test old examp: z,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
-	-- Test: .z,3,3+@$ -> [2,4,6]
-	-- Test 3 tuple: .z z,3,3,3++_@$ -> [3,6,9]
-	-- Test 3 tuple: z,3 z,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
-	opM("z", [], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT))]
+	-- Test old examp: old_zip_,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]
+	-- Test: .old_zip_,3,3+@$ -> [2,4,6]
+	-- Test 3 tuple: .old_zip_ old_zip_,3,3,3++_@$ -> [3,6,9]
+	-- Test 3 tuple: old_zip_,3 old_zip_,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
+	opM("old_zip_", [], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT))]
 
 foldr1Fn :: [VT] -> String
 foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")

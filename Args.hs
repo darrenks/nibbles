@@ -1,12 +1,12 @@
 {-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
 
-module Args(argn, getArgByName, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit, deBruijnArgReps) where
+module Args(argn, getArgByName, newLambdaArg, addLambda, newLetArg, popArg, debugContext, argImplicit, deBruijnArgReps, getAllArgs) where
 
 import Expr
 import Types
 import Header
 import Hs
-import Parse (parseError,litMatch)
+import Parse (parseError,onlyCheckMatch)
 
 import Data.List
 import Data.Maybe
@@ -15,17 +15,18 @@ import qualified Data.Set as Set
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 
-newLambdaArg :: [VT] -> ArgUsedness -> String -> ParseState Args
-newLambdaArg argT argUsedness from = do
+newLambdaArg :: [VT] -> Maybe [String] -> ArgUsedness -> String -> ParseState Args
+newLambdaArg argT names argUsedness from = do
 	context <- gets pdContext
 	let depth = 1 + length context
-	let impls = zipWith (\t tn -> Impl {
+	let namesList = maybe (repeat Nothing) (map Just) names :: [Maybe String]
+	let impls = zipWith3 (\t name tn -> Impl {
 		implType = t,
 		implCode = hsAtom $ argStr depth tn,
 		implDeps = Set.singleton depth,
-		implName = Nothing,
+		implName = name,
 		implUsed = argUsedness
-		} ) argT [1..]
+		} ) argT namesList [1..]
 	let newArg = Args impls LambdaArg from
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
@@ -39,26 +40,29 @@ newLetArg argUsedness context (Impl _ defHs defDepth _ usedness) defTypes from =
 argn :: Int -> ParseState Impl
 argn deBruijnIndex = do
 	context <- gets pdContext
-	let flattenedArgs = concatMap flattenArg context
+	flattenedArgs <- getAllArgs
 	case at flattenedArgs (deBruijnIndex-1) of
 		Nothing -> parseError $ "Attempt to access " ++ (snd $ indexToOp (deBruijnIndex-1)) ++ debugContext context
 		Just impl -> setUsed impl
 
 getArgByName :: ParseState (Maybe Impl)
 getArgByName = do
-	context <- gets pdContext
-	getArgByNameH 0 (concatMap flattenArg context)
+	allArgs <- getAllArgs
+	getArgByNameH 0 allArgs
 	where
 		getArgByNameH :: Int -> [Impl] -> ParseState (Maybe Impl)
 		getArgByNameH _ [] = return Nothing
 		getArgByNameH n (impl:rest) =
-			if isJust (implName impl) then do
-				matched <- litMatch [fromMaybe undefined $ implName impl]
-				if matched then do
-					appendRep $ (fst $ indexToOp n, " ")
-					return $ Just impl
-				else getArgByNameH (n+1) rest
-			else getArgByNameH (n+1) rest
+			case implName impl of
+				Just impln -> do
+					code <- gets pdCode
+					case onlyCheckMatch code ([-1],[impln]) of
+						Just nextCode -> do
+							modify $ \s -> s { pdCode = nextCode }
+							appendRep $ indexToOp n
+							argn (n+1) >>= return.Just
+						otherwise -> getArgByNameH (n+1) rest
+				otherwise -> getArgByNameH (n+1) rest
 
 setUsed :: Impl -> ParseState Impl
 setUsed impl = do
@@ -78,12 +82,17 @@ argImplicit = do
 	if ?isSimple
 	then parseError "Expecting more expressions at EOF"
 	else do
-		context <- gets pdContext
+		allArgs <- getAllArgs
 		modify $ \s -> s { pdImplicitArgUsed = True }
-		argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) (concatMap flattenArg context))
+		argn $ 1 + (fromMaybe 0 $ findIndex ((==UnusedArg).implUsed) allArgs)
 
 flattenArg (Args impls (LambdaArg) _) = impls
 flattenArg (Args impls (LetArg _) _) = tail impls
+
+getAllArgs :: ParseState [Impl]
+getAllArgs = do
+	context <- gets pdContext
+	return $ concatMap flattenArg context
 
 addLambda :: Args -> Impl -> Impl
 addLambda arg (Impl t body d _ _) = Impl {

@@ -1,6 +1,6 @@
 -- tuple
 -- Test: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
--- Test: z .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]
+-- Test: old_zip_ .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]
 
 -- int versus integer
 -- Test: %$=1"cde" -> 1
@@ -32,9 +32,9 @@
 
 -- Test: testCoerce2 :"abc"~ :"abc"~ -> "[VList [VList [VChr]]]"
 
--- Test: testCoerce2 z,3"abc" ,3 -> "[VList [VInt]]"
--- Test: testCoerce2 ,3 z,3"abc" -> "[VList [VInt]]"
--- Test: testCoerce2 z,3"abc" z"abc",3 -> "[VList [VList [VChr],VList [VChr]]]"
+-- Test: testCoerce2 old_zip_,3"abc" ,3 -> "[VList [VInt]]"
+-- Test: testCoerce2 ,3 old_zip_,3"abc" -> "[VList [VInt]]"
+-- Test: testCoerce2 old_zip_,3"abc" old_zip_"abc",3 -> "[VList [VList [VChr],VList [VChr]]]"
 ------------------------------------------------------------------	
 -- Test: testCoerceToInt 1 -> 1
 -- Test: testCoerceToInt 'a' -> 97
@@ -84,8 +84,8 @@
 -- Test: testCoerceToX ~""4 ~4 "3" $ -> "4",3
 -- Test: testCoerceToX ~""4 5 $ -> "5",0
 -- Test: testCoerceToX 4 ~"5"3 $ -> 5,100
--- Test: testCoerceToX ,3 z\,3"abc" -> [3,2,1]
--- Test: testCoerceToX z,3"abc" \,3 -> [(3,' '),(2,' '),(1,' ')]
+-- Test: testCoerceToX ,3 old_zip_\,3"abc" -> [3,2,1]
+-- Test: testCoerceToX old_zip_,3"abc" \,3 -> [(3,' '),(2,' '),(1,' ')]
 
 -- Test: testFinish 123 -> "123"
 -- Test: testFinish 'c' -> "c"
@@ -95,7 +95,7 @@
 -- Test: testFinish ^3:"abc"~ -> "abc\nabc\nabc\n"
 -- Test: testFinish ^2:^2:,2~~ -> "12 12\n12 12\n"
 -- Test: testFinish ^2:^2:"ab"~~ -> "ab ab\nab ab\n"
--- Test: testFinish z ,3 "abc" -> "1 a\n2 b\n3 c\n"
+-- Test: testFinish old_zip_ ,3 "abc" -> "1 a\n2 b\n3 c\n"
 
 -- Test "hi\n": \@ -> "ih"
 -- RawTest: 1 2 -> "12\n"
@@ -112,11 +112,11 @@
 -- RawTest "1 2 3": *2$ -> "2\n4\n6\n"
 
 ----- Test implicit ops with tuples:
--- RawTest: z,3"abc" ~$;$ "" $ -> "3a\n"
--- RawTest: z,3"abc" $ -> "1\n2\n3\n"
+-- RawTest: old_zip_,3"abc" ~$;$ "" $ -> "3a\n"
+-- RawTest: old_zip_,3"abc" $ -> "1\n2\n3\n"
 -- RawTest: ,3 ~$"c" -> "1 c\n2 c\n3 c\n"
---- RawTest: z,3"abc" "-" -> "1-a\n2-b\n3-c\n"
--- RawTest: z,3"abc" 5 -> "1 a\n2 b\n3 c\n5\n"
+--- RawTest: old_zip_,3"abc" "-" -> "1-a\n2-b\n3-c\n"
+-- RawTest: old_zip_,3"abc" 5 -> "1 a\n2 b\n3 c\n5\n"
 -- RawTest: 3~$"c" -> "1 c\n2 c\n3 c\n"
 
 ---- Test input types
