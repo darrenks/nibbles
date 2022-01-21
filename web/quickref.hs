@@ -246,7 +246,7 @@ drawLegend = do
 			table $ do
 				tr $ do; th "1st type"; th "arg used"; th "meaning"
 				tr $ do; td "int"; td "$ or @"; td "range"
-				tr $ do; td "list"; td "@"; td "foldl/r"
+				tr $ do; td "list"; td "@"; td "foldl"
 				tr $ do; td "list"; td "$"; td "map"
 				tr $ do; td "~"; td ""; td "encode data"
 				

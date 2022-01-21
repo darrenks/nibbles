@@ -16,7 +16,7 @@ There are a few exceptions:
 
 *	Space and newline each require only 1 nibble.
 *	Empty string is 3 nibbles.
-*	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline which should be more common).
+*	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline and no terminators).
 
 **Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
@@ -31,25 +31,26 @@ There are a few exceptions:
 *	A
 *	0
 
-Binary chars will require 5 nibbles.
+Binary chars require 5 nibbles.
 
 ## Coercion Behavior
 
-Some ops require the values to be a certain type. For example the result of `foldr1`. Rather than say your program is invalid if it doesn't match, it coerces the value to the desired type. TODO: write all the rules (in general it is intuitive). See coerceTo in polylib.hs.
+Some ops require the values to be a certain type. For example the result of `foldr1` function (it must match the initial element type). Rather than say your program is invalid if it doesn't match, it coerces the value to the desired type. TODO: write all the rules (in general it is intuitive). See coerceTo in [Polylib.hs](https://github.com/darrenks/nibbles/blob/main/Polylib.hs).
 
-Other ops (like `:`) will take in two values and need to coerce them to the same type. First that type is decided and then both are coerced using the same rules as above. TODO: write the rules (but again it is intuitive, one that isn't obvious is char,int which becomes int). See coerce2 in polylib.hs.
+Other ops (like `:`) will take in two values and need to coerce them to the same type. First that type is decided and then both are coerced using the same rules as above. TODO: write the rules (but again it is intuitive, one that isn't obvious is char,int which becomes int). See coerce2 in [Polylib.hs](https://github.com/darrenks/nibbles/blob/main/Polylib.hs).
+
 
 ## Implicit Args
 
-If you use an operation that expects more values than you provide then Nibbles will choose a value for you to complete the program (so this can only be used for the last operations in a program). It will first choose any unused identifiers (starting from the smallest DeBruijn index). For example:
+If you use an operation that expects more values than you provide  before EOF then Nibbles will choose a value for you to complete the program (so this can only be used for the last operations in a program). It will first choose any unused identifiers (starting from the smallest DeBruijn index) then look at all other identifiers. For example:
 
 	p.,;3+$
 $Output
 	[4,5,6]
 
-Because `$` had been used already, it chose `@` which was the value from the let `;` of 3.
+Because `$` had been used already, it chose `@` which was the value from the let `;` of 3. `ct` can be useful here as it shows the current status of this usedness.
 
-If there are no unused identifiers it will simply choose as many `$` as are needed.
+This can be used multiple times in the same program if you are lucky!
 
 	p.,3+
 $Output
@@ -136,7 +137,7 @@ There's a lot more possibilities here, but it isn't obvious what the most common
 
 ## Auto Map
 
-If your program uses input but not the entire raw input (`;_` or `;;$`) then your program will auto map.
+If your program uses input but not the entire raw input (`$` `;$` `@` `;@` or potentially even `_`) then your program will auto map.
 
 Suppose the input to your program is
 
@@ -184,7 +185,7 @@ $HiddenOutput "1\na\n2 3"
 	[1]
 	[2,3]
 
-But note that if all lines only had 1 or less ints then we would treat it is a single list and not auto map (because that could have just been accomplished using `:$`.
+But note that if all lines only had 1 or less ints then we would treated it is a single list and not auto mapped (because that could have just been accomplished using `:$~`.
 
 	p ;$
 $Output "12 888\n34\n56\n78"
@@ -202,10 +203,6 @@ $HiddenOutput "a"
 	""
 
 Because it automapped on pairs of lines. Note that if there had been an odd number of lines the last would have been `""`
-
-	p ;_
-$HiddenOutput "12 888\n34\n56\n78"
-	"12 888\n34\n56\n78"
 
 If auto mapping occurs then the outer list default separator becomes `" "` instead of `"\n"` and the inner list default separator becomes `""` intead of `" "`. This is because if automapping, each output already uses the newline, it's unlikely you'd also want to separate list elements by a newline.
 
@@ -248,7 +245,7 @@ $Output
 
 You can easily convert it to lists of a desired radix with `to base` (``@`).
  
-Some ops use data by default (``D` and `#`). If used, they also prevent the data value from overwriting the first int input value. And after the end of the current root expression data is assumed to start rather than needing ~.
+Some ops use data by default (`` `D `` and `` `# ``). If used, they also prevent the data value from overwriting the first int input value. And after the end of the current root expression data is assumed to start rather than needing ~.
 
 Data can be handy for recreating large strings.
 

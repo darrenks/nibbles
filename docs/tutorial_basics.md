@@ -27,7 +27,7 @@ Save that to `intro.nbl` (nbl is the file extension for literate Nibbles program
 	> nibbles intro.nbl
 $Gives
 
-	size = 5 nibbles
+	size = 5 nibbles (3 bytes)
 	3
 
 In addition to running the program, it also output the compactified size of your program to stderr.
@@ -44,7 +44,7 @@ A file appears named `intro.nbb` (nbb is the file extension for binary Nibbles p
 Programs are written in Polish (prefix notation). Instead of writing `1+2` we write `+1 2`. The advantage of this is that you do not ever need parenthesis. `(1+2)*3` would be written as `*+1 2 3`. `1+(2*3)` would be written as `+1*2 3`. This may seem strange for math operators but it is actually quite familiar for other functions. For example C uses prefix notation for function calls. e.g. `add(1, 2)`. But unlike C we don't need commas or parentheses since all functions have a fixed arity.
 
 ## Simple Mode
-If you play around with those examples, you'll find that `+1 2` doesn't actually work! This obviously makes no sense yet, but the reason is that Nibbles tries to only have one way to do things in the binary form, other ways are remapped to something else, and these are called extensions. But the whole purpose of the literate form is to make it easy and not error prone to write code, so we error rather than do what you didn't mean. In this case `]1 2` would generate the same binary code that `+1 2` would have and it means `max`. You should be protected from accidentally doing the wrong thing, but this could be quite annoying so I suggest using nibbles with `nibbles -simple` to disable all extensions and implicit operations until you have mastered the basics.
+If you play around with those examples, you'll find that `+1 2` doesn't actually work! This obviously makes no sense yet, but the reason is that Nibbles tries to only have one way to do things in the binary form, other ways are remapped to something else, and these are called extensions and are covered later. But the whole purpose of the literate form is to make it easy and not error prone to write code, so we error rather than do what you didn't mean. In this case `]1 2` would generate the same binary code that `+1 2` would have and it means `max`. You should be protected from accidentally doing the wrong thing, but this could be quite annoying so I suggest using nibbles with `nibbles -simple` to disable all extensions and implicit operations until you have mastered the basics.
 
 ### Exercise
 Write a program that computes `(1+2)*(3-4)`
@@ -62,7 +62,7 @@ $EndSolution
 ## Other Types
 You've seen **integers**, other data types are chars and lists. **Chars** behave like integers in most cases but are displayed differently (the ops table linked below makes this more precise). They can be created with single quotes, e.g. `' '` to create a space char.
 
-**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `:1 :2 3` -> `[1,2,3]`. Note that this bracket output is just for output display purposes and not valid Nibbles code.
+**Lists** can be created with the `:` (append) operator. However unlike Haskell, `:` coerces its operands, turns non lists into singleton lists and then concatenates them. For example `:1 :2 3` -> `[1,2,3]`. Note that this bracket/comma notation is just for output display purposes and not valid Nibbles code.
 
 **Strings** are actually just a list of chars, and can be created using double quotes. Escapes are valid for strings and chars in the same style that Haskell uses. E.g.
 
@@ -113,7 +113,7 @@ That newline could have been included in the string but I'm just showing off how
 $EndSolution
 
 ## Functions
-There were a couple things in that table we haven't seen yet, functions and args. For example `.` (map's) second argument is a function and the first is the list it will map over.
+There were a couple things in that table we haven't seen yet, functions and args. For example map's (`.`) second argument is a function and the first is the list it will map over.
 
 Functions do not require any syntax, some ops take a function argument and automatically treat that operand as a function. Any expression can be treated as a function, for example if `+1 2` is to be treated as a function with 1 argument, then it is simply a function which ignores its argument and returns 3!
 
@@ -143,7 +143,7 @@ This corresponds to the Haskell code:
 
 **Note:** If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
-**Note:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. They are automatically converted to their equivalent DeBruijn indices. Just put a `\` followed by the names of the identifiers you wish to use. This will be automatically converted to DeBruijns for conversion to binary. For example:
+**Tip:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. Just put a `\` followed by the names of the identifiers you wish to use. This will be automatically converted to DeBruijns during conversion to binary. For example this program will generate the same binary code as the earlier example:
 
 	/,3 \element accum
 		+accum element
@@ -178,16 +178,18 @@ Those `#`'s act like typical scripting language comments.
 $EndSolution
 
 ## Input
-All programs actually start off with args available for use.
+All programs actually start off with args available for use, that read from stdin.
 
-- `$` is the first integer in STDIN (`int`)
-- `@` is the first line of STDIN (`str`)
-- `_` is the first line of STDIN as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
-- `;$` is the second integer in STDIN (`int`)
-- `;@` is the second line of STDIN (`str`)
-- `;_` is the entire STDIN (`str`)
-- `;;$` is the entire STDIN as a list of list of ints (`[[int]]`)
-- `;;@` is the entire STDIN as lines (`[str]`)
+- `$` is the first integer (`int`)
+- `@` is the first line (`str`)
+- `_` is the first line as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
+- `;$` is the second integer (`int`)
+- `;@` is the second line (`str`)
+- `;_` is the entire input (`str`)
+- `;;$` is the entire input as a list of list of ints (`[[int]]`)
+- `;;@` is the entire input as lines (`[str]`)
+
+You may also refer to these by name (`fstInt` `fstLine` `ints` `sndInt` `sndLine` `allInput` `intMatrix` `allLines`).
 
 For example, if the input is a list of integers we could find the sum as so:
 
@@ -197,7 +199,7 @@ $Gives
 
 	6
 
-Keep in mind that these are DeBruijn indices too! So after you start using functions they will shift. It can be hard to keep track of what DeBruijn index corresponds to what, so you can always use `ct` anywhere to see **c**ontext **t**ypes.
+Keep in mind that these are DeBruijn indices too! So after you start using functions they will shift. It can be hard to keep track of what DeBruijn index corresponds to what, so you can always use `ct` anywhere to see **c**ontext **t**ypes and info.
 
 ## Arg Input
 

@@ -14,7 +14,7 @@ What if I use it multiple times? It will return the same result each time. In fa
 ### Infinite lists and errors
 If this is all unfamiliar to you, you could read up on [lazy evaluation](https://en.wikipedia.org/wiki/Lazy_evaluation). But you'll do ok with just the information here, as laziness should be pure win compared to eager evaluation (for code golf purposes). Anything you would do eagerly will still work in equal or better asymptotic time lazily.
 
-Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `/1 0` throws an error but if we do something like `=1 :2 /1 0` -> `2` (which builds a list of `[2,error]`, then takes the first element), it never uses the value of `/1 0` and so therefore never errors.
+Typical examples to show off laziness revolve around not throwing an error if you never use a value. For example `error "msg"` throws an error but if we do something like `=1 :2 error "msg"` -> `'2'` (which builds a list of `[2,error]`, then takes the first element), it never uses the value of `error "msg"` and so therefore never errors.
 
 And we could also generate the list of numbers from 1 to a googol, then select only the first 5 that are odd as such:
 
@@ -43,7 +43,7 @@ Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds
 This is critical for the whole model of Nibbles' syntax (since there would be no easy way to move an expensive computation from inside a loop to out).
 
 ### <span style="color: red">Challenge</span> Exercise
-Write a program that finds one factor of a composite number from stdin, let's say 3902309423233451. You may not hard code constants besides numbers <= 2.
+Write a program that finds one factor of a composite number from stdin, let's say 3902309423233451. You may not hard code constants > 2.
 
 Hint: If you'd like to negate a "bool" don't forget about the custom truthiness rules for ints.
 
@@ -55,7 +55,7 @@ $Solution
 $HiddenOutput "3902309423233451"
 	436151
 
-That was hard, and there are still some pain points we haven't learned how to get around yet, like having to extract the input number from a list twice (and differently even since there was something added to the context). The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly exit the loop.
+That was hard, and there are still some pain points we haven't learned how to get around yet. The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly terminate the loop when we found one (laziness did it).
 
 $EndSolution
 
@@ -104,9 +104,9 @@ You can probably guess the auto values for each operation, but they are also lis
 
 ## Let Statements
 
-`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the let variable can only be used within that loop.
+`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` -> `4`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the let variable can only be used within that loop.
 
-For debugging purposes you may use a `let` statement anywhere. Which is done by `let identifier expr`. It would always be shorter to use `;` where the value is actually used first, but sometimes you don't know where it will be used when you are developing so this can ease development.
+You may use a `let` statement anywhere. Which is done by `let identifier expr`. However it would always be shorter to use `;` where the value is actually first used (even if let was 1 nibble). Because of this `let` statements can only be used in the literate form and are just a crutch to help you reach your ultimate program.
 
 ### Exercise
 
@@ -126,7 +126,7 @@ $EndSolution
 
 ## Tuples
 
-When I said `;` is "somewhat special" I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself. Tuples really are somewhat special though (not first class), they will never be bound to an identifier.
+When I said `;` is "somewhat special," I was somewhat lying. Anytime something returns multiple values, everything after the first value is automatically splatted onto the context. So `;` really just takes one value, then returns "a tuple" of that value and itself. Tuples really are somewhat special though (not first class), they will never be bound to an identifier.
 
 For example ``/` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
 
@@ -160,6 +160,14 @@ Outside of functions it would be pointless to create your own tuple, it would im
 
 You may have multiple `~` in a row to create three tuples or higher.
 
+If a tuple is to be used as an argument to a function, it also gets splatted to the context. This way you never have to request fst or snd. For example:
+
+	let listOfTuples .,5 ~$ *$$
+	p . listOfTuples +@$
+$Output
+	[2,6,12,20,30]
+
+
 ## Vectorization
 
 Check out the full $QuickRef. Notice that the `+` and `*` ops actually take a `vec` instead of `num`. All this means is that the `vec` arg can actually be a list of any dimension and that the operation will be applied to all elements.
@@ -170,7 +178,7 @@ For example `+5 ,5` -> `[6,7,8,9,10]`. This is cool, but not as useful as in oth
 
 You've seen an example of extensions already, ``/` (divmod). If you look at the binary representation of divmod it is `9 d`. This would normally correspond to `< num , num`, but it is pointless to do a `take` after using `range`. At best you could have wanted a range on the min of the two nums, but that could be done equally as short with `,[num num` So we remap `9 d` to divmod and give it a new name so that you don't need to remember that `< ,` is divmod.
 
-In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if did try to take on a range). Nibbles will give you a warning if you do this.
+In general you do not actually have to think about extensions, it is all abstracted away. But it is useful for understanding naming conventions and why there are the number of built-ins that there are. Also you may accidentally use an extension (e.g. if you did try to take on a range). Nibbles will give you a warning if you do this.
 
 Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (in most cases). There are probably hundreds of possible 3 nibble extensions, but finding them and avoiding extension collisions would be extremely unmanageable, besides a primary goal of Nibbles is to be simple (few operations) anyway.
 
