@@ -85,7 +85,8 @@ toLetArgs args = let
 		) argTypes [1..]
 	argNamez = map toTuple argNames
 	readers = zipWith (\t i->"("++toParser t++")(args!!"++show i++")") argTypes [0..]
-	reader = "let "++toTuple argNamez++"="++toTuple readers
+	reader = "when (length args /= "++show (length args)++") $ errorWithoutStackTrace $ \"Error: "++show (length args)++" args found at compile time, but \"++show (length args)++\" args found at runtime (pass them in at compile time too!)\";\
+		\let "++toTuple argNamez++"="++toTuple readers
 	cargs = concat $ zipWith toCargs argNames argTypes
 	in (cargs, reader)
 

@@ -7,9 +7,10 @@ import Polylib
 
 import System.Process
 import System.IO
+import Control.Monad (when)
 import Data.Maybe
 import Data.List
-import Data.Char (isSpace)
+import Data.Char (isSpace,isAlpha)
 import Data.List.Split -- needs cabal install --lib split
 import Hs(flatHs)
 
@@ -59,15 +60,17 @@ removeSpaces = filter (not.isSpace)
 printTestResult (result, (expected, outLit, origLit, nibSize, expectedSize, hsFromNib, hsFromLit)) = do
 -- 	putStrLn $ "Running test: " ++ origLit
 	assertEq expected result "Output mismatch"
-	assertEq (removeSpaces origLit) (removeSpaces outLit) "Literate mismatch"
-	if expectedSize == -1 then return ()
-	else do 
-		if expectedSize == 0 then return ()
-			else assertEq (show expectedSize) (show nibSize) "Nibble size mismatch"
+	when (not $ litOnlyFeatures origLit) $ assertEq (removeSpaces origLit) (removeSpaces outLit) "Literate mismatch"
+	when (expectedSize /= -1) $ do 
+		when (expectedSize /= 0) $ assertEq (show expectedSize) (show nibSize) "Nibble size mismatch"
 		assertEq hsFromLit hsFromNib "HS mismatch"
-	where assertEq expected actual reason = do
-		if expected == actual then return ()
-		else putStrLn $ "Test failed: " ++ origLit ++ "\nReason: " ++ reason ++ "\nExpected: " ++ expected ++ "\nActual  : " ++ actual
+	where 
+		assertEq expected actual reason = do
+			if expected == actual then return ()
+			else putStrLn $ "Test failed: " ++ origLit ++ "\nReason: " ++ reason ++ "\nExpected: " ++ expected ++ "\nActual  : " ++ actual
+		litOnlyFeatures lit = isInfixOf "sets " lit
+			|| isInfixOf "let " lit
+			|| any (\next -> not $ null $ takeWhile isAlpha next) (splitOn "\\" lit)
 
 main=do
 	let ?isSimple = False

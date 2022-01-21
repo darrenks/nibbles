@@ -89,7 +89,7 @@ main=do
 					hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $ 
 						"size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ div (length bRaw + 1) 2) ++ " bytes)"
 				return nibBytes
- 			fullHs <- toFullHs impl maybeNibBytes cargs reader
+ 			fullHs <- toFullHs impl maybeNibBytes reader
  			writeFile "out.hs" fullHs
  			setLocaleEncoding defaultEncoding
  			when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
@@ -134,14 +134,12 @@ toBytes = map toByte . chunksOf 2
 isOtherOption = flip elem ["-simple"]
 isSimple = elem "-simple"
 
-toFullHs impl nibBytes cargs reader = do
+toFullHs impl nibBytes reader = do
  	let header = unlines $ tail $ lines headerRaw -- remove "module Header"
  	return $ header ++ "\n\
 	\progSource = "++show nibBytes++"\n\
  	\main=do\n\
  	\ args <- getArgs \n\
- 	\ when (length args /= "++show (length cargs)++") $ \n\
- 	\   errorWithoutStackTrace $ \"Error: "++show (length cargs)++" args found at compile time, but \"++show (length args)++\" args found at runtime (pass them in at compile time too!)\"\n\
 	\ "++reader++"\n\
  	\ interact ((\\input->let output=" ++ flatHs (implCode impl) ++ "\n\
  	\  -- don't print a newline to a quine! \n\
