@@ -106,6 +106,8 @@ You can probably guess the auto values for each operation, but they are also lis
 
 `;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` is the same as `+ 2 2`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the let variable can only be used within that loop.
 
+For debugging purposes you may use a `let` statement anywhere. Which is done by `let identifier expr`. It would always be shorter to use `;` where the value is actually used first, but sometimes you don't know where it will be used when you are developing so this can ease development.
+
 ### Exercise
 
 Write a program to print the sum of all numbers in the input or the string "large" if that sum is greater than 100 (without computing the sum twice).

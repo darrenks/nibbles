@@ -33,11 +33,15 @@ newLambdaArg argT names argUsedness from = do
 transposeMaybe :: Maybe [String] -> [Maybe String]
 transposeMaybe names = maybe (repeat Nothing) (map Just) names
 
-newLetArg :: Maybe [String] -> ArgUsedness -> [Args] -> Impl -> [VT] -> String -> Args
-newLetArg names argUsedness context (Impl _ defHs defDepth _ usedness) defTypes from = newArg where
-	depth = 1 + length context
-	impls = zipWith3 (\t name tn -> Impl t (hsAtom $ argStr depth tn) defDepth name argUsedness) defTypes (transposeMaybe names) [1..]
-	newArg = Args impls (LetArg defHs) from
+newLetArg :: Maybe [String] -> ArgUsedness -> Impl -> [VT] -> String -> ParseState Args
+newLetArg names argUsedness (Impl _ defHs defDepth _ usedness) defTypes from = do
+	context <- gets pdContext
+	let depth = 1 + length context
+	let impls = zipWith3 (\t name tn -> Impl t (hsAtom $ argStr depth tn) defDepth name argUsedness) defTypes (transposeMaybe names) [1..]
+	let newArg = Args impls (LetArg defHs) from
+	modify $ \s -> s { pdContext=newArg:context }
+	return newArg
+
 
 argn :: Int -> ParseState Impl
 argn deBruijnIndex = do

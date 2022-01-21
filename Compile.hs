@@ -431,8 +431,7 @@ getLambdaValue numRets argType argUsedness from = do
 			let nonRecImpls = init $ argsImpls newArg
 			modify $ \s -> s { pdContext=Args nonRecImpls LambdaArg "recursive fn" : tail (pdContext s) }
 			match <- match tildaOp
-			aaa <- getValuesMemo 1
-			let aa = head aaa
+			aa <- get1Value
 			let truthyF = truthy [implType aa]
 			let a = app1Hs ((if match then "not$" else "")++truthyF) aa { implType = InvalidType }
 			bonus <- parseCountTuple
@@ -518,7 +517,11 @@ data Thunk = Thunk Code [Args]
 -- Gets the arg list (given an arg from each possible offset after this one)
 getValues :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
 getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
-	(impl, after) = runState (getValue offsetExprs) $ blankRep code context
+	(impl, after) = runState (do
+		didThem <- doLitLets
+		case didThem of
+			Just nextGetValue -> nextGetValue
+			Nothing -> getValue offsetExprs) $ blankRep code context
 	afterThunk = Thunk (pdCode after) (pdContext after)
 	offsetAfterExprs =
 		if length (pdContext after) == length context
@@ -626,10 +629,8 @@ coerceImpl (Impl et hs dep _ _) t = Impl t (hsApp (hsAtom$coerceTo [t] [et]) hs)
 convertPairToLet :: ArgUsedness -> Impl -> [VT] -> String -> ParseState Impl
 convertPairToLet _ (Impl _ hs dep _ _) [t] _ = return $ Impl t hs dep undefined undefined
 convertPairToLet argUsedness impl implTypes from = do
-	context <- gets pdContext
 	setVars <- getSetVars (length implTypes-1)
-	let letArg = newLetArg setVars argUsedness context impl implTypes from
-	modify $ \s -> s { pdContext=letArg:context }
+	letArg <- newLetArg setVars argUsedness impl implTypes from
 	return $ head $ argsImpls letArg
 
 getSetVars :: Int -> ParseState (Maybe [String])
@@ -649,3 +650,17 @@ getParseCoordinates = do
 		(Lit f _ cp) ->
 			let (lineno,charno) = getLitParseCoordinates f cp in
 				"(line:"++show lineno++",char:"++show charno++")"
+
+-- also return the next getvalue because this destroys the memoization, pretty hacky...
+doLitLets :: (?isSimple::Bool) => ParseState (Maybe (ParseState Impl))
+doLitLets = do
+	code <- gets pdCode
+	matched <- match ([16,-1], ["let "]) -- 16 so that it is picked up as a lit only op
+	if matched then do
+		name <- consumeNIdentifiers 1 "let expression"
+		impl <- get1Value
+		-- pad it since the first is ignored by normal let statements			
+		let doubledImpl = app1Hs "(\\x->((),x))" impl
+		newLetArg (Just $ "first is unused" : name) OptionalArg doubledImpl [implType impl,implType impl] "let"
+		return (Just get1Value)
+	else return Nothing
