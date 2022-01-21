@@ -833,6 +833,7 @@ rawOps = [
 	opM("\\",[],[],parseError "\\ lambda detected outside of function start" :: ParseState Impl),
 	-- Desc: name extras (; ok)
 	-- Example: : `/ 10 3 sets a a -> [3,1]
+	-- Test 3 tuple: + =1 :~~2 3 4~ sets b c  + c b -> 9
 	opM("sets",[],[],parseError "sets must be used after an expression that returns multiple values" :: ParseState Impl),
 	-- Desc: error
 	-- Example: error +2 1 -> error "3"

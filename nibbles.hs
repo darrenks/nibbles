@@ -112,7 +112,7 @@ estimateBinLength (_:s) = 1 + estimateBinLength s
 litErrorHandle msgPrefix bRaw litWarnings = do
 	let binOnlyOps = any (==16) bRaw
 	if binOnlyOps && null litWarnings then do
-		hPutStrLn stderr $ msgPrefix ++ ": you are using literal only ops, estimated size: " ++ show (estimateBinLength bRaw)
+		hPutStrLn stderr $ msgPrefix ++ ": you are using literal only ops, estimated size: " ++ show (estimateBinLength bRaw) ++ " nibbles"
 		return True
 	else if not (null litWarnings) then do
 		mapM_ (\msg -> hPutStrLn stderr $ msgPrefix++": " ++msg) litWarnings

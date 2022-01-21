@@ -456,13 +456,17 @@ pushLambdaArg argType argUsedness from f = do
 		Just nextCode -> do
 			maybeName <- getNewIdentifier nextCode
 			case maybeName of
-				Just (name,nextCode2) -> do
+				Left (name,nextCode2) -> do
 					modify $ \s -> s { pdCode = nextCode2 }
 					rest <- consumeNIdentifiers (length argType-1) "lambda"
 					return $ Just $ name : rest
-				otherwise -> return Nothing
-		otherwise -> return Nothing
-	else return Nothing
+				Right reason | reason == inUseAlreadyMsg -> do
+					-- They might have meant to use a lambda
+					parseLitWarning $ "You may have meant to use a lambda failed because " ++ reason
+					return Nothing
+				Right reason -> return Nothing -- not an identifier
+		otherwise -> return Nothing -- no \ lambda
+	else return Nothing -- no args
 
 	newArg <- newLambdaArg argType namedArgs argUsedness from
 	depth <- gets pdContext >>= return.length
@@ -479,22 +483,25 @@ consumeNIdentifiers n exprType = do
 	code <- gets pdCode
 	maybeName <- getNewIdentifier code
 	case maybeName of
-		Just (name, nextCode) -> do
+		Left (name, nextCode) -> do
 			modify $ \s -> s { pdCode = nextCode }
 			rest <- consumeNIdentifiers (n-1) exprType
 			return $ name:rest
-		otherwise -> parseError $ "expecting another new identifier for " ++ exprType
+		Right reason -> parseError $ "invalid " ++ exprType ++ ": " ++ reason
 
-getNewIdentifier :: Code -> ParseState (Maybe (String,Code))
+inUseAlreadyMsg = "identifier is already in use"
+
+getNewIdentifier :: Code -> ParseState (Either (String,Code) String)
 getNewIdentifier code = do
 	allArgs <- getAllArgs
 	let maybeName = onlyCheckMatchIdentifier code
 	return $ case maybeName of
-		Just (name, nextCode)
-			| not (any (==Just name) $ map implName allArgs)
-			  && notElem name opsWithIdentiferNames
-			-> Just (name, nextCode)
-		otherwise -> Nothing
+		Just (name, nextCode) ->
+			if not (any (==Just name) $ map implName allArgs)
+			  && notElem name opsWithIdentiferNames then
+				Left (name, nextCode)
+			else Right inUseAlreadyMsg
+		otherwise -> Right "not an identifier"
 	where opsWithIdentiferNames = nub $ filter (all isIdentifierChar) $ flip map allOps (\(_,lit,_,_)->concat lit)
 
 get1Value :: (?isSimple::Bool) => ParseState Impl
