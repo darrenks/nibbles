@@ -13,6 +13,7 @@ import Data.Function (fix)
 import System.IO
 import qualified Data.Set as Set
 import System.Environment
+import Control.Monad (when)
 
 -- for Hash
 import qualified Data.ByteString as B8
