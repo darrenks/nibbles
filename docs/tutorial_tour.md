@@ -118,6 +118,8 @@ The value doesn't have to be a constant either, so you could use it to inspect s
 
 `ct` Prints the current context of all DeBruijn indices and terminates at compile time.
 
+Don't forget about `p` `let` `set` and `\` (lambda) too, highly useful for larger programs. 
+
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
 

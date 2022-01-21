@@ -136,10 +136,8 @@ getExample _ = Nothing
 
 
 getDesc (c:s) | isSpace c = getDesc s
-getDesc s | isPrefixOf "-- Desc: " s = Just (
-	case elemIndex ':' s of
-		Just i -> Data.List.head $ splitOn "." (drop (i + 2) s)
-	)
+getDesc s | isPrefixOf "-- Desc: " s = Just $
+	drop ((fromMaybe (error "expecting : in Desc") $ elemIndex ':' s) + 2) s
 getDesc _ = Nothing
 
 simplifyDesc (a,desc,c) = (a, case elemIndex '(' desc of
@@ -168,7 +166,7 @@ drawLegend = do
 		tr $ do
 			th "symbol"
 			th "meaning"
-		tr $ td "{type}" >> td "parse a value of that type"
+		tr $ td "{type}" >> td "parse a value of that type (not an expression, saves a nibble though)"
 		tr $ td "any*" >> td "any type or ~ for a tuple"
 		tr $ td ">type" >> td "this argument must be longer in length than the preceding (for commutative extensions)"
 		tr $ td "vec" >> td "same as \"any\" but used to denote that it will vectorize if a list is given"
@@ -178,8 +176,8 @@ drawLegend = do
 		tr $ td "[a]" >> td "list of type variable \"a\""
 		tr $ td "reqfn" >> td "fn but its argument must be used"
 		tr $ td "const" >> td "fn but its argument must not be used (for extensions)"
-		tr $ td "fn?" >> td "~ denotes: take an extra fn argument here"
-		tr $ td (i "itatlic") >> td "auto specifies \"option present\" but does not replace the arg"
+		tr $ td "fn?" >> td "auto ~ means to take an extra fn argument here"
+		tr $ td (i "itatlic") >> td "auto ~ specifies \"option present\" but does not replace the arg"
 	let chrows = flip map charClassesDefs $ \(symbol,meaning) -> td (toHtml symbol) ! class_ "code" >> td (toHtml meaning) ! class_ "code"
 	
 	let bothops = [

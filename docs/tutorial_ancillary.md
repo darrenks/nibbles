@@ -138,7 +138,7 @@ $HiddenOutput
 
 Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function ``%` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
 
-Like functions these are referrenced by DeBruijn indicies which can become tedious for larger programs. So you can name the extra values by doing a `sets identifier` after the expression that returned multiple values. (This also works for `;` ofcourse).
+Like functions these are referrenced by DeBruijn indicies which can become tedious for larger programs. So you can name the extra values by doing a `sets identifier` after the expression that returned multiple values. (This also works for `;` ofcourse). This will be automatically converted to DeBruijns for conversion to binary.
 
 For example:
 

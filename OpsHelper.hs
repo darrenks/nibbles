@@ -8,6 +8,8 @@ import Polylib
 import Parse
 import Hs
 
+import Data.List (isPrefixOf)
+
 makeOp :: (ToLitSpec lit) => Bool -> (lit, [Int], [ArgSpec], OpBehavior) -> [(Bool, [String], [Int], Operation)]
 makeOp priority (lit, nib, t, behavior) = [(priority, toLitSpec lit, nib, (t, behavior))]
 
@@ -180,13 +182,15 @@ testCoerce2 [a1,a2] = "const $ const $ sToA $ " ++ show (if ct1 == ct2
 testCoerceTo :: [VT] -> [VT] -> ([VT], String)
 testCoerceTo to a1 =  (to, coerceTo to a1)
 
-isExtension isExtOptFn (lit, nib, op) = length nib > 1 && length lit > 1 || any isExtOptFn (fst op) || elem '~' lit 
+isExtension isExtOptFn (lit, nib, op) = (isPrefixOf [16] nib) || (length nib > 1 && length lit > 1 || any isExtOptFn (fst op) || elem '~' lit )
+
 isExtOpt t = case t of
 	Auto -> True
 	Cond desc _ -> elem '>' desc
 	BinCode _ -> True
 	Fn ReqConst _ _ -> True 
 	otherwise -> False
+
 isOpSimple (isPriority, lits, nib, op@(types,_)) =
 	(not (isExtension isExtOpt (lit, nib, op) || null nib)
 	||elem lit whitelist)

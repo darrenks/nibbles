@@ -143,7 +143,7 @@ This corresponds to the Haskell code:
 
 **Note:** If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
-**Note:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. They are automatically converted to their equivalent DeBruijn indices. Just put a `\` followed by the names of the identifiers you wish to use. For example:
+**Note:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. They are automatically converted to their equivalent DeBruijn indices. Just put a `\` followed by the names of the identifiers you wish to use. This will be automatically converted to DeBruijns for conversion to binary. For example:
 
 	/,3 \element accum
 		+accum element

@@ -187,7 +187,7 @@ rawOps = [
 	-- Test: % 7 ~ -> 1
 	-- Test mod 0: %7 0 -> 0
 	op(('%',12), [num, AutoDefault num 2], "safeMod" ~> VInt),
-	-- Desc: pow (negative for nth root)
+	-- Desc: pow (minus is nth root)
 	-- Example: ^2 8 -> 256
 	-- Test: ^~ 1 -> 10
 	-- Test: ^8 ~ -> 64
@@ -298,7 +298,7 @@ rawOps = [
 	-- hidden Example: `, 3 -> [0,1,2]
 	-- Test: <3 `, ~ -> [0,1,2]
 	extendOp "`," [reverseRep, consRep] equivalentOrderReason ([AutoDefault num (2^128)], "\\x->[0..x-1]" ~> vList1 . a1),
-	-- Desc: range from 1 ( `, is from 0)
+	-- Desc: range 1.. ( `, is 0...)
 	-- Example: ,3 -> [1,2,3]
 	-- Test: ,-3 -> []
 	-- Test auto: <3 :0,~ -> [0,1,2]
@@ -311,7 +311,7 @@ rawOps = [
 	op(repRep, [AutoDefault int (2^128), orC list char], \[_,a2] ->
 		let (ap2, apf) = promoteList [a2] in
 		"\\n a->concat$genericReplicate n$"++apf++" a" ~> ap2),
-	-- Desc: subscript. Wrapped. todo maybe should use default or provide another option?
+	-- Desc: subscript (wrapped)
 	-- Example: =2 "asdf" -> 's'
 	-- Test 0 (wrapped): =0 "asdf" -> 'f'
 	-- Test empty: =0"" -> ' '
@@ -320,7 +320,7 @@ rawOps = [
 	-- hidden Example: ?,100~ -*$$80 -> 9
 	-- Test negation: ?,5~ ~0 -> 1
 	op(('?',15), [list, auto, AutoNot $ fn (elemT.a1)], "\\l f->fromIntegral$1+(fromMaybe (-1) $ findIndex f l)" ~> VInt),
-	-- Desc: index. Or 0 if not found.
+	-- Desc: index (or 0 if not found)
 	-- Example: ? "abc" 'b' -> 2
 	-- Test not found: ? ,3 4 -> 0
 	-- Test tuple: ? old_zip_ ,3 "abc" 2 -> 2
@@ -505,12 +505,12 @@ rawOps = [
 				if o==OptionNo then "elemIndices needle a"
 				else "findIndices (\\e->e /= needle) a"
 		) ~> vList1 VInt),
-	-- Desc: group by
+	-- Desc: chunk by
 	-- Example: `= ,5 /$2 -> [[1],[2,3],[4,5]]
 	-- Test tuple: `= .,5~$/$2 @ -> [[(1,0)],[(2,1),(3,1)],[(4,2),(5,2)]]
 	-- Test tuple ret: `= ,6 ~/$3 /$4 -> [[1,2],[3],[4,5],[6]]
 	extendOp "`=" [reverseRep, filterRep] equivalentOrderReason ([list, Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], \[a1,a2]->"\\a f->groupBy (onToBy f) a" ~> vList1 a1),
-	-- Desc: group all by
+	-- Desc: group by (also sorts)
 	-- Example: =~ "cabcb" $ -> ["a","bb","cc"]
 	-- Test: =~ "cabcb" ~$ -> ["cc","a","bb"]
 	extendOp "=~" [reverseRep, mapRep] equivalentOrderReason ([list, AutoOption "nosort", Fn ReqArg UnusedArg $ \[a1,_]->(1,elemT a1)], \[a1,o,_]->"\\a f->\
@@ -607,7 +607,7 @@ rawOps = [
 		\else if n==0 then subsequences a \
 		\else repeatedSubsequencesN (-n) a"~>vList1.a2),
 	-- Desc: nary cartesian product
-	-- Example: `*"ab""cd" -> ["ac","ad","bc","bd"]
+	-- Example: *" "`*"ab""cd" -> "ac ad bc bd"
 	opM("`*",[9,0],[listOf list],"sequence"~>a1),
 	-- Desc: permutations
 	-- Example: ``p "ab" -> ["ab","ba"]
@@ -665,7 +665,7 @@ rawOps = [
 	-- returns a list of pair of (adjacent matching sequence, non matching sequence before it)
 	-- assumes that the input ends with a match, if it does not, then it appends an empty match
 	-- so that you may have access to the final non matching sequence.
-	-- Example: %~"a b"\$a -> [("a",""),("b"," ")]
+	-- Example: %~"a b"$ -> [("a",""),("b"," ")]
 	-- Test: %~ "abc\nde  f" \$a -> [("abc",""),("de","\n"),("f","  ")]
 	-- Test leading non match: %~ " a" \$a -> [("a"," ")]
 	-- Test trailing non match: %~ "a " \$a -> [("a",""),(""," ")]
@@ -795,8 +795,8 @@ rawOps = [
 	extendOp "`;" [setRep,setRep] (shorterReason"multiple assignments on the same thing is useless, just use 1") recursionDef,
 		
 	-- Desc: hashmod
-	-- untested example: ."Fizz""Buzz" `# $ 6   1a -> [3,5]
-	-- RawTest: p."Fizz""Buzz" `# $ 6   1a -> "[3,5]\n"
+	-- untested example: ."Fizz""Buzz" `# $ 6  1a -> [3,5]
+	-- RawTest: p."Fizz""Buzz" `# $ 6  1a -> "[3,5]\n"
 	-- RawTest: p:`# ~"5a" 100 `# "5" 100 61 -> "[55,55]\n"
 	-- Test: hex `# "asdf" 0 -> "7c5d107b463ef312"
 	opM("`#", [15,0], [AutoOption "nosalt", any1, ParseArg "int" intParser], (\[o,a1,a2]->do
@@ -805,7 +805,7 @@ rawOps = [
 		return $ "\\a b->(fromIntegral$hlist$("++flatten a1++")a++toBase 256 "++(if salt then "dat" else "0") ++")`mod`(if b==0 then 2^128 else b)" ~> a2)::[VT]->ParseState (VT,String)),
 
 	-- Desc: find salt by
-	-- Example: fsb"Fizz""Buzz"6~ ==$ :3 5 -> "1a"
+	-- Example: fsb"Fizz""Buzz"6~==$ :3 5 -> "1a"
 	opM ("fsb", [], [list, int, AutoDefault int (2^128), AutoNot $ fn (\_->[VList [VInt]])], \[a1,_,_,_]->"\\inputs modn stopat goalChecker->toHex $\
 		\fromMaybe (-1) $ find (\\salt->goalChecker (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs)) [0..stopat] "~>vstr),
 	-- Desc: find salt
@@ -816,18 +816,27 @@ rawOps = [
 		\fromMaybe (-1) $ find (\\salt->and $ zipWith ("++(if cidim [a4]>1 then "elem" else "(==)")++") (map (\\input->(fromIntegral$hlist$("++flatten(head $ elemT a1)++")input++toBase 256 salt) `mod` modn) inputs) goal) [0..stopat] "~>vstr),
 	
 	-- Desc: debug arg type
-	-- Example: pt 5 -> error "VInt"
+	-- Example: pt 5 -> error"Integer"
 	opM("pt", [], [any1], "" ~> errorWithoutStackTrace.toHsReadType.a1 :: ([VT]->[VT],String)),
 	-- Desc: show
 	-- Example: p"a" -> "\"a\""
 	opM("p", [], [any1], inspect.a1 ~> vstr),
 	-- Desc: debug context types
-	-- Example: ;5 ct -> error "$ LetArg VInt ..."
+	-- Example: ;5 ct -> error"$ :: Integer ..."
 	opM("ct", [], [], gets pdContext >>= parseError . debugContext :: ParseState Impl),
+	-- This will be impossible to match because let is handled specially, it would have maybe be better to use this for real by creating an arg type identifier though.
+	-- Desc: let statement
+	-- Example: let x +5 4  *x x -> 81
+	opM("let",[],[],(error "impossible 41"::String)~>InvalidType),
+	-- Desc: lambda (only in fns)
+	-- Example: /,3 \e a +a e -> 6
+	opM("\\",[],[],parseError "\\ lambda detected outside of function start" :: ParseState Impl),
+	-- Desc: name extras (; ok)
+	-- Example: : `/ 10 3 sets a a -> [3,1]
+	opM("sets",[],[],parseError "sets must be used after an expression that returns multiple values" :: ParseState Impl),
 	-- Desc: error
 	-- Example: error +2 1 -> error "3"
 	extendOp "error" [diffRep, rangeRep, tildaRep, strRep] "- ,~ str is invalidly typed" ([any1], \[a1]->"\\s->errorWithoutStackTrace $ \"Error: \"++aToS ("++(if a1==vstr then "" else inspect a1)++" s)++\" (\"++"++ show version++"++\")\"" ~> vstr),
-
 
 	opM("testCoerce2", [], [any1, any1], testCoerce2 ~> vstr),
 	opM("testCoerceToInt", [], [any1], testCoerceTo [VInt]),
