@@ -459,7 +459,7 @@ pushLambdaArg argType argUsedness from f = do
 			case maybeName of
 				Just (name,nextCode2) -> do
 					modify $ \s -> s { pdCode = nextCode2 }
-					rest <- consumeNIdentifiers (length argType-1)
+					rest <- consumeNIdentifiers (length argType-1) "lambda"
 					return $ Just $ name : rest
 				otherwise -> return Nothing
 		otherwise -> return Nothing
@@ -472,17 +472,19 @@ pushLambdaArg argType argUsedness from f = do
 	finalContext <- gets pdContext
 	let newArgFinal = reverse finalContext !! (depth - 1) -- todo inefficient
 	bodyWithLets <- popArg depth body
-	return (newArgFinal, bodyWithLets) where
-		consumeNIdentifiers 0 = return []
-		consumeNIdentifiers n = do
-			code <- gets pdCode
-			maybeName <- getNewIdentifier code
-			case maybeName of
-				Just (name, nextCode) -> do
-					modify $ \s -> s { pdCode = nextCode }
-					rest <- consumeNIdentifiers (n-1)
-					return $ name:rest
-				otherwise -> parseError "expecting another new identifier for lambda"
+	return (newArgFinal, bodyWithLets)
+
+consumeNIdentifiers :: Int -> String -> ParseState [String]
+consumeNIdentifiers 0 _ = return []
+consumeNIdentifiers n exprType = do
+	code <- gets pdCode
+	maybeName <- getNewIdentifier code
+	case maybeName of
+		Just (name, nextCode) -> do
+			modify $ \s -> s { pdCode = nextCode }
+			rest <- consumeNIdentifiers (n-1) exprType
+			return $ name:rest
+		otherwise -> parseError $ "expecting another new identifier for " ++ exprType
 
 getNewIdentifier :: Code -> ParseState (Maybe (String,Code))
 getNewIdentifier code = do
@@ -625,9 +627,19 @@ convertPairToLet :: ArgUsedness -> Impl -> [VT] -> String -> ParseState Impl
 convertPairToLet _ (Impl _ hs dep _ _) [t] _ = return $ Impl t hs dep undefined undefined
 convertPairToLet argUsedness impl implTypes from = do
 	context <- gets pdContext
-	let letArg = newLetArg argUsedness context impl implTypes from
+	setVars <- getSetVars (length implTypes-1)
+	let letArg = newLetArg setVars argUsedness context impl implTypes from
 	modify $ \s -> s { pdContext=letArg:context }
 	return $ head $ argsImpls letArg
+
+getSetVars :: Int -> ParseState (Maybe [String])
+getSetVars n = do
+	code <- gets pdCode
+	case onlyCheckMatch code ([-1], ["sets "]) of
+		Just nextCode -> do
+			modify $ \s -> s { pdCode=nextCode }
+			consumeNIdentifiers n "sets expression" >>= (\names-> return $ Just $ "first is unused" : names)
+		otherwise -> return Nothing
 
 getParseCoordinates :: ParseState String
 getParseCoordinates = do

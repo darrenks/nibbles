@@ -136,6 +136,16 @@ $HiddenOutput
 
 Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function ``%` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
 
+Like functions these are referrenced by DeBruijn indicies which can become tedious for larger programs. So you can name the extra values by doing a `sets identifier` after the expression that returned multiple values. (This also works for `;` ofcourse).
+
+For example:
+
+	"the div is: " `/ 10 3 sets mod "\n"
+	"the mod is: " mod
+$HiddenOutput
+	the div is: 3
+	the mod is: 1
+
 ### Creating Tuples
 
 In functions you can return a tuple instead of a regular value using `~`. For example:

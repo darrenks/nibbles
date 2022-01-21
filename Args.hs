@@ -19,22 +19,24 @@ newLambdaArg :: [VT] -> Maybe [String] -> ArgUsedness -> String -> ParseState Ar
 newLambdaArg argT names argUsedness from = do
 	context <- gets pdContext
 	let depth = 1 + length context
-	let namesList = maybe (repeat Nothing) (map Just) names :: [Maybe String]
 	let impls = zipWith3 (\t name tn -> Impl {
 		implType = t,
 		implCode = hsAtom $ argStr depth tn,
 		implDeps = Set.singleton depth,
 		implName = name,
 		implUsed = argUsedness
-		} ) argT namesList [1..]
+		} ) argT (transposeMaybe names) [1..]
 	let newArg = Args impls LambdaArg from
 	modify $ \s -> s { pdContext=newArg:context }
 	return newArg
 
-newLetArg :: ArgUsedness -> [Args] -> Impl -> [VT] -> String -> Args
-newLetArg argUsedness context (Impl _ defHs defDepth _ usedness) defTypes from = newArg where
+transposeMaybe :: Maybe [String] -> [Maybe String]
+transposeMaybe names = maybe (repeat Nothing) (map Just) names
+
+newLetArg :: Maybe [String] -> ArgUsedness -> [Args] -> Impl -> [VT] -> String -> Args
+newLetArg names argUsedness context (Impl _ defHs defDepth _ usedness) defTypes from = newArg where
 	depth = 1 + length context
-	impls = zipWith (\t tn -> Impl t (hsAtom $ argStr depth tn) defDepth Nothing argUsedness) defTypes [1..]
+	impls = zipWith3 (\t name tn -> Impl t (hsAtom $ argStr depth tn) defDepth name argUsedness) defTypes (transposeMaybe names) [1..]
 	newArg = Args impls (LetArg defHs) from
 
 argn :: Int -> ParseState Impl
