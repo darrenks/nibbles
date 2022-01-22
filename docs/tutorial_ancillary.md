@@ -18,13 +18,13 @@ Typical examples to show off laziness revolve around not throwing an error if yo
 
 And we could also generate the list of numbers from 1 to a googol, then select only the first 5 that are odd as such:
 
-	<5 | ,^10 100 %$2
+   <5 | ,^10 100 %$2
 $HiddenOutput
-	1
-	3
-	5
-	7
-	9
+   1
+   3
+   5
+   7
+   9
 
 Without it using all of the time the universe has to offer. This is useful when we don't know how many elements we will need at later stages of computations (typically languages have a separate concept of streams to support this, but that is superflous in a lazy language).
 
@@ -32,11 +32,11 @@ Without it using all of the time the universe has to offer. This is useful when 
 
 Another useful thing about Haskell's laziness (full laziness). Is that expressions are never evaluated multiple times, even inside a loop. For example:
 
-	+,100000000
+   +,100000000
 
 Computes the sum from 1 to 100,000,000, and takes 1.16 seconds on my computer not including compile time.
 
-	+ .,1000 +,100000000
+   + .,1000 +,100000000
 
 Which computes the sum of that sum in a loop 1,000 times takes only 1.33 seconds. If you had done this in a strict language it would have taken 1,000 times longer. Yes, some optimizing compilers in languages like C might have been smart enough to automatically move that computation out of the loop, but in general they cannot because their type system doesn't understand side effects.
 
@@ -49,11 +49,11 @@ Hint: If you'd like to negate a "bool" don't forget about the custom truthiness 
 
 $Solution
 
-	<1 |      # Get the first 1 elements of the filtered list.
-	  >1,$    # Generate the list from 2 to input
-	  - 1 %@$ # \elem -> 1 - (input % elem)
+   <1 |      # Get the first 1 elements of the filtered list.
+     >1,$    # Generate the list from 2 to input
+     - 1 %@$ # \elem -> 1 - (input % elem)
 $HiddenOutput "3902309423233451"
-	436151
+   436151
 
 That was hard, and there are still some pain points we haven't learned how to get around yet. The key thing for this lesson though is we generated a list up to the original input number which was guaranteed to contain a factor, but we didn't have to pay the computational cost of checking all numbers, nor did we need to explicitly terminate the loop when we found one (laziness did it).
 
@@ -63,21 +63,21 @@ $EndSolution
 
 The best way to get the first element of a list actually relies on laziness, and that is doing a foldr1 and just returning the element.
 
-	/,^10 100 $
+   /,^10 100 $
 $Output
-	1
+   1
 
-Of course this trick doesn't require laziness to return the right result, but in that example, it does if you want your program to actually finish. A similar trick can be used to get the last element of a list (by using `@` instead of `$`). But this will not be lazy, nor could any operation on a simple cons style list.	
+Of course this trick doesn't require laziness to return the right result, but in that example, it does if you want your program to actually finish. A similar trick can be used to get the last element of a list (by using `@` instead of `$`). But this will not be lazy, nor could any operation on a simple cons style list.
 
 ## Output
 
 So far we've just been printing a single value or string. But if your program returns a list it is printed with newlines between each element. And if it is a list of lists then spaces between those inner elements. Example:
 
-	.,3 .,3 +@$
+   .,3 .,3 +@$
 $Output
-	2 3 4
-	3 4 5
-	4 5 6
+   2 3 4
+   3 4 5
+   4 5 6
 
 Lists of dimension &#8805; 3 first concatenate their inner dimensions to become 2 dimensions. For printing purposes a string is considered a single value (not a list of chars).
 
@@ -87,10 +87,10 @@ If the default behavior isn't what you want, you can fairly easily increase or d
 
 You can return multiple things, e.g.
 
-	+2 1
-	+4 3
+   +2 1
+   +4 3
 $Output
-	37
+   37
 
 They will just be printed without any separators. But beware, you may accidentally use some implicit ops besides concatenation (see [Implicit Ops](tutorial_minutiae.html#implicitops) for more info).
 
@@ -116,11 +116,11 @@ One unexpected thing to warn you about is the true and false clauses of a `?` ha
 
 $Solution
 
-	? - ;+_ 100 "large" $
+   ? - ;+_ 100 "large" $
 $HiddenOutput "1 2 3"
-	6
+   6
 $HiddenOutput "50 51"
-	large
+   large
 
 $EndSolution
 
@@ -130,11 +130,11 @@ When I said `;` is "somewhat special," I was somewhat lying. Anytime something r
 
 For example ``/` is a function that means `divmod`. It is just a function which returns two values. You could use it like this:
 
-	"the div is: " `/ 10 3 "\n"
-	"the mod is: " $
+   "the div is: " `/ 10 3 "\n"
+   "the mod is: " $
 $HiddenOutput
-	the div is: 3
-	the mod is: 1
+   the div is: 3
+   the mod is: 1
 
 Note if you wanted to use the value of the mod before the div, you can't do that with divmod, so there is also a function ``%` which computes moddiv. In general functions that return multiple things will have multiple versions due to this drawback.
 
@@ -142,19 +142,19 @@ Like functions these are referrenced by DeBruijn indicies which can become tedio
 
 For example:
 
-	"the div is: " `/ 10 3 sets mod "\n"
-	"the mod is: " mod
+   "the div is: " `/ 10 3 sets mod "\n"
+   "the mod is: " mod
 $HiddenOutput
-	the div is: 3
-	the mod is: 1
+   the div is: 3
+   the mod is: 1
 
 ### Creating Tuples
 
 In functions you can return a tuple instead of a regular value using `~`. For example:
 
-	p.,5 ~$ *$$
+   p.,5 ~$ *$$
 $Output
-	[(1,1),(2,4),(3,9),(4,16),(5,25)]
+   [(1,1),(2,4),(3,9),(4,16),(5,25)]
 
 Outside of functions it would be pointless to create your own tuple, it would immediately be deconstructed, and so that opcode has been rebound to something else, making it invalid to even try.
 
@@ -162,10 +162,10 @@ You may have multiple `~` in a row to create three tuples or higher.
 
 If a tuple is to be used as an argument to a function, it also gets splatted to the context. This way you never have to request fst or snd. For example:
 
-	let listOfTuples .,5 ~$ *$$
-	p . listOfTuples +@$
+   let listOfTuples .,5 ~$ *$$
+   p . listOfTuples +@$
 $Output
-	[2,6,12,20,30]
+   [2,6,12,20,30]
 
 
 ## Vectorization

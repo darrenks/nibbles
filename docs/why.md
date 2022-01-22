@@ -7,9 +7,9 @@ That's outside the scope of this page, but my quick answer is that can be fun to
 This too is outside the scope of this page, but my quick answer is that it is fun to produce even shorter and more incomprehensible code! It also can make golfing more about seeking the true simplest solution to a problem rather than fighting your mainstream language to avoid long function names and abuse obscure but short features.
 
 ## Why Nibbles?
--	To have a language that I would actually want to golf in.
-	-	This means simple but also competitive.
--	To make the language Golfscript should have been.
+-  To have a language that I would actually want to golf in.
+   -  This means simple but also competitive.
+-  To make the language Golfscript should have been.
 
 ### Some history
 I created [Golfscript](http://www.golfscript.com/golfscript/) in 2007. Originally it was an experiment just to see what a language would be like if the only control structure was string evaluation (because that was so powerful in Ruby golf). A stack was added as a simple way to increase its power. Then I realized that if code strings had their own type (blocks) then more overloading was possible. This made it pretty similar to other stack based languages. But as a golfer, I focussed on the fact that it was actually very good at code golf, so I made it even better by adding more operations and the result was the first ever "golf language". Although this is arguable as APL has always prized short code, but APL was optimized for the real world and doesn't fair as well on toy problems.
@@ -22,8 +22,8 @@ The allure of creating even more compact golf languages was irresistible and ove
 
 This has bothered me because
 
-1.	Solutions will rely on specialty functions for common golf themes (e.g. palindromize, factor, pi digits, etc.), rather than solving the problem yourself, as you would in a normal language.
-1.	Golf became more about hunting for puzzle pieces than manipulating puzzle pieces (searching through a long list of arbitrary functions rather than problem solving).
+1. Solutions will rely on specialty functions for common golf themes (e.g. palindromize, factor, pi digits, etc.), rather than solving the problem yourself, as you would in a normal language.
+1. Golf became more about hunting for puzzle pieces than manipulating puzzle pieces (searching through a long list of arbitrary functions rather than problem solving).
 
 ## Philosophy of Nibbles
 
@@ -31,16 +31,16 @@ Be simple **and** good at code golf!
 
 And some strategies that were chosen to accomplish this:
 
-1.	Decrease size by decreasing instruction size rather than adding more instructions.
-	-	This is more to keep it simple than to be optimal, more instructions would actually be shorter (if they are well chosen).
-	-	Half bytes keep it feeling like real golf, prefer it over variable bits
-1.	Functional programs are shorter and more intuitive.
-	-	Bonus is you get compatibility with laziness.
-1.	Overloading by type should only be used with static typing.
-	-	Changing types would almost never be what you actually want if there is overloading by type.
-1.	Prefix notation with DeBruijn indices are easy to use and eliminate the need for all function delimiters and stack manipulation.
-	-	Tacit is beautiful, but I couldn't find a way to match this efficiency while keeping it this simple.
-1.	There should be only 1 way to do things and 0 ways to do useless things, otherwise wastes entropy.
+1. Decrease size by decreasing instruction size rather than adding more instructions.
+   -  This is more to keep it simple than to be optimal, more instructions would actually be shorter (if they are well chosen).
+   -  Half bytes keep it feeling like real golf, prefer it over variable bits
+1. Functional programs are shorter and more intuitive.
+   -  Bonus is you get compatibility with laziness.
+1. Overloading by type should only be used with static typing.
+   -  Changing types would almost never be what you actually want if there is overloading by type.
+1. Prefix notation with DeBruijn indices are easy to use and eliminate the need for all function delimiters and stack manipulation.
+   -  Tacit is beautiful, but I couldn't find a way to match this efficiency while keeping it this simple.
+1. There should be only 1 way to do things and 0 ways to do useless things, otherwise wastes entropy.
 
 ### Anti-philosophy of Nibbles
 

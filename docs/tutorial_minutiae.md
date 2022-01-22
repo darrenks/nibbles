@@ -10,26 +10,26 @@ All ops correspond to their literate size. `+` is 1 nibble (half a byte). `=\` i
 
 The reason for this encoding is because in binary form only 1 hex value is reserved for starting a number. Then we need to use 1 bit per digit to say when to stop. Since integers are fairly common that is why `~` was added as another way to create integers cheaply.
 
-**Strings** require 1 nibble plus 2 nibbles per character. So "hi" is 2.5 bytes. 
+**Strings** require 1 nibble plus 2 nibbles per character. So "hi" is 2.5 bytes.
 
 There are a few exceptions:
 
-*	Space and newline each require only 1 nibble.
-*	Empty string is 3 nibbles.
-*	Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline and no terminators).
+*  Space and newline each require only 1 nibble.
+*  Empty string is 3 nibbles.
+*  Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline and no terminators).
 
 **Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
-*	\n
-*	space
-*	.
-*	,
-*	/
-*	\`
-*	a
-*	@
-*	A
-*	0
+*  \n
+*  space
+*  .
+*  ,
+*  /
+*  \`
+*  a
+*  @
+*  A
+*  0
 
 Binary chars require 5 nibbles.
 
@@ -44,17 +44,17 @@ Other ops (like `:`) will take in two values and need to coerce them to the same
 
 If you use an operation that expects more values than you provide  before EOF then Nibbles will choose a value for you to complete the program (so this can only be used for the last operations in a program). It will first choose any unused identifiers (starting from the smallest DeBruijn index) then look at all other identifiers. For example:
 
-	p.,;3+$
+   p.,;3+$
 $Output
-	[4,5,6]
+   [4,5,6]
 
 Because `$` had been used already, it chose `@` which was the value from the save `;` of 3. `ct` can be useful here as it shows the current status of this usedness.
 
 This can be used multiple times in the same program if you are lucky!
 
-	p.,3+
+   p.,3+
 $Output
-	[2,4,6]
+   [2,4,6]
 
 Because it is just the same as `p.,3+$$`
 
@@ -68,70 +68,70 @@ If stdin is empty, it likely means your program is supposed to produce some pres
 
 Example (w/ empty input):
 
-	+ *2$ ;$
+   + *2$ ;$
 $Output
-	1200
+   1200
 
 Also `@` becomes the list of printable ascii characters in a more useful order.
 
-	p@
+   p@
 $Output
-	" abcdefghijklmnopqrstuvwxyz.,!?_\nABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
+   " abcdefghijklmnopqrstuvwxyz.,!?_\nABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
 
 ## Implicit Ops
 
 If your program produces multiple values instead of 1, Nibbles will insert implicit ops. Usually this is conversion to string and then concatenation. For example:
 
-	5 3
+   5 3
 $Output
-	53
+   53
 
 But if the first value is a non-string list then it will attempt to do a foldl1 over the list.
 
-	,5 +@$
+   ,5 +@$
 $Output
-	15
+   15
 
 If you don't use the accumulator (`@`) then it will instead assume you wanted to do a map.
 
-	,3+$$
+   ,3+$$
 $Output
-	2
-	4
-	6
+   2
+   4
+   6
 
 You could even combine this with implicit args to just
 
-	,3+
+   ,3+
 $Output
-	2
-	4
-	6
+   2
+   4
+   6
 
 Note that this didn't default to a fold (via `,3+@$`) because these args are set to optional use.
 
 And if you don't even use the element identifier (`$`) then it will assume you wanted to use string concatenation.
 
-	,3 8
+   ,3 8
 $Output
-	1
-	2
-	3
-	8
+   1
+   2
+   3
+   8
 
 These rules also apply if the first value is an integer, except that it does a "range from 1 to n" to generate a list first.
 
-	3+
+   3+
 $Output
-	2
-	4
-	6
+   2
+   4
+   6
 
 And for a fold `5+@$` which can be done shorter by:
 
-	5+@
+   5+@
 $Output
-	15
+   15
 
 There's a lot more possibilities here, but it isn't obvious what the most common ops at the start of Nibble's programs will be, so we can wait and see what's used in practice the most and then add those.
 
@@ -141,66 +141,66 @@ If your program uses input but not the entire raw input (`$` `;$` `@` `;@` or po
 
 Suppose the input to your program is
 
-	12 888
-	34
-	56
-	78	
+   12 888
+   34
+   56
+   78
 
 Then outputs for these programs will be:
 
-	p +1$
+   p +1$
 $Output "12 888\n34\n56\n78"
-	13
-	889
-	35
-	57
-	79
+   13
+   889
+   35
+   57
+   79
 
 Because all ints are auto mapped over.
 
-	p @
+   p @
 $Output "12 888\n34\n56\n78"
-	"12 888"
-	"34"
-	"56"
-	"78"
+   "12 888"
+   "34"
+   "56"
+   "78"
 
 Because all lines are auto mapped over.
 
-	p _
+   p _
 $Output "12 888\n34\n56\n78"
-	[12,888]
-	[34]
-	[56]
-	[78]
+   [12,888]
+   [34]
+   [56]
+   [78]
 $HiddenOutput "1 2 3"
-	[1,2,3]
+   [1,2,3]
 $HiddenOutput "1\n2\n3"
-	[1,2,3]
+   [1,2,3]
 $HiddenOutput ""
-	[]
+   []
 $HiddenOutput "1"
-	[1]
+   [1]
 $HiddenOutput "1\na\n2 3"
-	[1]
-	[2,3]
+   [1]
+   [2,3]
 
 But note that if all lines only had 1 or less ints then we would treated it is a single list and not auto mapped (because that could have just been accomplished using `:$~`.
 
-	p ;$
+   p ;$
 $Output "12 888\n34\n56\n78"
-	888
-	56
-	1000
+   888
+   56
+   1000
 
 The 1000 resulted because that is the default value of `;$` if there is no value present. It attempted to auto map on pairs of numbers and 78 had no corresponding pair.
 
-	p ;@
+   p ;@
 $Output "12 888\n34\n56\n78"
-	"34"
-	"78"
+   "34"
+   "78"
 $HiddenOutput "a"
-	""
+   ""
 
 Because it automapped on pairs of lines. Note that if there had been an odd number of lines the last would have been `""`
 
@@ -208,26 +208,26 @@ If auto mapping occurs then the outer list default separator becomes `" "` inste
 
 E.g. if your input is
 
-	1 2
-	3 4
+   1 2
+   3 4
 
 then
 
-	\_
+   \_
 $Output "1 2\n3 4"
-	2 1
-	4 3
+   2 1
+   4 3
 
 But if the input was just
 
-	1 2
+   1 2
 
-then 
+then
 
-	\_
+   \_
 $Output "1 2"
-	2
-	1
+   2
+   1
 
 Note that while auto mapping if your program returns nothing for a value, no newline is printed.
 
@@ -239,38 +239,38 @@ To do that use `~` after your program and proceed it with a hex number. This num
 
 This program is only 14 nibbles instead of 17 encoded in octal.
 
-	$ ~d995376004a7 
+   $ ~d995376004a7
 $Output
-	239234902394023
+   239234902394023
 
 You can easily convert it to lists of a desired radix with `to base` (``@`).
- 
+
 Some ops use data by default (`` `D `` and `` `# ``). If used, they also prevent the data value from overwriting the first int input value. And after the end of the current root expression data is assumed to start rather than needing ~.
 
 Data can be handy for recreating large strings.
 
-	`D -41 3115bb46ee9d9a09d5
+   `D -41 3115bb46ee9d9a09d5
 $Output
-	Hello, world!
+   Hello, world!
 
 Which is 2 nibbles shorter than just using quotes. Not as impressive as compression algorithms tuned to the english language, but this is a more timeless and general technique!
 
 The negative in the radix means to use the list of printable characters rather than straight up base conversion. These values can be found by doing
 
-	ghci header.hs
-	> 1 + (maximum $ catMaybes $ map (flip elemIndex printables) $ sToA "Hello, world!")
+   ghci header.hs
+   > 1 + (maximum $ catMaybes $ map (flip elemIndex printables) $ sToA "Hello, world!")
 
 or if you prefer nibbles:
 
-	`/!@"Hello, world!"?]
+   `/!@"Hello, world!"?]
 $Output
-	41
+   41
 
 Which tells us the maximum index in the printable chars is 41 for that string. So then we could find the magic number with:
 
-	hex `@ -41 "Hello, world!"
+   hex `@ -41 "Hello, world!"
 $Output
-	3115bb46ee9d9a09d5
+   3115bb46ee9d9a09d5
 
 FYI data will always be shorter if you are getting it from the auto value of a fn, but for use with `$` it will only be shorter than normal numbers for numbers >= 32768 but it is equally as short for 0 and numbers >= 64 so it could be handy if you use that number more than once.
 
@@ -292,24 +292,24 @@ Let's see how we could use this to figure out how to use `ma` (`mapAccumL`) (wit
 
 The arg types are defined as:
 
-	[list, anyT, fn2 (\[l, x]->[x,elemT l])]
+   [list, anyT, fn2 (\[l, x]->[x,elemT l])]
 
 This means the first arg is a list, the second is any type, the third is a function that returns 2 values (denoted from fn2). The lambda expression isn't that function's type as you might expect. Instead it is a function which returns what the arg types of this function will be based on the previous args to `ma`. Here it says your function will receive 2 args, the first being the same type as the `anyT` and the second the same type as the element type of the `list`.
 
 Next we have the generated Haskell code:
 
-	"\\l i f->swap $ mapAccumL f i l"
+   "\\l i f->swap $ mapAccumL f i l"
 
 Which should be straightforward if you know Haskell.
 
 Finally we have the return type of this expression which is:
 
-	\[_,x,ft2] -> [vList1$last$ret ft2,x]
+   \[_,x,ft2] -> [vList1$last$ret ft2,x]
 
 This a function from the arg types to `ma` to the return type of `ma`. In this case it is a tuple of:
 
-1.	A list of a tuple1 (which is just a regular value) of the second return type of the function
-2.	The type of the initial value.
+1. A list of a tuple1 (which is just a regular value) of the second return type of the function
+2. The type of the initial value.
 
 So basically it is the same type as Haskell's `mapAccumL` with some things switched around. Yes Haskell's type system expresses this much cleaner...
 

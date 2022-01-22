@@ -6,8 +6,8 @@ You will need **GHC 8.0.2 - 8.10.7**. I recommend using [ghcup](https://www.hask
 ### Install Nibbles
 Download the [most recent stable version](nibbles-0.23.tgz) ([or old](downloads.html)), unpack it then compile it.
 
-	> cd nibbles
-	> ghc -O -package ghc -Wno-tabs *.hs
+   > cd nibbles
+   > ghc -O -package ghc *.hs
 
 This creates the `nibbles` binary. Do whatever you do to put binaries in your path.
 
@@ -15,8 +15,8 @@ This creates the `nibbles` binary. Do whatever you do to put binaries in your pa
 
 The .tgz file contains the source of the libraries it depends on. If you prefer to instead download them do so as follows.
 
-	> rm -r Data # (removes the predownloaded libraries)
-	> cabal install --lib dlist split murmur-hash memoize
+   > rm -r Data # (removes the predownloaded libraries)
+   > cabal install --lib dlist split murmur-hash memoize
 
 
 ### Other versions of Haskell

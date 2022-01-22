@@ -61,16 +61,16 @@ Also note that a list of the character is returned if true or empty list if fals
 ## If / Else
 -  If you do a length of a list for the condition there is a special hack here to check if the list is null rather than compute the length (which isn't lazy)
 -  True clause is a fn that is passed the condition as an argument (this is purely because it seems likely you'll use it).
--	True clause can construct a tuple.
--	False clause `~` will mean default value of the type of the true clause.
--	False clause expects multiple arguments if a tuple was given in true clause.
+-  True clause can construct a tuple.
+-  False clause `~` will mean default value of the type of the true clause.
+-  False clause expects multiple arguments if a tuple was given in true clause.
 
 ## Find Indices
 If 2nd arg is a fn then find all element indices that make that fn truthy. If 2nd arg is a constant then find all indices of that value.
 
 ## Transpose
 -  Can work on 1d lists.
--  Can work on list of tuples (returns a tuple of lists). 
+-  Can work on list of tuples (returns a tuple of lists).
 
 ## Subsequences
 -  0 means all lengths
@@ -118,7 +118,7 @@ The value doesn't have to be a constant either, so you could use it to inspect s
 
 `ct` Prints the current context of all DeBruijn indices and terminates at compile time.
 
-Don't forget about `p` `let` `set` and `\` (lambda) too, highly useful for larger programs. 
+Don't forget about `p` `let` `set` and `\` (lambda) too, highly useful for larger programs.
 
 ## Creating Your Own Functions
 It is actually somewhat rare to need to create your own functions in code golf. But none-the-less there are times that it could definitely be useful to apply the same logic in unrelated parts of the program.
@@ -127,9 +127,9 @@ This can be done using the `;~` extension. `;~` takes two arguments, treating th
 
 Example:
 
-	;~3 *$$
+   ;~3 *$$
 $Output
-	9
+   9
 and now we can use that square function with `$`. E.g. `$4` gives `16`.
 
 Note that we can even square strings now. E.g. `$"5"` gives `25`.
@@ -144,14 +144,14 @@ Hint: The first argument to `;~` is actually a function of no arguments (which a
 
 $Solution
 
-	p :                   # pretty print 1st call
-	   ;~ ~10 3 ~/$@ %$@  # create fn and call it
-	   $                  # get the snd result
-	p :                   # pretty print 2nd call
-	   @ 20 5             # call it again
-	   $                  # get the snd result
+   p :                   # pretty print 1st call
+      ;~ ~10 3 ~/$@ %$@  # create fn and call it
+      $                  # get the snd result
+   p :                   # pretty print 2nd call
+      @ 20 5             # call it again
+      $                  # get the snd result
 $Output
-	[3,1][4,0]
+   [3,1][4,0]
 
 Notice that the second use of your function didn't require you to use `~`. It knew it took two arguments.
 
@@ -163,8 +163,8 @@ Unfortunately recursive functions (without type specifications) are difficult to
 
 Recursive functions always need a base case to terminate (actually that's not true for lazy evaluation, but you will probably not be using your functions like this), and the base case is easy to deduce the type of. So recursive functions are implemented as a function that returns 3 things.
 
-1.	the condition for when to use the recursive case
-1.	the base case
+1. the condition for when to use the recursive case
+1. the base case
 1. the recursive case
 
 The recursive case doesn't technically have to recurse, but it does have its fixed point added to the context so that you can recurse with `@` (if your function takes 1 argument).

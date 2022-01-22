@@ -1,7 +1,7 @@
 pass = true
 
 # op tests
-puts `ghc -Wno-tabs -package ghc test/test.hs && test/test`
+puts `ghc -package ghc test/test.hs && test/test`
 pass &&= $?.exitstatus==0
 
 # parse speed test
@@ -26,12 +26,12 @@ pass &&= $?.exitstatus==0
 
 # test generate quickref (not in distributed code)
 if Dir.exist?('web')
-	puts 'testing quickref compile'
-	`ghc -Wno-tabs web/quickref.hs 2> /dev/null`
-	puts "ERROR: Quickref failed to compile!" if $?.exitstatus!=0
-	pass &&= $?.exitstatus==0
-	
-	`sh scripts/generate`
+   puts 'testing quickref compile'
+   `ghc web/quickref.hs 2> /dev/null`
+   puts "ERROR: Quickref failed to compile!" if $?.exitstatus!=0
+   pass &&= $?.exitstatus==0
+
+   `sh scripts/generate`
 end
 
 puts pass ? 'all tests pass' : 'FAIL' + "#"*100

@@ -55,25 +55,25 @@ data ReqArg = ReqDontCare | ReqArg | ReqConst
 
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
 data ArgSpec
-	= Cond String {-desc-} (MatchTestData -> Bool)
-	| ParseArg String {-desc-} (ParseState (VT, String))
-	| FakeAuto String -- an auto for quickref purposes only, it is implemented by a hidden op
-	| Auto
-	| AutoData ArgSpec
-	| AutoDefault ArgSpec Integer -- todo make any type
-	| Fn ReqArg ArgUsedness ([VT] -> (Int, [VT]))
-	| OrAuto String {- desc -} ArgSpec
-	| AutoNot ArgSpec {- only Fn -}
-	| AutoOption String {- desc -}
-	| OptionalFn ([VT] -> (Int, [VT])) -- returns a fn if its args are used, otherwise an impl with type ItWasAConstant
-	| ZipMode
-	| FoldMode
-	| CharClassMode
-	| AnyS -- basically a const fn, but shown as any*
-	| BinCodeRep (Char, Int) -- only used in spec, converted to BinCode/LitCode
-	| BinCode Int
-	| LitCode Char
-	| NotEOF
+   = Cond String {-desc-} (MatchTestData -> Bool)
+   | ParseArg String {-desc-} (ParseState (VT, String))
+   | FakeAuto String -- an auto for quickref purposes only, it is implemented by a hidden op
+   | Auto
+   | AutoData ArgSpec
+   | AutoDefault ArgSpec Integer -- todo make any type
+   | Fn ReqArg ArgUsedness ([VT] -> (Int, [VT]))
+   | OrAuto String {- desc -} ArgSpec
+   | AutoNot ArgSpec {- only Fn -}
+   | AutoOption String {- desc -}
+   | OptionalFn ([VT] -> (Int, [VT])) -- returns a fn if its args are used, otherwise an impl with type ItWasAConstant
+   | ZipMode
+   | FoldMode
+   | CharClassMode
+   | AnyS -- basically a const fn, but shown as any*
+   | BinCodeRep (Char, Int) -- only used in spec, converted to BinCode/LitCode
+   | BinCode Int
+   | LitCode Char
+   | NotEOF
 
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
@@ -83,16 +83,16 @@ dToList = DList.toList
 
 addLitWarning :: String -> ParseState ()
 addLitWarning msg = do
-	modify $ \s -> s { pdLitWarnings = msg : pdLitWarnings s }
-	return ()
+   modify $ \s -> s { pdLitWarnings = msg : pdLitWarnings s }
+   return ()
 
 appendRepH :: (SmartList Int,DList.DList Char) -> ParseState ()
 appendRepH (nib2,lit2) = do
-	nib <- gets pdNib
-	lit <- gets pdLit
-	modify $ \s -> s { pdNib = smartAppend nib nib2
-	                 , pdLit = DList.append lit lit2 }
-	                 
+   nib <- gets pdNib
+   lit <- gets pdLit
+   modify $ \s -> s { pdNib = smartAppend nib nib2
+                    , pdLit = DList.append lit lit2 }
+
 appendRep :: ([Int],String) -> ParseState ()
 appendRep (nib2,lit2) = appendRepH (newSmartList nib2, DList.fromList lit2)
 
@@ -101,7 +101,7 @@ appendRepA (nib,lit) = appendRep (nib,concat lit)
 
 blankRep :: Code -> [Args] -> ParseData
 blankRep code context =
-	ParseData code context (newSmartList []) (DList.fromList "") False False []
+   ParseData code context (newSmartList []) (DList.fromList "") False False []
 
 getNib :: ParseData -> [Int]
 getNib = smartToList . pdNib

@@ -5,49 +5,49 @@
 
 n=9000
 pass = true
-`ghc -O -package ghc -Wno-tabs nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
+`ghc -O -package ghc nibbles.hs 2> /dev/null`; pass &&= $?.exitstatus==0
 
 t=Time.now
 
 def time
-	tt=Time.now
-	yield
-	STDERR.puts "took: #{Time.now-tt}"  
+   tt=Time.now
+   yield
+   STDERR.puts "took: #{Time.now-tt}"
 end
 
 time {
-	`echo nested expressions 1>&2
-	echo #{'+'*n+'1 '*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
-	`./nibbles -hs a.nbb` ; pass &&= $?.exitstatus==0
+   `echo nested expressions 1>&2
+   echo #{'+'*n+'1 '*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
+   `./nibbles -hs a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 time {
-	`echo flat expressions 1>&2
-	echo #{'-1'*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
-	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+   `echo flat expressions 1>&2
+   echo #{'-1'*n} 1 | ./nibbles -c` ; pass &&= $?.exitstatus==0
+   `./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 time {
-	`echo non first choice multi character op 1>&2
-	echo '#{'/%'*(n/2) + '1 1 '*(n/2)} 1' | ./nibbles -c`; pass &&= $?.exitstatus==0
-	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+   `echo non first choice multi character op 1>&2
+   echo '#{'/%'*(n/2) + '1 1 '*(n/2)} 1' | ./nibbles -c`; pass &&= $?.exitstatus==0
+   `./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 time {
-	`echo first choice multi character op 1>&2
-	echo '#{'`$'*n},3' | ./nibbles -c`; pass &&= $?.exitstatus==0
-	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+   `echo first choice multi character op 1>&2
+   echo '#{'`$'*n},3' | ./nibbles -c`; pass &&= $?.exitstatus==0
+   `./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 
 time {
-	`echo long string 1>&2
-	echo '"#{'a'*n}"' | ./nibbles -c` ; pass &&= $?.exitstatus==0
-	`./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
+   `echo long string 1>&2
+   echo '"#{'a'*n}"' | ./nibbles -c` ; pass &&= $?.exitstatus==0
+   `./nibbles -hs  a.nbb` ; pass &&= $?.exitstatus==0
 }
 time {
-	`echo long number 1>&2
-	echo '#{'1'*n}' | ./nibbles -c`; pass &&= $?.exitstatus==0
-	`./nibbles -hs  a.nbb`; pass &&= $?.exitstatus==0
+   `echo long number 1>&2
+   echo '#{'1'*n}' | ./nibbles -c`; pass &&= $?.exitstatus==0
+   `./nibbles -hs  a.nbb`; pass &&= $?.exitstatus==0
 }
 raise 'errors in runs' if !pass
 raise 'fail, parse too slow (in %f)' % (Time.now - t) if Time.now - t > 3

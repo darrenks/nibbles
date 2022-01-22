@@ -6,7 +6,7 @@
 -- This really only exist for a faster commutative order check
 
 module SmartList --(SmartList,newSmartList,smartLength)
-	where
+   where
 
 import qualified Data.DList as DList -- needs cabal install --lib dlist
 

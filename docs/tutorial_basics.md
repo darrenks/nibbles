@@ -18,17 +18,17 @@ Let's see this in action.
 ### Create a simple program
 Here's a simple Nibbles program in literate form:
 
-	+2 1
+   +2 1
 
 Save that to `intro.nbl` (nbl is the file extension for literate Nibbles programs).
 
 ### Run it
 
-	> nibbles intro.nbl
+   > nibbles intro.nbl
 $Gives
 
-	size = 5 nibbles (3 bytes)
-	3
+   size = 5 nibbles (3 bytes)
+   3
 
 In addition to running the program, it also output the compactified size of your program to stderr.
 
@@ -36,7 +36,7 @@ You may have also noticed that a file named `out.hs` appeared. For now, Nibbles 
 
 ###  Compress it to binary form
 
-	> nibbles -c intro.nbl
+   > nibbles -c intro.nbl
 
 A file appears named `intro.nbb` (nbb is the file extension for binary Nibbles programs) which has a size of 3 bytes. That compactification was not as good as the promised divide by 2... but it would have been 2.5 bytes if we were measuring that way (and small numbers are a bad example). FYI you can automatically expand `.nbb` files back to literate form using `-e`.
 
@@ -51,11 +51,11 @@ Write a program that computes `(1+2)*(3-4)`
 
 $Solution
 
-	*- 3 4+2 1
+   *- 3 4+2 1
 $HiddenOutput
-	-3
+   -3
 
-You may be distraught about those spaces, but they don't affect binary size. The first space is to stop `-3` from being interpreted as negative 3. 
+You may be distraught about those spaces, but they don't affect binary size. The first space is to stop `-3` from being interpreted as negative 3.
 
 $EndSolution
 
@@ -66,47 +66,47 @@ You've seen **integers**, other data types are chars and lists. **Chars** behave
 
 **Strings** are actually just a list of chars, and can be created using double quotes. Escapes are valid for strings and chars in the same style that Haskell uses. E.g.
 
-	"Hi\nthere"
+   "Hi\nthere"
 $Output
-	Hi
-	there
+   Hi
+   there
 
 A list of strings can be created by listing multiple strings together without spaces between them, e.g. `"hi""there"` -> `["hi","there"]`
 
 ### A note on example format in this tutorial
 
--	Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketed, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`
--	Boxed examples mean the result (shown in the solid box) is what nibbles would actually output.
+-  Inline examples (with &#x2907;) mean the result is shown in "show" form (strings are escaped, lists bracketed, etc.). So `"Hi\nthere"` -> `"Hi\nthere"`
+-  Boxed examples mean the result (shown in the solid box) is what nibbles would actually output.
 
 ## Ops
 
 Here is [a table of the basic Nibbles ops](https://nibbles.golf/simpleref.html). There is a more complete quick reference, but for now it would have some confusing things. A couple things to note:
 
--	`num` means `int` or `chr`
--	`[a]`, etc. means "list of anything," but the next use of `a` must be the same type.
+-  `num` means `int` or `chr`
+-  `[a]`, etc. means "list of anything," but the next use of `a` must be the same type.
 
 ### Exercise
 Use the ops table to write a program which outputs your name as a square, e.g.
 
-	Darren
-	Darren
-	Darren
-	Darren
-	Darren
-	Darren
+   Darren
+   Darren
+   Darren
+   Darren
+   Darren
+   Darren
 
 Hint: Since we haven't introduced assignments yet, it is ok to hard code the length.
 
 $Solution
 
-	^6:"Darren" '\n'
+   ^6:"Darren" '\n'
 $HiddenOutput
-	Darren
-	Darren
-	Darren
-	Darren
-	Darren
-	Darren
+   Darren
+   Darren
+   Darren
+   Darren
+   Darren
+   Darren
 
 That newline could have been included in the string but I'm just showing off how not to code golf.
 
@@ -125,11 +125,11 @@ Let's look at the examples from the ops table for `map` and `foldr1`.
 
 This corresponds to the Haskell code:
 
-	flip map "abc" (\a -> chr ((+) 1 (ord a)))
+   flip map "abc" (\a -> chr ((+) 1 (ord a)))
 
 The `chr` and `ord` are implicit because Nibbles supports `+` on chars. Let's imagine the map function just took the list first and also supported math ops on chars then the code could have been:
 
-	map "abc" (\a -> (+) 1 a)
+   map "abc" (\a -> (+) 1 a)
 
 Which is more obviously related to the Nibbles code.
 
@@ -139,16 +139,16 @@ And for foldr1:
 
 This corresponds to the Haskell code:
 
-	flip foldr1 [1..3] (\elem accum -> (+) elem accum)
+   flip foldr1 [1..3] (\elem accum -> (+) elem accum)
 
 **Note:** If you need a DeBruijn index > 3, then preceding an identifier with a `;` adds 3 for each `;`. E.g. `;;@` is DeBruijn index 8.
 
 **Tip:** Using DeBruijn indices on more complicated programs can become extremely tedious, so Nibbles also supports explicit lambdas with identifiers in the literate form. Just put a `\` followed by the names of the identifiers you wish to use. This will be automatically converted to DeBruijns during conversion to binary. For example this program will generate the same binary code as the earlier example:
 
-	/,3 \element accum
-		+accum element
+   /,3 \element accum
+      +accum element
 $Output
-	6
+   6
 
 ### Exercise
 Compute the product of all even numbers less than 50 (the answer is `10409396852733332453861621760000`). And yes this number is > 2<sup>64</sup> but Nibbles uses arbitrary precision, so don't worry about that.
@@ -159,17 +159,17 @@ Compute the product of all even numbers less than 50 (the answer is `10409396852
 
 $Solution
 
-	/|,49%+1$2*@$
-	
+   /|,49%+1$2*@$
+
 Or more verbosely:
 
-	/         # flip foldr1
-	  |       #   (flip filter
-	    ,49   #     [1..49] 
-	    %+1$2 #     (\a -> (mod) ((+) 1 a) 2 > 0)
-	  *@$     #   ) (\a b-> (*) a b)
+   /         # flip foldr1
+     |       #   (flip filter
+       ,49   #     [1..49]
+       %+1$2 #     (\a -> (mod) ((+) 1 a) 2 > 0)
+     *@$     #   ) (\a b-> (*) a b)
 $HiddenOutput
-	10409396852733332453861621760000
+   10409396852733332453861621760000
 
 Finally we are seeing nice looking programs, can you do better? We will learn more ways to shorten this.
 
@@ -193,11 +193,11 @@ You may also refer to these by name (`fstInt` `fstLine` `ints` `sndInt` `sndLine
 
 For example, if the input is a list of integers we could find the sum as so:
 
-	> echo "+_" > intro.nbl
-	> echo 1 2 3 | nibbles intro.nbl
+   > echo "+_" > intro.nbl
+   > echo 1 2 3 | nibbles intro.nbl
 $Gives
 
-	6
+   6
 
 Keep in mind that these are DeBruijn indices too! So after you start using functions they will shift. It can be hard to keep track of what DeBruijn index corresponds to what, so you can always use `ct` anywhere to see **c**ontext **t**ypes and info.
 
@@ -205,7 +205,7 @@ Keep in mind that these are DeBruijn indices too! So after you start using funct
 
 You may also pass inputs to your program as command line args and they will be parsed as if they are Haskell values (tuples, lists, strings, chars, numbers are ok). These will take up the lower DeBruijn indices than the regular input variables if present. For example:
 
-	> echo 5 | nibbles filename.nbl 6 [(7,'c'),(8,'d')]
+   > echo 5 | nibbles filename.nbl 6 [(7,'c'),(8,'d')]
 
 Will assign `6` to `$`, `[(7,'c'),(8,'d')]` to `@` and `5` to `_`.
 
@@ -220,10 +220,10 @@ Input a number n, then repeat the second line n times.
 
 $Solution
 
-	^$;@
+   ^$;@
 $HiddenOutput "2\nabc"
-	abcabc
-  
+   abcabc
+
 Were you expecting it to be harder than that?
 
 $EndSolution

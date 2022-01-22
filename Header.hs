@@ -23,7 +23,7 @@ newli = myOrd '\n'
 space = myOrd ' '
 
 printables = sToA $ ' ':['a'..'z']++".,!?_\n"++['A'..'Z']++['0'..'9']
-	++"-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
+   ++"-+:;\"'~`@#$%^&*()[]{}<>\\/=|"
 unprintables = filter (\c->not$elem c printables) $ sToA ['\0'..'\127']
 
 myChr :: Integral i => i -> Char
@@ -93,15 +93,15 @@ asIntsH :: String -> [String]
 asIntsH "" = []
 asIntsH "-" = []
 asIntsH ('-':c:rest)
-	| isDigit c = ('-':c:num) : asIntsH after
-	| otherwise = asIntsH rest
-	where
-		(num,after) = span isDigit rest
+   | isDigit c = ('-':c:num) : asIntsH after
+   | otherwise = asIntsH rest
+   where
+      (num,after) = span isDigit rest
 asIntsH (c:rest)
-	| isDigit c = (c:num) : asIntsH after
-	| otherwise = asIntsH rest
-	where
-		(num,after) = span isDigit rest
+   | isDigit c = (c:num) : asIntsH after
+   | otherwise = asIntsH rest
+   where
+      (num,after) = span isDigit rest
 
 fromBase :: (Integral a, Integral b) => b -> [a] -> Integer
 fromBase b a = foldl (\x y->x*(toInteger b)+(toInteger y)) (0::Integer) a
@@ -111,8 +111,8 @@ toBase b n = reverse $ map (fromIntegral.flip mod b) $ takeWhile (>0) $ iterate 
 
 hlist :: Integral i => [i] -> Integer
 hlist a = fromIntegral $ Murmur.asWord64 $ Murmur.hash64 $ B8.pack $ map fromIntegral $ concatMap (toBase 256)
-	 -- (map (\e->fromIntegral$ord$myChr e) a)
-	 (map fromIntegral a)
+    -- (map (\e->fromIntegral$ord$myChr e) a)
+    (map fromIntegral a)
 
 listOr :: [a] -> [a] -> [a]
 listOr defaultResult [] = defaultResult
@@ -120,38 +120,38 @@ listOr _ nonEmpty = nonEmpty
 
 parseNum :: Integer -> [Integer] -> Integer
 parseNum base strI = if base > 36 then error "parseNum base must be <= 36" else
-	case findIndex isJust digitIndices of
-		Just i -> let value = fromBase base $ catMaybes $ takeWhile isJust $ drop i digitIndices
-		              sign = if isSuffixOf "-" (take i str) then -1 else 1 in 
-		              sign * value
-		otherwise -> 0
-	where
-		str = map toLower $ aToS strI
-		digits = genericTake base $ ['0'..'9']++['a'..'z']
-		digitIndices = map (flip elemIndex digits) str
+   case findIndex isJust digitIndices of
+      Just i -> let value = fromBase base $ catMaybes $ takeWhile isJust $ drop i digitIndices
+                    sign = if isSuffixOf "-" (take i str) then -1 else 1 in
+                    sign * value
+      otherwise -> 0
+   where
+      str = map toLower $ aToS strI
+      digits = genericTake base $ ['0'..'9']++['a'..'z']
+      digitIndices = map (flip elemIndex digits) str
 
 appendUntilNull :: [a] -> ([a] -> [a]) -> [a]
 -- appendUntilNull a f = a ++ appendUntilNullH a f
 -- appendUntilNullH a f = case f a of
--- 	[] -> []
--- 	r -> r ++ appendUntilNullH (a++r) f
+--    [] -> []
+--    r -> r ++ appendUntilNullH (a++r) f
 -- appendUntilNull a f = case f a of
--- 	[] -> reverse a
--- 	r -> appendUntilNull (reverse r++a) f
+--    [] -> reverse a
+--    r -> appendUntilNull (reverse r++a) f
 appendUntilNull a f = a ++ appendUntilNullH (reverse a) f
 appendUntilNullH a f = case f a of
-	[] -> []
-	r -> r ++ appendUntilNullH (reverse r++a) f
+   [] -> []
+   r -> r ++ appendUntilNullH (reverse r++a) f
 
 
 iterateWhileUniq :: Ord a => (a -> a) -> a -> [a]
 iterateWhileUniq f i =
-	let uniqPart = iterateWhileUniqH Set.empty f i
-	    Just repeatedIndex = elemIndex (f (last uniqPart)) uniqPart
-	in (uniqPart) --, drop repeatedIndex uniqPart)
+   let uniqPart = iterateWhileUniqH Set.empty f i
+       Just repeatedIndex = elemIndex (f (last uniqPart)) uniqPart
+   in (uniqPart) --, drop repeatedIndex uniqPart)
 iterateWhileUniqH been f i =
-	if Set.member i been then []
-	else i : iterateWhileUniqH (Set.insert i been) f (f i)
+   if Set.member i been then []
+   else i : iterateWhileUniqH (Set.insert i been) f (f i)
 
 subsequencesN :: Integral i => i -> [a] -> [[a]]
 subsequencesN _ []     = [[]]
@@ -168,17 +168,17 @@ nthRoot :: Integer -> Integer -> Integer
 nthRoot n 0 = 0
 nthRoot n x = nthRootGuess n x x
 nthRootGuess n guess x = case ((x `div` guess^(n-1)) + guess*(n-1)) `div` n of
-	r | r>=guess -> guess
-	  | otherwise -> nthRootGuess n r x
+   r | r>=guess -> guess
+     | otherwise -> nthRootGuess n r x
 
 -- from https://stackoverflow.com/questions/40097116/get-all-permutations-of-a-list-in-haskell
 permutationsSaneOrder :: Eq a => [a] -> [[a]]
 permutationsSaneOrder [] = [[]]
 permutationsSaneOrder as = do
-	a <- as
-	let l = delete a as
-	ls <- permutationsSaneOrder l
-	return $ a : ls
+   a <- as
+   let l = delete a as
+   ls <- permutationsSaneOrder l
+   return $ a : ls
 
 isSym c = isPunctuation c || isSymbol c
 toHex = sToA . flip showHex ""
