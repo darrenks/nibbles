@@ -102,11 +102,11 @@ To make this concrete: `+4~` -> `5`
 
 You can probably guess the auto values for each operation, but they are also listed in a column in the full $QuickRef.
 
-## Let Statements
+## Save and Let Statements
 
-`;` is a let statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` -> `4`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the let variable can only be used within that loop.
+`;` is a save statement and is somewhat special. It takes one argument and returns it, but also saves that argument for use by anything after it. You reference it in the same way you do for function arguments. For example `+ ;2 $` -> `4`. Note that the scope of this variable is limited to the same scope as its highest level dependency. E.g. if you use a loop variable the saved variable can only be used within that loop.
 
-You may use a `let` statement anywhere. Which is done by `let identifier expr`. However it would always be shorter to use `;` where the value is actually first used (even if let was 1 nibble). Because of this `let` statements can only be used in the literate form and are just a crutch to help you reach your ultimate program.
+Alternatively you may use a `let` statement anywhere. Which is done by `let identifier expr`. However it would always be less operations to use `;` (because you replace its first use with the actual save statement). Because of this `let` statements can only be used in the literate form and are just a crutch to help you reach your ultimate program.
 
 ### Exercise
 
@@ -186,7 +186,7 @@ If you find possible two nibble extensions, please let me know!
 
 ### Commutative Extensions
 
-Alright these things are going to be annoying, but their efficiency cannot be passed up. There's no reason to make `+1 2` do the same thing as `+2 1` so we can remap one of the orders so long as there is a way to statically say which way the args are ordered. We say that the order is for `+` when the left operand is larger or equal to the right operand (and `]` which means `max` otherwise). But by larger we don't mean the value, but the length of the nibbles binary code (or lexicographically as a tie breaker). So in general if you want to use `+` put the longer code first. This should always be possible but it might not always be easy to put the small operand first since if both sides use the values of let statements, the lets will always need to be in the first operand. I think it is possible to factor that code out and will try to do this in the future.
+Alright these things are going to be annoying, but their efficiency cannot be passed up. There's no reason to make `+1 2` do the same thing as `+2 1` so we can remap one of the orders so long as there is a way to statically say which way the args are ordered. We say that the order is for `+` when the left operand is larger or equal to the right operand (and `]` which means `max` otherwise). But by larger we don't mean the value, but the length of the nibbles binary code (or lexicographically as a tie breaker). So in general if you want to use `+` put the longer code first. This should always be possible but it might not always be easy to put the small operand first since if both sides use the values of save statements, the saves will always need to be in the first operand. I think it is possible to factor that code out and will try to do this in the future.
 
 
 ### reqfn and const Extensions

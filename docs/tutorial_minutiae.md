@@ -48,7 +48,7 @@ If you use an operation that expects more values than you provide  before EOF th
 $Output
 	[4,5,6]
 
-Because `$` had been used already, it chose `@` which was the value from the let `;` of 3. `ct` can be useful here as it shows the current status of this usedness.
+Because `$` had been used already, it chose `@` which was the value from the save `;` of 3. `ct` can be useful here as it shows the current status of this usedness.
 
 This can be used multiple times in the same program if you are lucky!
 

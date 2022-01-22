@@ -92,7 +92,7 @@ rawOps = [
 	-- Desc: 3rd arg
 	-- Example: ;1;2;3 _ -> 1,2,3,1
 	op(('_', 5), [], argn 3),
-	-- Desc: let
+	-- Desc: save
 	-- Example: + ;3 $ -> 6
 	-- Test: ++; 3 ; 2 $ -> 7
 	-- Test: ++; 3 ; 2 @ -> 8
@@ -756,7 +756,7 @@ rawOps = [
 	extendOp ".~~" [subtractRep,tildaRep,tildaRep] (shorterReason"-~~ = 0") ([AnyS, fn $ \[a1]->[fst $ promoteList (ret a1)]], \[a1,a2]-> 
 		let (a1T,a1C) = promoteList (ret a1) in
 			"\\a f->appendUntilNull ("++a1C++"(a())) ("++coerceTo [a1T] (ret a2)++".f)" ~> a1T),
-	-- Desc: let fn
+	-- Desc: save fn
 	-- Example: ;~2+1$ $4 -> 3,5
 	-- Test (multiple args): ;~~1 2 +@$ $4 5 -> 3,9
 	-- Test (multiple returns): ;~1 ~$3 $ @4 $ -> 1,3,4,3
