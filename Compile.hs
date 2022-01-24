@@ -3,7 +3,6 @@
 module Compile(compile,padToEvenNibbles,charClassesDefs) where
 
 import Data.List(inits,intercalate,nub)
-import Data.List.Split(splitOn)
 import Data.Maybe
 import State
 import qualified Data.Set as Set
@@ -99,12 +98,11 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
             dat <- parseDataExpr
             return (Just dat,finishedPrev)
          else do
-            let changeFoldrToFoldl = intercalate "(foldl1.flip)" . splitOn "foldr1"
             result <- case implType prev of
                VInt | not ?isSimple -> do
-                  (impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg "implicit op int"
+                  (impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg "implicit op int" False
                   if last argsUsed then do
-                     return $ (applyImpl (app1Hs (changeFoldrToFoldl $ "("++foldr1Fn [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
+                     return $ (applyImpl (app1Hs ("("++foldr1Fn "(foldl1.flip)" "id" [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
                   else if argsUsed == [True,False] then do
                      return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
                   else do
@@ -112,9 +110,9 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
                      afterCode <- gets pdCode
                      return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
                VList e | not ?isSimple && e /= [VChr] -> do
-                  (impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg "implicit op list"
+                  (impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg "implicit op list" False
                   if or $ drop (length e) argsUsed then do
-                     convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ changeFoldrToFoldl $ foldr1Fn [implType prev, implType impl1] }) prev) impl1) e "tuple in implicit op foldl"
+                     convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn "(foldl1.flip)" "id" [implType prev, implType impl1] }) prev) impl1) e "tuple in implicit op foldl"
                   else if or $ take (length e) argsUsed then do
                      return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
                   -- this is moderately annoying
@@ -241,7 +239,7 @@ tryArg (Fn reqArgUse argUsedness f) from prevTs _ _ = do
    let (nRets, argT) = f prevTs
    -- todo make fn0 cleaner here?
    -- fn0 doesn't use memoArgs but could, this makes things like ::::1 1 1 1 1 exponentially slow, because singleton needs to parse fully before seeing that second arg is ~
-   (impl,used) <- getLambdaValue nRets argT argUsedness from
+   (impl,used) <- getLambdaValue nRets argT argUsedness from (reqArgUse /= ReqDontCare)
    let success = Success (error"memoized args cannot be used after fn")
    return $ case reqArgUse of
       ReqArg | not (or used) && not ?isSimple -> FailConstFn impl
@@ -252,7 +250,7 @@ tryArg (Fn reqArgUse argUsedness f) from prevTs _ _ = do
 
 tryArg (OptionalFn f) from prevTs _ memoArgs = do
    let (nRets, argT) = f prevTs
-   (impl,used) <- getLambdaValue nRets argT UnusedArg from
+   (impl,used) <- getLambdaValue nRets argT UnusedArg from False
    code <- gets pdCode
    context <- gets pdContext
    if not (or used) then
@@ -338,7 +336,7 @@ specialZips a@[a1,a2] = let
    in
       -- if add then add to Quickref.hs !!!!!!!!!!
 
-      [('~',getLambdaValue 1 flatT UnusedArg "zip with by" >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
+      [('~',getLambdaValue 1 flatT UnusedArg "zip with by" False >>= \(impl,_) -> return $ app1Hs  ("(zipWith . \\f a b->f $ "++flatten++"(a,b))") impl { implType=VFn undefined [VList $ ret $ implType impl] })
       ,(':', createSpecialFn ([VList coercedType], "\\a1 b1->zipWith (\\a b->("++coerceFnA++"$ "++ap1Fn++"a)++"++coerceFnB++"b) a1 ("++ap2Fn++"b1)"))
       ,(',',createSpecialFn ([VList flatT], "\\a1 b1->zipWith (\\a b->"++flatten++" $ (a,b)) a1 ("++ap2Fn++"b1)"))
       ] ++ -- ,('z',toImpl $ zipImpl a)] ++
@@ -377,7 +375,7 @@ specialFolds [a1] =
       -- todo add more. bit ops? flipped ops?
       ] where
    takeAnotherOrderBy fName = do
-      getLambdaValue 1 (elemT a1) UnusedArg ("special fold "++fName) >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++defaultValue (elemT a1)++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
+      getLambdaValue 1 (elemT a1) UnusedArg ("special fold "++fName) False >>= (\(impl,_) -> return $ app1Hs ("(\\f (foldType,initFn) a->if null a then initFn $ "++defaultValue (elemT a1)++" else foldType (onToSelectBy ("++fName++") f) a)") impl { implType=VFn undefined (elemT a1) } )
 
 charClasses :: (?isSimple::Bool) => [(Char, ParseState Impl)]
 charClasses = map (\(c,hs)->(c,createImplMonad (VFn undefined [VInt]) (hsParen $ hsAtom hs))) charClassesDefs
@@ -421,8 +419,8 @@ getArgsH prevArgs prevNibs (spec:s) from memoArgs = do
       nibs = (prevNibs++if pdImplicitArgUsed afterState then [newSmartList []] else [theseNibs])
       prevArgTypes = map implType prevArgs
 
-getLambdaValue numRets argType argUsedness from = do
-   (newArg,body) <- pushLambdaArg argType argUsedness from $ \newArg -> do
+getLambdaValue numRets argType argUsedness from reqUsed = do
+   (newArg,body) <- pushLambdaArg argType argUsedness from $ \newArg checkIfArgsUsedFn -> do
       -- 0 is special case for letrec, this is a hacky way to replace the 3rd arg type
       -- with its real Fn type which can only be known after 2nd arg type is determined.
       -- It would very tricky to allow the the 3rd argument to do things like auto pair
@@ -446,10 +444,13 @@ getLambdaValue numRets argType argUsedness from = do
          return $ [a]++[makePairs argType b]++[makePairs argType c]
       else do
          bonus <- parseCountTuple
-         getValuesMemo (bonus + numRets)
+         if reqUsed then
+            getValuesMemo2 (bonus+1) (bonus + numRets) $ \context -> checkIfArgsUsedFn context
+         else
+            getValuesMemo (bonus + numRets)
    return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argsImpls newArg)
 
-pushLambdaArg :: [VT] -> ArgUsedness -> String -> (Args -> ParseState [Impl]) -> ParseState (Args, Impl)
+pushLambdaArg :: [VT] -> ArgUsedness -> String -> (Args -> ([Args] -> Bool) -> ParseState [Impl]) -> ParseState (Args, Impl)
 pushLambdaArg argType argUsedness from f = do
    code <- gets pdCode
    namedArgs <- if not (null argType) then case onlyCheckMatch code ([-1],["\\"]) of
@@ -470,12 +471,13 @@ pushLambdaArg argType argUsedness from f = do
 
    newArg <- newLambdaArg argType namedArgs argUsedness from
    depth <- gets pdContext >>= return.length
-   rets <- f newArg
+   rets <- f newArg (\context -> (any ((==UsedArg).implUsed) $ argsImpls $ getNewArg depth context))
    let body = makePairs argType rets
    finalContext <- gets pdContext
-   let newArgFinal = reverse finalContext !! (depth - 1) -- todo inefficient
+   let newArgFinal = getNewArg depth finalContext
    bodyWithLets <- popArg depth body
    return (newArgFinal, bodyWithLets)
+      where getNewArg depth context = reverse context !! (depth - 1) -- todo inefficient
 
 consumeNIdentifiers :: Int -> String -> ParseState [String]
 consumeNIdentifiers 0 _ = return []
@@ -518,6 +520,17 @@ getValuesMemo n = do
    let exprs = take n $ head $ exprsByOffset $ toThunk state
    mapM (putAddRep.snd) exprs
    return $ map fst exprs
+
+-- Same as getValuesMemo but get args between n and m args, stopping if condition (hacky I know)
+getValuesMemo2 :: (?isSimple::Bool) => Int -> Int -> ([Args] -> Bool) -> ParseState [Impl]
+getValuesMemo2 n m whileFn = do
+   state <- get
+   let exprs = take m $ head $ exprsByOffset $ toThunk state
+   let nonConstExprsHead = takeWhile (whileFn.pdContext.snd) exprs
+   let finalExprs = take (max n (length nonConstExprsHead + 1)) exprs
+   mapM (putAddRep.snd) finalExprs
+   return $ map fst finalExprs
+
 
 data Thunk = Thunk Code [Args]
 

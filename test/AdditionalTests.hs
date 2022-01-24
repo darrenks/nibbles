@@ -111,6 +111,8 @@
 
 -- RawTest "1 2 3": *2$ -> "2\n4\n6\n"
 
+-- RawTest implicit foldL: 3 @ -> "1\n"
+
 ----- Test implicit ops with tuples:
 -- RawTest: old_zip_,3"abc" ~$;$ "" $ -> "3a\n"
 -- RawTest: old_zip_,3"abc" $ -> "1\n2\n3\n"

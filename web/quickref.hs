@@ -172,7 +172,6 @@ drawLegend = do
       tr $ td "vec" >> td "same as \"any\" but used to denote that it will vectorize if a list is given"
       tr $ td "num" >> td "int|chr"
       tr $ td "[*]" >> td "list of any type"
-      tr $ td "[1]" >> td "list of non tuple"
       tr $ td "[a]" >> td "list of type variable \"a\""
       tr $ td "reqfn" >> td "fn but its argument must be used"
       tr $ td "const" >> td "fn but its argument must not be used (for extensions)"

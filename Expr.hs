@@ -51,7 +51,7 @@ data MatchTestData = MatchTestData { mtdTypes :: [VT]
                                    , mtdNibs :: [SmartList Int]
                                    , mtdState :: ParseData }
 
-data ReqArg = ReqDontCare | ReqArg | ReqConst
+data ReqArg = ReqDontCare | ReqArg | ReqConst deriving Eq
 
 -- https://stackoverflow.com/questions/7787317/list-of-different-types
 data ArgSpec

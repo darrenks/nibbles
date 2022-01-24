@@ -254,31 +254,24 @@ rawOps = [
    -- Test: !"abc" "ccb"? -> [3,3,2]
    op(('!',snd filterRep), [list, Fn ReqConst UnusedArg $ \[a1]->(1,elemT a1), ZipMode], \[a1,a2,rt]->"\\a b f->f a b" ~> ret rt),
 
-   -- Desc: hidden foldr1tuple
+   -- Desc: hidden foldr init tuple
    -- hidden Example: /,3 ~1 2 _ @  $ -> 2,1
    -- Test triple: /,3 ~~1 2 3 ;$ _ @  $ @ -> 3,2,1
+   -- Test tuple: /!,2 "ab""cd", ~"a" 3 @ @  $ -> "ab",0
    -- Test: / ,3 ~0 "" +@$ :$_ $ -> 6,"123"
-   op(('/',10), [nonTupleList, FakeAuto "tuple", auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
-
-   -- Desc: foldr
-   -- Example: /,3 1 +@$ -> 7
-   op(('/',10), [nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
-
+   op(('/',10), [list, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
    -- Desc: foldr1
    -- Example: /,3+@$ -> 6
    -- Test empty: /,0+@$ -> 0
+   -- Test coerce: /,3 p $ -> 1
+   -- Test tuple: / old_zip_ ,4 :1,3 +_$ *;$@  $ -> 10,6
+   op(('/',10), [list, Fn ReqArg UnusedArg $ \[a1]->(length $ elemT a1,concat $ replicate 2 $ elemT a1)], foldr1Fn "foldr1" "id" ~> elemT.a1),
+   -- Desc: foldr
+   -- Example: /,3 1 +@$ -> 7
    -- Test coerce: / ,3 0 "5" -> 5
-   op(('/',10), [nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
-      "\\a i f->foldr (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(x,y)) i a" ~> ret a2)),
+   -- Test tuple: / !,3,3,  1  ++_@$ -> 13
+   op(('/',10), [list, FakeAuto $ italic "tuple", Fn ReqConst UnusedArg $ \[a1]->(length $ elemT a1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], foldrFn2 "foldr" ~> ret.a2),
 
-   -- Desc: hidden foldr list tuple
-   -- hidden Example: / old_zip_ ,3 ,3 ~ 1 ++_@$ -> 13
-   op(('/',10), [list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
-   -- Desc: hidden foldr1 list tuple
-   -- hidden Example: /old_zip_"acb" ,3 ]$_ +;$@  $ -> 'c',6
-   -- Test coerce: / old_zip_ "acb" ,3 100 99 $ -> 'd',99
-   -- Test empty: / old_zip_ "" ,3 ]$_ +;$@  $ -> ' ',0
-   op(('/',10), [list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], foldr1Fn ~> elemT.a1),
    -- Desc: reverse
    -- Example: \,3 -> [3,2,1]
    op(reverseRep, [list], "reverse" ~> a1),
@@ -539,26 +532,19 @@ rawOps = [
          VList (_:_:_) -> unzipTuple a1
          otherwise -> "transpose.(:[])" ~> [VList [a1]]
       ),
-   -- Desc: hidden scanl1 tuple
+
+   -- Desc: hidden scanl init tuple
    -- hidden Example: =\,3 ~1 2 +*2$_ 3 -> [(1,2),(4,3),(7,3),(9,3)]
-   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, FakeAuto "tuple", auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
-
-   -- Desc: scanl
-   -- Example: =\,3 0 +@$ -> [0,1,3,6]
-   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, Fn ReqArg UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
-
+   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
    -- Desc: scanl1
    -- Example: =\,3+*2$@ -> [1,5,11]
    -- Test empty: =\,0+@$ -> []
-   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([nonTupleList, Fn ReqConst UnusedArg $ \[a1]->(1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], (\[a1,a2,a3]->
-      "\\a i f->scanl (\\x y->"++coerceTo (ret a2) (ret a3)++"$f(y,x)) i a" ~> VList (ret a2))),
-
-   -- Desc: hidden scanl list tuple
-   -- hidden Example: =\ old_zip_ ,3 "abc" ~0 ++_@$ -> [0,98,198,300]
-   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, auto, AnyS, fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "(scanl . flip)" ~> VList .ret.a2),
-   -- Desc: hidden scanl1 list tuple
-   -- hidden Example: =\ old_zip_ ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
-   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, fnx $ \[a1]->(length $ elemT a1, concat $ replicate 2 $ elemT a1)], (\[a1,a2]->"\\a f->scanl1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(y,x)) a") ~> VList .elemT.a1),
+   -- Test tuple: =\ old_zip_ ,3 "a.c" +_$ +,\@a;$ -> [(1,'a'),(3,'a'),(6,'b')]
+   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, Fn ReqArg UnusedArg $ \[a1]->(length $ elemT a1,concat $ replicate 2 $ elemT a1)], foldr1Fn "(scanl1 . flip)" "take 0.(:[])" ~> VList .elemT.a1),
+   -- Desc: scanl
+   -- Example: =\,3 0 +@$ -> [0,1,3,6]
+   -- Test tuple: =\ old_zip_ ,3 "abc" 0 ++_@$ -> [0,98,198,300]
+   extendOp "=\\" [lengthRep, mapRep] (shorterReason"just take length without map") ([list, FakeAuto $ italic "tuple", Fn ReqConst UnusedArg $ \[a1]->(length $ elemT a1,concat $ replicate 2 $ elemT a1), fn (\[a1,a2]->elemT a1 ++ ret a2)], foldrFn2 "(scanl . flip)" ~> VList .ret.a2),
 
    -- Desc: special scans
    -- Example: `\ ,4 + -> [1,3,6,10]
@@ -856,10 +842,15 @@ rawOps = [
    -- Test 3 tuple: old_zip_,3 old_zip_,3"abc" -> [(1,1,'a'),(2,2,'b'),(3,3,'c')]
    opM("old_zip_", [], [list, list], (\[a1,a2]->"zipWith (\\a b->"++flattenTuples (length$elemT a1) (length$elemT a2) ++ "(a,b))") ~> (VList .(concatMap elemT) :: [VT] -> VT))]
 
-foldr1Fn :: [VT] -> String
-foldr1Fn = (\[a1,a2]->"\\a f->if null a then "++defaultValue (elemT a1)++" else foldr1 (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
+foldr1Fn :: String -> String -> [VT] -> String
+foldr1Fn foldOp initOp = (\[a1,a2]->"\\a f->if null a then "++initOp++"$"++defaultValue (elemT a1)++" else "++foldOp++" (\\x y->"++coerceTo (elemT a1) (ret a2)++"$f$"++flattenTuples(length $ elemT a1)(length $ elemT a1)++"(x,y)) a")
 foldrFn :: String -> [VT] -> String
 foldrFn foldOp = (\[a1,a2,a3]->"\\a i f->"++foldOp++" (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i()) a")
+
+-- Same as foldr1Fn but initial value isn't a fn. Ideally this is the one that would always be used but there's some hacky code requiring the other for now.
+foldrFn2 :: String -> [VT] -> String
+foldrFn2 foldOp = (\[a1,a2,a3]->"\\a i f->"++foldOp++" (\\x y->"++coerceTo (ret a2) (ret a3)++"$f$"++flattenTuples(length $ elemT a1)(length $ ret a2)++"(x,y)) (i) a")
+
 
 mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")

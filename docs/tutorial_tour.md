@@ -21,8 +21,6 @@ If the second arg is a constant then it is treated as an initial value in the fo
 
 If `~` precedes the function it means it will be describing an initial value and that value is a tuple.
 
-If the list you are folding on is of a tuple, then `~` just means set initial value (and you would need another `~` to make that initial value a tuple). This is a bit annoying to have two conventions depending on the type of list, so that may change in the future.
-
 ### Special Folds / Scans
 See the foldop table at the bottom of the $QuickRef for all supported ops. Note that if using `>` or `<` it will take an additional expression and do a max/min by that function.
 
