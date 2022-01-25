@@ -131,7 +131,9 @@ Good places to use Nibbles for competing online are:
 $Feedback
 
 ## News
-- **June 29, 2021**: Nibbles is in **Alpha**! If you post code please designate it as Nibbles Alpha so as not to be confusing later when it becomes broken by language changes.
+- **Jan 24, 2021**: Check out [Nibbles Commenter by tails](http://www.tailsteam.com/cgi-bin/nbbdag/index.pl) for more verbose decompiles of nibbles solutions on anarchy golf. Especially nice for solutions to older problems with changes that weren't backwards compatible.
 
 - **Dec 21, 2021**: Nibbles is in **Beta**. Happy solstice and golfing! The language should be mostly stable except for bug fixes and documentation for a while.
+
+- **June 29, 2021**: Nibbles is in **Alpha**! If you post code please designate it as Nibbles Alpha so as not to be confusing later when it becomes broken by language changes.
 

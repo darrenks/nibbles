@@ -1,3 +1,9 @@
+-- Some tests for handling of saves within functions (these exposed bugs in the past)
+-- Test: ``; 5 ;4 2 3 -> 3
+-- Test: ;~ 5 -;4 @ -> -1
+-- That last ;$ is "ints"
+-- Test: ;~ 5 = $ ; :0 ;$ -> 0
+
 -- tuple
 -- Test: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 -- Test: old_zip_ .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]

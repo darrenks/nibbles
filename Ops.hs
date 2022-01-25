@@ -227,6 +227,12 @@ rawOps = [
    -- Test: |"Fizz" ~0 -> "Fizz"
    op(filterRep, [list, auto, AutoNot $ fn (elemT.a1)], "\\a f->filter (not.f) a" ~> a1),
 
+-- These will be added soon
+--    -- Desc: hidden filter not (separated so that we can detect constant for zip3)
+--    op(filterRep, [list, auto, AutoNot $ Fn ReqArg UnusedArg $ \[a1]->(1,elemT a1)], "\\a f->filter (not.f) a" ~> a1),
+--    -- Desc: zip3 with
+--    op([('!',snd filterRep), tildaRep], [list, auto, Fn ReqConst UnusedArg $ \[a1]->(1,elemT a1), list ], undefinedImpl),
+
    -- Desc: filter
    -- Example: |,5%$2 -> [1,3,5]
    -- Test chr truthy: |"a b\nc"$ -> "abc"
@@ -818,7 +824,7 @@ rawOps = [
    -- Example: /,3 \e a +a e -> 6
    opM("\\",[],[],parseError "\\ lambda detected outside of function start" :: ParseState Impl),
    -- Desc: name extras (; ok)
-   -- Example: : `/ 10 3 sets a a -> [3,1]
+   -- Example: `/ 10 3 sets a a -> 3,1
    -- Test 3 tuple: + =1 :~~2 3 4~ sets b c  + c b -> 9
    opM("sets",[],[],parseError "sets must be used after an expression that returns multiple values" :: ParseState Impl),
    -- Desc: error

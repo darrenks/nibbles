@@ -20,7 +20,7 @@ padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
 compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> [(String, VT, String)] -> Code -> (Impl, [Int], String, [String])
-compile finishFn separator cArgs input = evalState doCompile $ blankRep (consumeWhitespace input) args where
+compile finishFn separator cArgs input = evalState doCompile $ blankRep (consumeWhitespace input) args 0 where
 
    args =
       [ Args (Impl undefined (hsAtom"_") (Set.singleton 0) Nothing UsedArg:letArgs)
@@ -160,12 +160,12 @@ makePairs fromTypes args = foldl applyImpl initImpl args where
 -- add the current rep to the partialFinalState
 -- arg is the snd thing (monad state is the first)
 putAddRep :: ParseData -> ParseState ()
-putAddRep (ParseData code context nib lit dataUsed implicitArgUsed warnings) = do
+putAddRep (ParseData code context nib lit dataUsed implicitArgUsed warnings letid) = do
    appendRepH (nib,lit)
    dataUsed1 <- gets pdDataUsed
    context1 <- gets pdContext
    warnings1 <- gets pdLitWarnings
-   modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1, pdImplicitArgUsed=implicitArgUsed }
+   modify $ \s -> s { pdCode=code, pdContext=unionUsed context1 context, pdDataUsed=dataUsed1 || dataUsed, pdLitWarnings = warnings ++ warnings1, pdImplicitArgUsed=implicitArgUsed, pdNextUniqLetId=letid }
 
 unionUsed :: [Args] -> [Args] -> [Args]
 unionUsed lhs rhs =
@@ -212,9 +212,9 @@ tryArg (FakeAuto _) _ _ _ memoArgs = do
 
 tryArg (BinCode b) _ _ _ memoArgs = do
    matched <- match ([b], [])
+   stateThunk <- toThunk
    code <- gets pdCode
-   context <- gets pdContext
-   let regenedArgs = head $ exprsByOffset $ Thunk code context
+   let regenedArgs = head $ exprsByOffset stateThunk
    return $ if matched then Success (if isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg bincode mismatch"
 
 tryArg NotEOF _ _ _ memoArgs = do
@@ -226,9 +226,9 @@ tryArg NotEOF _ _ _ memoArgs = do
 
 tryArg (LitCode l) _ _ _ memoArgs = do
    matched <- match ([], [[l]])
+   stateThunk <- toThunk
    code <- gets pdCode
-   context <- gets pdContext
-   let regenedArgs = head $ exprsByOffset $ Thunk code context
+   let regenedArgs = head $ exprsByOffset stateThunk
    return $ if matched then Success (if not $ isBinary code then regenedArgs else memoArgs) [] else FailTypeMismatch "arg litcode mismatch"
 
 tryArg AnyS from prevTs _ _ =
@@ -253,17 +253,17 @@ tryArg (OptionalFn f) from prevTs _ memoArgs = do
    (impl,used) <- getLambdaValue nRets argT UnusedArg from False
    code <- gets pdCode
    context <- gets pdContext
+   nextUniqLetId <- gets pdNextUniqLetId
    if not (or used) then
-      return $ Success ((impl, blankRep code context):error "cannot used memo args after the one after optional fn") [noArgsUsed { implType=ItWasAConstant}]
+      return $ Success ((impl, blankRep code context nextUniqLetId):error "cannot used memo args after the one after optional fn") [noArgsUsed { implType=ItWasAConstant}]
    else
-      return $ Success (head $ exprsByOffset $ Thunk code context) [impl]
+      return $ Success (head $ exprsByOffset $ Thunk code context nextUniqLetId) [impl]
 
 tryArg (OrAuto _ nonAutoSpec) from prevTs nibs memoArgs = do
    matched <- match tildaOp
    if matched
    then return $ Success (tail memoArgs) [noArgsUsed { implType=OptionYes }]
    else tryArg nonAutoSpec from prevTs nibs memoArgs
-
 
 tryArg (AutoNot fn) from prevTs _ _ = do
    matched <- match tildaOp
@@ -426,6 +426,7 @@ getLambdaValue numRets argType argUsedness from reqUsed = do
       -- It would very tricky to allow the the 3rd argument to do things like auto pair
       -- without this (and do things like only add the recursive function to args for it.
       if numRets == 0 then do
+         origDepth <- gets pdContext >>= return.length
          let nonRecImpls = init $ argsImpls newArg
          modify $ \s -> s { pdContext=Args nonRecImpls LambdaArg "recursive fn" : tail (pdContext s) }
          match <- match tildaOp
@@ -439,7 +440,8 @@ getLambdaValue numRets argType argUsedness from reqUsed = do
          let recType = VFn from toType
          let recImpl = (last $ argsImpls newArg) { implType=recType }
          let recArg = Args (nonRecImpls ++ [recImpl]) LambdaArg "recursive fn"
-         modify $ \s -> s { pdContext=recArg : tail (pdContext s) }
+         newDepth <- gets pdContext >>= return.length -- it could be different due to saves
+         modify $ \s -> s { pdContext = replaceTailOfIth (newDepth-origDepth) (pdContext s) recImpl }
          c <- getNArgs toType
          return $ [a]++[makePairs argType b]++[makePairs argType c]
       else do
@@ -450,6 +452,12 @@ getLambdaValue numRets argType argUsedness from reqUsed = do
             getValuesMemo (bonus + numRets)
    return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argsImpls newArg)
 
+replaceTailOfIth :: Int -> [Args] -> Impl -> [Args]
+replaceTailOfIth n context new = zipWith (\i arg->
+      if i==n then arg { argsImpls = (argsImpls arg) ++ [new] }
+      else arg
+   ) [0..] context
+
 pushLambdaArg :: [VT] -> ArgUsedness -> String -> (Args -> ([Args] -> Bool) -> ParseState [Impl]) -> ParseState (Args, Impl)
 pushLambdaArg argType argUsedness from f = do
    code <- gets pdCode
@@ -459,7 +467,7 @@ pushLambdaArg argType argUsedness from f = do
          case maybeName of
             Left (name,nextCode2) -> do
                modify $ \s -> s { pdCode = nextCode2 }
-               rest <- consumeNIdentifiers (length argType-1) "lambda"
+               rest <- consumeNIdentifiers (length argType-1) $ "lambda (expecting "++(show$length argType)++" args)"
                return $ Just $ name : rest
             Right reason | reason == inUseAlreadyMsg -> do
                -- They might have meant to use a lambda
@@ -511,38 +519,41 @@ get1Value = do
    v <- getValuesMemo 1
    return $ head v
 
-toThunk state = Thunk (pdCode state) (pdContext state)
+toThunk :: ParseState Thunk
+toThunk = do
+   state <- get
+   return $ Thunk (pdCode state) (pdContext state) (pdNextUniqLetId state)
 
 -- Gets the arg list
 getValuesMemo :: (?isSimple::Bool) => Int -> ParseState [Impl]
 getValuesMemo n = do
-   state <- get
-   let exprs = take n $ head $ exprsByOffset $ toThunk state
+   stateThunk <- toThunk
+   let exprs = take n $ head $ exprsByOffset stateThunk
    mapM (putAddRep.snd) exprs
    return $ map fst exprs
 
 -- Same as getValuesMemo but get args between n and m args, stopping if condition (hacky I know)
 getValuesMemo2 :: (?isSimple::Bool) => Int -> Int -> ([Args] -> Bool) -> ParseState [Impl]
 getValuesMemo2 n m whileFn = do
-   state <- get
-   let exprs = take m $ head $ exprsByOffset $ toThunk state
+   stateThunk <- toThunk
+   let exprs = take m $ head $ exprsByOffset stateThunk
    let nonConstExprsHead = takeWhile (whileFn.pdContext.snd) exprs
    let finalExprs = take (max n (length nonConstExprsHead + 1)) exprs
    mapM (putAddRep.snd) finalExprs
    return $ map fst finalExprs
 
 
-data Thunk = Thunk Code [Args]
+data Thunk = Thunk Code [Args] Int
 
 -- Gets the arg list (given an arg from each possible offset after this one)
 getValues :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]] -> [(Impl, ParseData)]
-getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
+getValues (Thunk code context nextUniqLetId) offsetExprs = (impl, after) : getValues afterThunk offsetAfterExprs where
    (impl, after) = runState (do
       didThem <- doLitLets
       case didThem of
          Just nextGetValue -> nextGetValue
-         Nothing -> getValue offsetExprs) $ blankRep code context
-   afterThunk = Thunk (pdCode after) (pdContext after)
+         Nothing -> getValue offsetExprs) $ blankRep code context nextUniqLetId
+   afterThunk = Thunk (pdCode after) (pdContext after) (pdNextUniqLetId after)
    offsetAfterExprs =
       if length (pdContext after) == length context
       then drop (cp (pdCode after) - cp code) offsetExprs
@@ -550,9 +561,9 @@ getValues (Thunk code context) offsetExprs = (impl, after) : getValues afterThun
 
 -- Gets the arg lists from each possible offset (ParseData is what is after the Impl)
 exprsByOffset :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]]
-exprsByOffset (Thunk code context) =
-   getValues (Thunk code context) rest : rest where
-      rest = exprsByOffset (Thunk (nextOffset code) context)
+exprsByOffset thunk@(Thunk code context nextUniqLetId) =
+   getValues thunk rest : rest where
+      rest = exprsByOffset (Thunk (nextOffset code) context nextUniqLetId)
 
 data FailedMatch = FailedMatch {
    opName :: String,
@@ -567,12 +578,13 @@ getValue memoArgOffsets = do
    identifier <- getArgByName
    if empty code
    then argImplicit
-   else if isJust $ identifier then return $ fromMaybe undefined identifier
+   else if isJust $ identifier then applyFirstClassFn (fromMaybe undefined identifier)
    else getValueH ops memoArgOffsets []
 getValueH [] _ failedMatches = parseError $ "Parse Error: no matching op" ++ if null attempts then " (no matching identifier)" else ", tried: " ++ attempts
    where attempts = flip concatMap failedMatches $
             \(FailedMatch opName matchFailureReason expectedTypes) ->
                "\n"++opName++" "++unwords expectedTypes++", "++matchFailureReason
+
 getValueH ((isPriority,lit,nib,op):otherOps) memoArgOffsets failedMatches = do
    code <- gets pdCode
    let tryRest newFailedMatches = getValueH otherOps memoArgOffsets newFailedMatches

@@ -14,6 +14,7 @@ import State
 import qualified Data.Set as Set
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
+letStr n tn = "larg" ++ show n ++ "t" ++ show tn
 
 newLambdaArg :: [VT] -> Maybe [String] -> ArgUsedness -> String -> ParseState Args
 newLambdaArg argT names argUsedness from = do
@@ -36,8 +37,9 @@ transposeMaybe names = maybe (repeat Nothing) (map Just) names
 newLetArg :: Maybe [String] -> ArgUsedness -> Impl -> [VT] -> String -> ParseState Args
 newLetArg names argUsedness (Impl _ defHs defDepth _ usedness) defTypes from = do
    context <- gets pdContext
-   let depth = 1 + length context
-   let impls = zipWith3 (\t name tn -> Impl t (hsAtom $ argStr depth tn) defDepth name argUsedness) defTypes (transposeMaybe names) [1..]
+   nextLetId <- gets pdNextUniqLetId
+   modify $ \s -> s { pdNextUniqLetId=nextLetId+1 }
+   let impls = zipWith3 (\t name tn -> Impl t (hsAtom $ letStr nextLetId tn) defDepth name argUsedness) defTypes (transposeMaybe names) [1..]
    let newArg = Args impls (LetArg defHs) from
    modify $ \s -> s { pdContext=newArg:context }
    return newArg
