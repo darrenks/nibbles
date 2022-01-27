@@ -2,7 +2,7 @@
 module ParseArgs(isNibblesArg, toLetArgs) where
 
 import Data.Char
-import Data.List (nub,stripPrefix,intercalate)
+import Data.List (nub,stripPrefix,intercalate,isSuffixOf)
 import Data.Maybe
 import Polylib(tupleLambda)
 import Parse(errorUnderLine)
@@ -20,8 +20,12 @@ isNibblesArg ('(':_) = True
 isNibblesArg ('[':_) = True
 isNibblesArg ('"':_) = True
 isNibblesArg ('\'':_) = True
-isNibblesArg ('-':c:_) = isDigit c
-isNibblesArg (c:_) = isDigit c
+isNibblesArg ('-':s) = isPositiveIntegerArg s
+isNibblesArg s = isPositiveIntegerArg s
+
+isPositiveIntegerArg (c:s) = isDigit c
+	&& not (isSuffixOf ".nbl" s)
+	&& not (isSuffixOf ".nbb" s)
 
 getArgTypes :: String -> [VT]
 getArgTypes s = case getArgTypesH [EofBracket] s of

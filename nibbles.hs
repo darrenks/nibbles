@@ -9,7 +9,6 @@ import System.FilePath
 import System.Process
 import System.Exit
 import Control.Monad
-import Data.Char(isDigit)
 import Data.List(intercalate)
 import Data.List.Split (chunksOf,splitOn) -- needs cabal install --lib split
 
@@ -78,7 +77,7 @@ main=do
    let nibBytes = toBytes paddedNibs
    let (_,_,binLit,_) = compileFn (Nib (paddedNibs) 0)
 
-   case filter isOpt args of
+   case opts of
       -- if no c/e/v option specified then assume it means run
       ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
          errored <- litErrorHandle "Warning" bRaw litWarnings
@@ -129,7 +128,7 @@ checkWouldExtractCorrectly binLit lit = do
       hPutStrLn stderr "Please report this as it is a bug (there is supposed to be a more clear accidental extension detection, this is just a fail safe)"
 
 
-isOpt arg = isPrefixOf "-" arg && null (takeWhile isDigit $ tail arg)
+isOpt arg = isPrefixOf "-" arg
 toBytes = map toByte . chunksOf 2
 isOtherOption = flip elem ["-simple"]
 isSimple = elem "-simple"

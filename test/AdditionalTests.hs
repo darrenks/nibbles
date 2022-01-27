@@ -4,6 +4,12 @@
 -- That last ;$ is "ints"
 -- Test: ;~ 5 = $ ; :0 ;$ -> 0
 
+-- First ret is not constant, but others are
+-- Test: / .,1 ~~1 2 3  $ 4 5  $  @ -> 1,2,3
+-- First ret is constant (should become initial value)
+-- Test: / .,2 ~~1 2 3  2  5 -> 5
+-- Test: / .,0 ~~1 2 3  2  5 -> 2
+
 -- tuple
 -- Test: .,3 ~$1 -> [(1,1),(2,1),(3,1)]
 -- Test: old_zip_ .,1 ~~$ 2 3 :4~ -> [(1,2,3,4)]

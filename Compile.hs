@@ -446,8 +446,8 @@ getLambdaValue numRets argType argUsedness from reqUsed = do
          return $ [a]++[makePairs argType b]++[makePairs argType c]
       else do
          bonus <- parseCountTuple
-         if reqUsed then
-            getValuesMemo2 (bonus+1) (bonus + numRets) $ \context -> checkIfArgsUsedFn context
+         if reqUsed && bonus == 0 then
+            getValuesMemo2 numRets $ \context -> checkIfArgsUsedFn context
          else
             getValuesMemo (bonus + numRets)
    return $ (addLambda newArg body, map (\impl->UsedArg==implUsed impl) $ argsImpls newArg)
@@ -532,13 +532,14 @@ getValuesMemo n = do
    mapM (putAddRep.snd) exprs
    return $ map fst exprs
 
--- Same as getValuesMemo but get args between n and m args, stopping if condition (hacky I know)
-getValuesMemo2 :: (?isSimple::Bool) => Int -> Int -> ([Args] -> Bool) -> ParseState [Impl]
-getValuesMemo2 n m whileFn = do
+-- Same as getValuesMemo but get only gets more than 1 if cond true (hacky I know)
+-- ultimately this is so that foldr1/etc can use foldr instead if constant
+getValuesMemo2 :: (?isSimple::Bool) => Int -> ([Args] -> Bool) -> ParseState [Impl]
+getValuesMemo2 n moreIfFn = do
    stateThunk <- toThunk
-   let exprs = take m $ head $ exprsByOffset stateThunk
-   let nonConstExprsHead = takeWhile (whileFn.pdContext.snd) exprs
-   let finalExprs = take (max n (length nonConstExprsHead + 1)) exprs
+   let exprs = take n $ head $ exprsByOffset stateThunk
+   let more = moreIfFn $ pdContext $ snd $ head exprs
+   let finalExprs = if more then exprs else [head exprs]
    mapM (putAddRep.snd) finalExprs
    return $ map fst finalExprs
 

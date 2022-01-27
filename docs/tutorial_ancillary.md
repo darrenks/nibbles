@@ -182,7 +182,7 @@ In general you do not actually have to think about extensions, it is all abstrac
 
 Note that there is no limit to the number of extensions that can be created, but in order to keep the language simple I have decided to limit extensions to 2 nibbles (in most cases). There are probably hundreds of possible 3 nibble extensions, but finding them and avoiding extension collisions would be extremely unmanageable, besides a primary goal of Nibbles is to be simple (few operations) anyway.
 
-If you find possible two nibble extensions, please let me know!
+If you find possible two nibble extensions, please let me know (this [full ref](fullref.html) may help find them - it shows some hidden ops that are how the shown ops work behind the scenes, also columns are sortable)!
 
 ### Commutative Extensions
 
