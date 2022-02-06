@@ -3,7 +3,7 @@ module Types where
 import Data.List(intercalate)
 import Data.Maybe
 
-data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | InvalidType
+data VT = VInt | VChr | VList [VT] | VFn [VT] [VT] | AutoType | InvalidType
    | OptionYes | OptionNo | ItWasAConstant | StaticInt Integer -- only for code gen, not real types
    -- | VMaybe VT | Nothing -- (other ideas)
    deriving (Show, Eq)
@@ -30,11 +30,11 @@ toTuple s = "(" ++ intercalate "," s ++ ")"
 toHsType :: VT -> Maybe String
 toHsType VInt = Just "Integer"
 toHsType VChr = toHsType VInt
--- toHsType InvalidType = "a"
 toHsType (VList ts) =
    toHsTypes ts >>= \s -> Just $ "["++s++"]"
 toHsType (VFn a b) = Nothing
 toHsType (ItWasAConstant) = Nothing
+toHsType (AutoType) = Nothing
 toHsType (InvalidType) = Nothing
 toHsType (StaticInt _) = Nothing
 toHsType e = error $ "cant toHsType " ++ show e

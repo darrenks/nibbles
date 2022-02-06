@@ -134,6 +134,8 @@ isBaseElemChr (VList [e]) = isBaseElemChr e
 isBaseElemChr _ = False
 
 coerce2 :: [VT] -> [VT] -> [VT]
+coerce2 [AutoType] t = t
+coerce2 t [AutoType] = t
 coerce2 [VChr] [VChr] = [VChr]
 coerce2 [VInt] [VInt] = [VInt]
 coerce2 [a] [b] | isNum a && isNum b = [vstr]
@@ -149,6 +151,7 @@ coerce2 [a] (b:_) = coerce2 [a] [b]
 coerce2 (a:_) [b] = coerce2 [a] [b]
 coerce2 (a:as) (b:bs) = coerce2 [a] [b] ++ coerce2 as bs
 
+coerceToH (a, AutoType) = "(const "++defaultValue [a]++")"
 -- || (baseElem a == VInt && cidim [a] == cidim [b])
 coerceToH (a, b) | a==b || (isNum a && isNum b) = "(id)"
 coerceToH (VList [VInt], VList [VChr]) = "(id)"

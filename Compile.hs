@@ -192,8 +192,7 @@ tryArg (Cond desc c) _ prevTypes nibs memoArgs = do
    state <- get
    code <- gets pdCode
 
-   if (isNothing $ onlyCheckMatch code tildaOp) -- check this to avoid passing autos with undefined type
-      && c (MatchTestData (prevTypes++[implType impl]) nibs state)
+   if c (MatchTestData (prevTypes++[implType impl]) nibs state)
    then do
       putAddRep nextState
       return $ Success (tail memoArgs) [impl]
@@ -532,7 +531,7 @@ getValuesMemo n = do
    mapM (putAddRep.snd) exprs
    return $ map fst exprs
 
--- Same as getValuesMemo but get only gets more than 1 if cond true (hacky I know)
+-- Same as getValuesMemo but only gets more than 1 if cond true (hacky I know)
 -- ultimately this is so that foldr1/etc can use foldr instead if constant
 getValuesMemo2 :: (?isSimple::Bool) => Int -> ([Args] -> Bool) -> ParseState [Impl]
 getValuesMemo2 n moreIfFn = do

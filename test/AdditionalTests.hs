@@ -30,6 +30,8 @@
 -- Test: testCoerce2 'a' :,3~ -> "[VList [VList [VList [VChr]]]]"
 -- Test: testCoerce2 'a' :"abc"~ -> "[VList [VList [VChr]]]"
 
+-- Test: testCoerce2 ,3 ~ -> "[VList [VInt]]"
+-- Test: testCoerce2 ~ ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 ,3 -> "[VList [VInt]]"
 -- Test: testCoerce2 ,3 "abc" -> "[VList [VChr]]"
 -- Test: testCoerce2 ,3 :,3~ -> "[VList [VList [VInt]]]"
@@ -56,6 +58,7 @@
 -- Test: testCoerceToInt ^3:,3~ -> 18
 -- Test: testCoerceToInt ^3:"3"~ -> 9
 
+-- Test: testCoerceToChr ~ -> ' '
 -- Test: testCoerceToChr 100 -> 'd'
 -- Test: testCoerceToChr 'a' -> 'a'
 -- Test: testCoerceToChr :100 200 -> 'd'

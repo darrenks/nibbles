@@ -39,7 +39,7 @@ rawOps = [
    -- Desc: hidden auto value
    -- This is only here so that auto handling can use memoized args after.
    -- and so that if ops check type it won't match
-   op(tildaRep, [], (error"undefined auto impl"::String)~>InvalidType),
+   op(tildaRep, [], "error\"undefined auto impl\""~>AutoType),
    -- Desc: integer
    -- Example (size 2): 3 -> 3
    -- Test (size 2): 0 -> 0
@@ -671,8 +671,12 @@ rawOps = [
    -- Test end splits: `% "abca" "a" -> ["","bc",""]
    -- Test promote: `% ,5 3 -> [[1,2],[4,5]]
    -- Test coerce: `% "abc" 'b' -> ["a","c"]
-   extendOp "`%" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,any1], \[a1,a2]->
-      "\\a needle->splitOn ("++coerceTo [a1] [a2]++" needle) a" ~> vList1 a1),
+   -- Test auto: `% "a b c" ~ -> ["a","b","c"]
+   extendOp "`%" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([list,OrAuto "default" any1], \[a1,a2]->
+      (if a2==OptionYes then
+         "\\a -> splitOn ["++defaultValue (elemT a1)++"] a"
+      else
+         "\\a needle->splitOn ("++coerceTo [a1] [a2]++" needle) a") ~> vList1 a1),
    -- Desc: strip
    -- Example: -~ " bcd\n\n" -> "bcd"
    opM("-~",[9,0],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
@@ -736,6 +740,7 @@ rawOps = [
    -- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
    -- Test tuple: `. ~1 2 @$ -> [(1,2),(2,1)]
    -- Test lazy: <1 `. ~4 5 ? $ 0 error "not lazy" -> [(4,5)]
+   -- Test default: `. ~1 2 3 ~ -> [(1,2),(3,0)]
    extendOp "`." [reverseRep, strRep] (shorterReason"just write the string in reverse") ([AnyS, AutoOption "inf", fnx (\[a1,o1]->(length $ ret a1, ret a1))],
       \[a1,o1,a2]->"\\i f->"++(if o1==OptionYes then "iterate" else "iterateWhileUniq") ++"("++coerceTo (ret a1) (ret a2)++".f) (i())" ~> VList (ret a1)),
 
@@ -822,14 +827,15 @@ rawOps = [
    opM("let",[],[],(error "impossible 41"::String)~>InvalidType),
    -- Desc: lambda (only in fns)
    -- Example: /,3 \e a +a e -> 6
-   opM("\\",[],[],parseError "\\ lambda detected outside of function start" :: ParseState Impl),
+   opM("\\",[],[],parseError $ "\\ lambda detected outside of function start (arg type is not a list so not a reverse op)" :: ParseState Impl),
    -- Desc: name extras (; ok)
    -- Example: `/ 10 3 sets a a -> 3,1
    -- Test 3 tuple: + =1 :~~2 3 4~ sets b c  + c b -> 9
    opM("sets",[],[],parseError "sets must be used after an expression that returns multiple values" :: ParseState Impl),
    -- Desc: error
    -- Example: error +2 1 -> error "3"
-   extendOp "error" [diffRep, rangeRep, tildaRep, strRep] "- ,~ str is invalidly typed" ([any1], \[a1]->"\\s->errorWithoutStackTrace $ \"Error: \"++aToS ("++(if a1==vstr then "" else inspect a1)++" s)++\" (\"++"++ show version++"++\")\"" ~> vstr),
+   -- todo: really it's return type should be wild
+   extendOp "error" [diffRep, rangeRep, tildaRep, strRep] "- ,~ str is invalidly typed" ([any1], \[a1]->"\\s->errorWithoutStackTrace $ \"Error: \"++aToS ("++(if a1==vstr then "" else inspect a1)++" s)++\" (\"++"++ show version++"++\")\"" ~> a1),
 
    opM("testCoerce2", [], [any1, any1], testCoerce2 ~> vstr),
    opM("testCoerceToInt", [], [any1], testCoerceTo [VInt]),
@@ -862,7 +868,7 @@ mapFn :: [VT] -> String
 mapFn = (\[a1,a2]->"(\\a f->map f a)")
 
 recursionDef = ([AnyS, fnx (\[a1]->(0, ret a1++[InvalidType]))],
-   \[a1,a2]->
+   \[a1,a2]-> -- todo fix memoization slowness in some cases
       "\\x f -> memoFix (\\rec x->let (a,b,c)=f ("++flattenTuples (length $ ret a1) 1++"(x,rec)) in if a then c else b) (x())" ~> ret (head $ tail $ ret a2))
 
 ifBodyArgs =
