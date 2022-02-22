@@ -89,6 +89,7 @@ intToNib (-7) = [0,1,9]
 intToNib (-10) = [0,14]
 intToNib n | n<0 = 0:intToNibH (-1 - n)
 intToNib n = intToNibH n
+
 intToNibH n = init digits ++ [last digits + 8]
    where digits = map digitToInt $ showOct n ""
 
@@ -101,7 +102,8 @@ parseStr(Nib (a:s) cp)
       then ([""], Nib (tail s) (cp+2))
       else let (r2,code2) = parseStr $ Nib (drop 1 s) (cp+2)
          in ("":r2,code2)
-   | c==127 = cont (toByte $ tail s) 4
+   | c==127 = let (i,Nib _ cp2) = parseNibInt (tail s) 0 (cp+2) in
+      cont (chr $ fromIntegral $ if i>31 then i+127-31 else i) (cp2-cp)
    | otherwise = cont (chr c) 2
    where
       a8=a`mod`8
@@ -129,7 +131,8 @@ strToNib [""] = [2,0]
 strToNib [s] = (concatMap (\(c,last)->let oc = ord c in case c of
    '\n' -> [last]
    ' ' -> [1+last]
-   c | oc > 126 || oc < 32 -> [last+7, 15, div oc 16, mod oc 16]
+   c | oc > 126 || oc < 32 -> let offsetMinusPrintables = if oc > 126 then (oc-127+31) else oc
+      in [last+7, 15] ++ intToNibH offsetMinusPrintables
    _ -> [last+div oc 16, mod oc 16]
    ) (zip s $ take (length s - 1) (repeat 0) ++ [8]))
 
@@ -171,6 +174,7 @@ chrToNib c =
    Just i -> [if i < 2 then i else i + 6]
    Nothing -> if c >= chr 32 && c < chr 127
       then fromByte c
+      else if c >= chr 256 then errorWithoutStackTrace "single quote char of character >256 is not supported, use ch <int>"
       else let [a,b] = fromByte (swap127 c)
          in fromByte (specialChars127n!!(if a<2 then a else a-6))++[b]
 

@@ -60,7 +60,8 @@ rawOps = [
    -- Test space (size 2): " " -> " "
    -- Test empty (size 3): "" -> ""
    -- Test escapes: "\"" -> "\""
-   -- Test binary (size 5): "\200" -> "\200"
+   -- Test binary (size 6): "\200" -> "\200"
+   -- Test big binary (size 8): "\9839" -> "\9839"
    -- Test list of strs (size 5) : """a" -> ["","a"]
    -- Test list of strs (size 7) : "a""" -> ["a",""]
    -- Test list of strs (size 7) : "a""b" -> ["a","b"]
@@ -824,7 +825,7 @@ rawOps = [
    -- This will be impossible to match because let is handled specially, it would have maybe be better to use this for real by creating an arg type identifier though.
    -- Desc: let statement
    -- Example: let x +5 4  *x x -> 81
-   opM("let",[],[],(error "impossible 41"::String)~>InvalidType),
+  opM("let",[],[],(error "impossible 41"::String)~>InvalidType),
    -- Desc: lambda (only in fns)
    -- Example: /,3 \e a +a e -> 6
    opM("\\",[],[],parseError $ "\\ lambda detected outside of function start (arg type is not a list so not a reverse op)" :: ParseState Impl),

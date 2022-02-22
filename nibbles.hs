@@ -51,22 +51,28 @@ headerRaw = [litFile|Header.hs|]
 
 main=do
    defaultEncoding <- getLocaleEncoding
-   setLocaleEncoding char8 -- (only for file reading/writing)
    args <- getArgs
    let (progArgs, nonProgArgs) = partition isNibblesArg args
    let (opts,fileArgs) = partition isOpt nonProgArgs
-   let (contentsIO, basename, parseMode) = case fileArgs of
-         [] -> (do
+   (contents, basename, parseMode) <- case fileArgs of
+         [] -> do
             when (not$null progArgs) (hPutStrLn stderr "Warning: args are being treated as input args and nibbles code is being read from stdin")
-            getContents
-            , "a", FromLit)
-         [f] -> (readFile f, base, case ext of
-            ".nbb" -> FromBytes
-            ".nbl" -> FromLit
-            _ -> errorWithoutStackTrace "file extension must be .nbb or .nbl")
-               where (base, ext) = splitExtension f
+            contents <- getContents
+            return (contents, "a", FromLit)
+         [f] -> case ext of
+            ".nbb" -> do
+               setLocaleEncoding latin1
+               contents <- readFile f
+               setLocaleEncoding defaultEncoding
+               return (contents, base, FromBytes)
+            ".nbl" -> do
+               setLocaleEncoding utf8
+               contents <- readFile f
+               setLocaleEncoding defaultEncoding
+               return (contents, base, FromLit)
+            _ -> errorWithoutStackTrace "file extension must be .nbb or .nbl"
+            where (base, ext) = splitExtension f
          e -> errorWithoutStackTrace $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
-   contents <- contentsIO
    let ?isSimple = isSimple args
    let (cargs, reader) = toLetArgs progArgs
    let compileFn = compile finish "" cargs
@@ -89,6 +95,7 @@ main=do
                   "size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ div (length bRaw + 1) 2) ++ " bytes)"
             return nibBytes
          fullHs <- toFullHs impl maybeNibBytes reader
+         setLocaleEncoding utf8
          writeFile "out.hs" fullHs
          setLocaleEncoding defaultEncoding
          when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
@@ -98,7 +105,9 @@ main=do
          when errored $ errorWithoutStackTrace "aborting"
          let outname = (basename ++ ".nbb")
          hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
+         setLocaleEncoding latin1
          writeFile outname nibBytes
+         setLocaleEncoding defaultEncoding
       ["-e"] -> putStrLn lit
       ["-v"] -> putStrLn version
       e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage

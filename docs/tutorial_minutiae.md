@@ -16,7 +16,7 @@ There are a few exceptions:
 
 *  Space and newline each require only 1 nibble.
 *  Empty string is 3 nibbles.
-*  Binary characters (ascii values <32 or >=127) require 4 nibbles per character (this seems bad, but is necessary to allow for the 1 nibble space/newline and no terminators).
+*  Unicode chars <32 or >=127 require 2 nibbles + 1 nibble per octal digit of the character - 96. If these are common in your string you are probably better off encoding your data manually with base conversion (see below). Note that your literate program is assumed to be encoded in utf8, but that the output of your program is left up to the system.
 
 **Chars** aren't that common so require 2 nibbles to initiate and 2 nibbles to encode their value. But since they don't need to use any bits to terminate, they have more special values. The following chars require only 3 nibbles.
 
@@ -31,7 +31,7 @@ There are a few exceptions:
 *  A
 *  0
 
-Binary chars require 5 nibbles.
+Unprintable unicode chars < 256 require 5 nibbles, for larger values use `ch` and an integer.
 
 ## Coercion Behavior
 

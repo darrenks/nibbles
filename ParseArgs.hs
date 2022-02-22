@@ -24,8 +24,8 @@ isNibblesArg ('-':s) = isPositiveIntegerArg s
 isNibblesArg s = isPositiveIntegerArg s
 
 isPositiveIntegerArg (c:s) = isDigit c
-	&& not (isSuffixOf ".nbl" s)
-	&& not (isSuffixOf ".nbb" s)
+   && not (isSuffixOf ".nbl" s)
+   && not (isSuffixOf ".nbb" s)
 
 getArgTypes :: String -> [VT]
 getArgTypes s = case getArgTypesH [EofBracket] s of
