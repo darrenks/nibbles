@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 
 
 -- if change, change downloads.md and install.md
-version = "nibbles 0.24"
+version = "nibbles 0.24+ (unstable)"
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
 data OptionalLets = OptionalLets [VT] -- used to denote that the extra rets should be marked optional

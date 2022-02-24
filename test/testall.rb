@@ -24,6 +24,9 @@ pass &&= $?.exitstatus==0
 puts `ruby test/litonly_integration_test.rb`
 pass &&= $?.exitstatus==0
 
+puts `ruby test/utf8_integration_test.rb`
+pass &&= $?.exitstatus==0
+
 # test generate quickref (not in distributed code)
 if Dir.exist?('web')
    puts 'testing quickref compile'

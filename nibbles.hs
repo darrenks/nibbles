@@ -50,7 +50,6 @@ headerRaw :: String
 headerRaw = [litFile|Header.hs|]
 
 main=do
-   defaultEncoding <- getLocaleEncoding
    args <- getArgs
    let (progArgs, nonProgArgs) = partition isNibblesArg args
    let (opts,fileArgs) = partition isOpt nonProgArgs
@@ -63,12 +62,10 @@ main=do
             ".nbb" -> do
                setLocaleEncoding latin1
                contents <- readFile f
-               setLocaleEncoding defaultEncoding
                return (contents, base, FromBytes)
             ".nbl" -> do
                setLocaleEncoding utf8
                contents <- readFile f
-               setLocaleEncoding defaultEncoding
                return (contents, base, FromLit)
             _ -> errorWithoutStackTrace "file extension must be .nbb or .nbl"
             where (base, ext) = splitExtension f
@@ -97,7 +94,6 @@ main=do
          fullHs <- toFullHs impl maybeNibBytes reader
          setLocaleEncoding utf8
          writeFile "out.hs" fullHs
-         setLocaleEncoding defaultEncoding
          when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
       ["-c"] -> do
          checkWouldExtractCorrectly binLit lit
@@ -107,7 +103,6 @@ main=do
          hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
          setLocaleEncoding latin1
          writeFile outname nibBytes
-         setLocaleEncoding defaultEncoding
       ["-e"] -> putStrLn lit
       ["-v"] -> putStrLn version
       e -> errorWithoutStackTrace $ "invalid option " ++ (show e) ++ "\n" ++ usage
@@ -147,6 +142,9 @@ toFullHs impl nibBytes reader = do
    return $ header ++ "\n\
    \progSource = "++show nibBytes++"\n\
    \main=do\n\
+   \ -- allow system to specify encoding, but no reason to use 7 bit ascii\n\
+   \ ascii <- mkTextEncoding \"ASCII\"\n\
+   \ when (textEncodingName initLocaleEncoding == textEncodingName ascii) $ setLocaleEncoding utf8\n\
    \ args <- getArgs \n\
    \ "++reader++"\n\
    \ interact ((\\input->let output=" ++ flatHs (implCode impl) ++ "\n\
@@ -156,6 +154,7 @@ toFullHs impl nibBytes reader = do
 
 runHs :: String -> [String] -> IO ()
 runHs filename args = do
+   setLocaleEncoding initLocaleEncoding
    -- Compile with -O for full laziness rather than using runhaskell
    (_, _, _, p) <- createProcess (proc "ghc" ["-O", filename]){ std_out = CreatePipe }
    ex <- waitForProcess p

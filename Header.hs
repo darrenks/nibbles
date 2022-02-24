@@ -14,6 +14,7 @@ import System.IO
 import qualified Data.Set as Set
 import System.Environment
 import Control.Monad (when)
+import GHC.IO.Encoding
 
 -- for Hash
 import qualified Data.ByteString as B8
