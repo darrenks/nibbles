@@ -180,7 +180,7 @@ chrToNib c =
 
 -- Consume rest of program as an integer (efficient binary packing)
 parseData :: Code -> Integer
-parseData l@(Lit _ _ _) = if empty rest then n else error "program must be empty after storing ~ integer data. See https://nibbles.golf/tutorial_minutiae.html#data " where
+parseData l@(Lit _ _ _) = if empty rest then n else error $ "program must be empty after storing ~ integer data. See "++webpage++"/tutorial_minutiae.html#data " where
    (n,rest)=parseInt16 l
 
 parseData (Nib b _) = fromBase 16 (map fromIntegral $ padSafeDat b)

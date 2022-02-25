@@ -80,7 +80,7 @@ A list of strings can be created by listing multiple strings together without sp
 
 ## Ops
 
-Here is [a table of the basic Nibbles ops](https://nibbles.golf/simpleref.html). There is a more complete quick reference, but for now it would have some confusing things. A couple things to note:
+Here is [a table of the basic Nibbles ops](simpleref.html). There is a more complete quick reference, but for now it would have some confusing things. A couple things to note:
 
 -  `num` means `int` or `chr`
 -  `[a]`, etc. means "list of anything," but the next use of `a` must be the same type.

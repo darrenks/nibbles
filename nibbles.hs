@@ -26,7 +26,7 @@ usage = "\
 \\n\
 \Nibbles - a functional code golf language for mortals.\n\
 \\n\
-\Documentation at https://nibbles.golf\n\
+\Documentation at "++webpage++"\n\
 \\n\
 \Modes:\n\
 \  default = compile the nibbles program to out.hs and run it\n\
