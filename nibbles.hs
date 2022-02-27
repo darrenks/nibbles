@@ -50,6 +50,7 @@ headerRaw :: String
 headerRaw = [litFile|Header.hs|]
 
 main=do
+   setLocaleEncoding latin1 -- use raw bytes for .nbl, .nbb, and .hs files
    args <- getArgs
    let (progArgs, nonProgArgs) = partition isNibblesArg args
    let (opts,fileArgs) = partition isOpt nonProgArgs
@@ -60,11 +61,9 @@ main=do
             return (contents, "a", FromLit)
          [f] -> case ext of
             ".nbb" -> do
-               setLocaleEncoding latin1
                contents <- readFile f
                return (contents, base, FromBytes)
             ".nbl" -> do
-               setLocaleEncoding utf8
                contents <- readFile f
                return (contents, base, FromLit)
             _ -> errorWithoutStackTrace "file extension must be .nbb or .nbl"
@@ -92,7 +91,6 @@ main=do
                   "size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ div (length bRaw + 1) 2) ++ " bytes)"
             return nibBytes
          fullHs <- toFullHs impl maybeNibBytes reader
-         setLocaleEncoding utf8
          writeFile "out.hs" fullHs
          when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
       ["-c"] -> do
@@ -101,7 +99,6 @@ main=do
          when errored $ errorWithoutStackTrace "aborting"
          let outname = (basename ++ ".nbb")
          hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
-         setLocaleEncoding latin1
          writeFile outname nibBytes
       ["-e"] -> putStrLn lit
       ["-v"] -> putStrLn version
@@ -142,9 +139,8 @@ toFullHs impl nibBytes reader = do
    return $ header ++ "\n\
    \progSource = "++show nibBytes++"\n\
    \main=do\n\
-   \ -- allow system to specify encoding, but no reason to use 7 bit ascii\n\
-   \ ascii <- mkTextEncoding \"ASCII\"\n\
-   \ when (textEncodingName initLocaleEncoding == textEncodingName ascii) $ setLocaleEncoding utf8\n\
+   \ hSetEncoding stdin char8\n\
+   \ hSetEncoding stdout char8\n\
    \ args <- getArgs \n\
    \ "++reader++"\n\
    \ interact ((\\input->let output=" ++ flatHs (implCode impl) ++ "\n\

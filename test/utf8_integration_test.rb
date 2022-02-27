@@ -13,6 +13,6 @@ out == "a♯b\n" or raise 'generated haskell produces wrong output %p' % out
 file=File.open(testnbb,"rb")
 
 out = `./nibbles -e #{testnbb}`
-out.strip == '"a\\9839b"' or raise 'decompiled program differs %p' % out
+out.strip == '"a\\226\\153\\175b"' or raise 'decompiled program differs %p' % out
 
 puts 'pass utf8 integration test'

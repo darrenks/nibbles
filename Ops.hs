@@ -60,8 +60,7 @@ rawOps = [
    -- Test space (size 2): " " -> " "
    -- Test empty (size 3): "" -> ""
    -- Test escapes: "\"" -> "\""
-   -- Test binary (size 6): "\200" -> "\200"
-   -- Test big binary (size 8): "\9839" -> "\9839"
+   -- Test binary (size 5): "\200" -> "\200"
    -- Test list of strs (size 5) : """a" -> ["","a"]
    -- Test list of strs (size 7) : "a""" -> ["a",""]
    -- Test list of strs (size 7) : "a""b" -> ["a","b"]
