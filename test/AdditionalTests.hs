@@ -1,3 +1,6 @@
+-- test that the implicit arg is @ instead of $ which it would be if it is using the memoized parse for this expression (would return 12).
+-- Test: +;2 +.,5 - $ - -> 22
+
 -- Some tests for handling of saves within functions (these exposed bugs in the past)
 -- Test: ``; 5 ;4 2 3 -> 3
 -- Test: ;~ 5 -;4 @ -> -1

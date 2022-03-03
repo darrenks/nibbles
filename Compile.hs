@@ -555,9 +555,20 @@ getValues (Thunk code context nextUniqLetId) offsetExprs = (impl, after) : getVa
          Nothing -> getValue offsetExprs) $ blankRep code context nextUniqLetId
    afterThunk = Thunk (pdCode after) (pdContext after) (pdNextUniqLetId after)
    offsetAfterExprs =
-      if length (pdContext after) == length context
+      if pdNextUniqLetId after == nextUniqLetId
+         && equivalentContexts (pdContext after) context
+         -- to disable parse memoization uncomment
+         -- && False
       then drop (cp (pdCode after) - cp code) offsetExprs
       else drop 1 $ exprsByOffset afterThunk
+
+-- Only need to check length and usedness since context should not be changed (only added to)
+equivalentContexts :: [Args] -> [Args] -> Bool
+equivalentContexts a1s a2s =
+   length a1s == length a2s
+   && and (zipWith equallyUsed (concatMap argsImpls a1s) (concatMap argsImpls a2s))
+   where
+      equallyUsed a1 a2 = implUsed a1 == implUsed a2
 
 -- Gets the arg lists from each possible offset (ParseData is what is after the Impl)
 exprsByOffset :: (?isSimple::Bool) => Thunk -> [[(Impl, ParseData)]]

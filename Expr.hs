@@ -45,7 +45,7 @@ data ParseData = ParseData { pdCode :: Code
                            , pdDataUsed :: Bool -- (used directly, not through $)
                            , pdImplicitArgUsed :: Bool -- to disable commutative extensions
                            , pdLitWarnings :: [String]
-                           , pdNextUniqLetId :: Int }
+                           , pdNextUniqLetId :: Int}
 type ParseState = State ParseData
 
 -- all relevant information for determining arg match in a more abridge form than arg spec
