@@ -76,7 +76,7 @@ data ArgSpec
    | BinCode Int
    | LitCode Char
    | NotEOF
-
+   | EOF
 
 data OpBehavior = LitWarn String | CodeGen ([VT]->ParseState ([VT], Impl))
 type Operation = ([ArgSpec], OpBehavior)

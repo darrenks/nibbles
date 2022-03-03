@@ -179,6 +179,7 @@ data ArgAttemptResult =
       [(Impl, ParseData)] -- the memoized args after parsing arg
       [Impl] -- the arg implementation (or empty)
    | FailConstFn Impl -- a constant resulting from unused args of a fn
+                      -- the purpose of this is to save the result so that next op's check for if it is a constant or not won't need to parse again (which could cause exponential parse times, but currently it is unused :(
    | FailTypeMismatch String -- reason for failure (aka "arg 2 is int")
 
 tryArg :: (?isSimple::Bool) => ArgSpec
@@ -222,6 +223,12 @@ tryArg NotEOF _ _ _ memoArgs = do
    return $ if not (isBinary code) && empty code && implicitArgUsed
       then FailTypeMismatch "EOF cannot be here since this op needs part of its binary representation after the arg (try not using implicit args)"
       else Success memoArgs []
+
+tryArg EOF _ _ _ memoArgs = do
+   code <- gets pdCode
+   return $ if empty code
+      then Success memoArgs []
+      else FailTypeMismatch "not EOF"
 
 tryArg (LitCode l) _ _ _ memoArgs = do
    matched <- match ([], [[l]])

@@ -266,12 +266,25 @@ rawOps = [
    -- Test tuple: /!,2 "ab""cd", ~"a" 3 @ @  $ -> "ab",0
    -- Test: / ,3 ~0 "" +@$ :$_ $ -> 6,"123"
    op(('/',10), [list, auto, fn2 (const []), fnx (\[a1,a2]->(length $ ret a2, elemT a1 ++ ret a2))], foldrFn "foldr" ~> ret.a2),
+
+   -- Desc: hidden foldr1 $, needed because normally foldr1 needs to know if size 1 or 1+ to determine if f will be called on anything, but in this case, it doesn't matter, so this is lazier... The best way to actually fix this would be to call foldr with an initial value of "identity" which is a special value that when used in a binary op always returns the other value.
+   -- hidden Example: / | `,~ - ~ $ $ -> 0
+   -- Test: /,1 +5$ -> 1
+   op(('/',10), [nonTupleList, BinCode 3, LitCode '$'], \[a1] -> "head" ~> head (elemT a1)),
+   -- Desc: hidden foldr1 EOF
+   -- hidden Example: / | `,~ - ~ $ -> 0
+   op(('/',10), [nonTupleList, EOF], \[a1] -> do
+      argn 1 -- for setting things like pdImplicitArgsUsed
+      return $ "head" ~> head (elemT a1)),
+
    -- Desc: foldr1
    -- Example: /,3+@$ -> 6
    -- Test empty: /,0+@$ -> 0
    -- Test coerce: /,3 p $ -> 1
    -- Test tuple: / old_zip_ ,4 :1,3 +_$ *;$@  $ -> 10,6
+   -- Test: /,2 +5$ -> 6
    op(('/',10), [list, Fn ReqArg UnusedArg $ \[a1]->(length $ elemT a1,concat $ replicate 2 $ elemT a1)], foldr1Fn "foldr1" "id" ~> elemT.a1),
+
    -- Desc: foldr
    -- Example: /,3 1 +@$ -> 7
    -- Test coerce: / ,3 0 "5" -> 5
@@ -920,7 +933,7 @@ binOp '*' a = ([VInt], "*")
 binOp '-' a = ([xorChr a], "-")
 binOp '/' a = ([VInt], "safeDiv")
 binOp '%' a = ([VInt], "safeMod")
-binOp '^' a = ([xorChr a], "^")
+binOp '^' a = ([VInt], "^")
 binOp ']' a = ([unvecOrChr a], "max")
 binOp '[' a = ([unvecOrChr a], "min")
 binOp '!' a = ([VInt], "(abs.).(-)")
