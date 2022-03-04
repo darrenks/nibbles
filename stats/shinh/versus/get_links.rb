@@ -1,0 +1,1 @@
+http://golf.shinh.org/all.rb
