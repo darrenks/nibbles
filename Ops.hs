@@ -695,12 +695,6 @@ rawOps = [
    -- Example: -~ " bcd\n\n" -> "bcd"
    opM("-~",[9,0],[str {-could be more general, but probably not useful -}],\[a1]->let cond="(not."++truthy (elemT a1)++")" in
       "dropWhileEnd "++cond++" . dropWhile "++cond~>a1),
-   -- Desc: to bits
-   -- Example: ``@ 10 -> [1,0,1,0]
-   -- Test: ``@ 0 -> []
-   -- Test: ``@ -2 -> []
-   -- Test: ``@ 'c' -> [1,1,0,0,0,1,1]
-   extendOp "``@" [lengthRep, consRep, tildaRep] (shorterReason"just add 1 to the length") ([num], "toBase 2" ~> vList1 VInt),
    -- Desc: signum
    -- Example: `$ -2 `$ 0 `$ 2 -> -1,0,1
    extendOp "`$" [lengthRep, consRep] (shorterReason"just add 1 to the length") ([num], "signum" ~> VInt),
@@ -722,6 +716,12 @@ rawOps = [
    -- Desc: int to str
    -- Example: `p 5 -> "5"
    extendOp "`p" [ifRep, intRep] (shorterReason"don't use an if, just provide either the true or false clause depending on the constant)") ([num], inspect.a1 ~> vstr),
+   -- Desc: to bits
+   -- Example: ``@ 10 -> [1,0,1,0]
+   -- Test: ``@ 0 -> []
+   -- Test: ``@ -2 -> []
+   -- Test: ``@ 'c' -> [1,1,0,0,0,1,1]
+   extendOp "``@" [lengthRep, consRep, tildaRep] (shorterReason"just add 1 to the length") ([num], "toBase 2" ~> vList1 VInt),
    -- Desc: to/from hex
    -- Example: hex 31 -> "1f"
    -- Test negative: hex -31 -> "-1f"
