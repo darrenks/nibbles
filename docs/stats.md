@@ -4,11 +4,13 @@ Thanks to [tails](https://twitter.com/saito_ta) (for both creating a better [dis
 
 Also thanks to shinh for hosting a well organized golf server. It would be more difficult to do statistics like this from the stackexchange problems because there isn't a standard way to document input and many problems will use command line args of which their type needs to be known at compile time (one would have to manually curate inputs).
 
-Code to generate data is on [github](https://github.com/darrenks/nibbles) in stats folder.
+Code to generate data is on [github](https://github.com/darrenks/nibbles/tree/main/stats/shinh).
 
 -  [atoms.txt](atoms.txt) - atom count frequency
 -  [ops.txt](ops.txt) - op use frequency based on the types of its arguments
 -  [combos.txt](combos.txt) - counts of ops/atoms used together (not just in the first argument)
+
+## Analsysis on March 4, 2022
 
 It is difficult to draw many sound conclusions because even though the data set contains 200 solutions, many are short, and when you break binary ops down by both argument types, the counts aren't that high. They could easily be biased by which types of problems have been solved. None-the-less, a few things to note:
 

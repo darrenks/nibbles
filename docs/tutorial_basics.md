@@ -184,10 +184,10 @@ All programs actually start off with args available for use, that read from stdi
 - `@` is the first line (`str`)
 - `_` is the first line as a list of ints, or, if there is only 1, the entire input as a list of ints (`[int]`)
 - `;$` is the second integer (`int`)
-- `;@` is the second line (`str`)
+- `;@` is the entire input as lines (`[str]`)
 - `;_` is the entire input (`str`)
 - `;;$` is the entire input as a list of list of ints (`[[int]]`)
-- `;;@` is the entire input as lines (`[str]`)
+- `;;@` is the second line (`str`)
 
 You may also refer to these by name (`fstInt` `fstLine` `ints` `sndInt` `sndLine` `allInput` `intMatrix` `allLines`).
 
@@ -220,7 +220,7 @@ Input a number n, then repeat the second line n times.
 
 $Solution
 
-   ^$;@
+   ^$;;@
 $HiddenOutput "2\nabc"
    abcabc
 

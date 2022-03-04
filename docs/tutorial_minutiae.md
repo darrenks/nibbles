@@ -141,7 +141,7 @@ There's a lot more possibilities here, but it isn't obvious what the most common
 
 ## Auto Map
 
-If your program uses input but not the entire raw input (`$` `;$` `@` `;@` or potentially even `_`) then your program will auto map.
+If your program uses input but not the entire raw input (`$` `;$` `@` `;;@` or potentially even `_`) then your program will auto map.
 
 Suppose the input to your program is
 
@@ -199,7 +199,7 @@ $Output "12 888\n34\n56\n78"
 
 The 1000 resulted because that is the default value of `;$` if there is no value present. It attempted to auto map on pairs of numbers and 78 had no corresponding pair.
 
-   p ;@
+   p ;;@
 $Output "12 888\n34\n56\n78"
    "34"
    "78"

@@ -4,7 +4,7 @@ In this tutorial you will learn how to use some of the more complicated built in
 
 Note that the $QuickRef should print nicely in 3 pages in Chrome/Brave, if it doesn't, [here is a pdf](NibblesQuickRef.pdf). Also FYI you may sort by any column.
 
-There aren't many example here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
+There aren't many examples here [yet?], but there are many in [Ops.hs](https://github.com/darrenks/nibbles/blob/main/Ops.hs).
 
 ## Filter (not&#8728;)
 Filter (like many ops that want a function that returns a boolean) have no use for a tuple return, so `~` is taken to mean `not` composed with the function after `~`. Note that filter normally requires the function to use its argument (due to reqfn), but filter is special in that if you are using `~` for not, then the function doesn't have to use its argument.

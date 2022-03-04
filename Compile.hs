@@ -30,10 +30,10 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
       , ("fstLine", vstr, "fromMaybe printables $ at strLines 0")
       , ("ints", VList [VInt], "intList")
       , ("sndInt", VInt, "fromMaybe 1000 $ at intList 1")
-      , ("sndLine", vstr, "fromMaybe [] $ at strLines 1")
+      , ("allLines", VList [vstr], "strLines")
       , ("allInput", vstr, "input")
       , ("intMatrix", VList [VList [VInt]], "intMatrix_")
-      , ("allLines", VList [vstr], "strLines")
+      , ("sndLine", vstr, "fromMaybe [] $ at strLines 1")
       ]
    letArgs = zipWith (\(name, vt, _) ind -> noArgsUsed {
       implType=vt, implCode=hsAtom name, implName=Just name, implUsed=if ind>length cArgs then OptionalArg else UnusedArg
@@ -50,7 +50,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
       lit <- gets getLit
       dataUsed <- gets pdDataUsed
 
-      let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,sndLineUsed,allInputUsed,allInputUsedAsInts,allInputUsedAsLines] =
+      let [fstIntUsed,fstLineUsed,intsUsed,sndIntUsed,allInputUsedAsLines,allInputUsed,allInputUsedAsInts,sndLineUsed] =
             drop (length cArgs) $ getInputsUsedness context
 
       let useDataInsteadOfFirstIntInput = isJust dat && not dataUsed
@@ -280,7 +280,7 @@ tryArg (AutoNot fn) from prevTs _ _ = do
             truthyImpl = app1Hs ((truthy $ ret $ implType impl)++".") impl
             modifiedImpl = if matched then app1Hs "not." truthyImpl else truthyImpl
          in Success memo [modifiedImpl]
-      FailConstFn impl -> FailConstFn impl
+      FailConstFn impl -> FailConstFn impl -- not??
 
 tryArg (AutoOption desc) _ prevTs nibs memoArgs = do
    matched <- match tildaOp

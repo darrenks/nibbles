@@ -232,10 +232,10 @@ drawLegend = do
             tr $ do;td "@" ! class_ "code";td "str";td "fstLine";td "printable chars"
             tr $ do;td "_" ! class_ "code";td "[int]";td "ints";td "[]"
             tr $ do;td ";$" ! class_ "code";td "int";td "sndInt";td "1000"
-            tr $ do;td ";@" ! class_ "code";td "str";td "sndLine";td "\"\""
+            tr $ do;td ";@" ! class_ "code";td "[str]";td "allLines";td "[]"
             tr $ do;td ";_" ! class_ "code";td "str";td "allInput";td "\"\""
             tr $ do;td ";;$" ! class_ "code";td "[[int]]";td "intMatrix";td "[]"
-            tr $ do;td ";;@" ! class_ "code";td "[str]";td "allLines";td "[]"
+            tr $ do;td ";;@" ! class_ "code";td "str";td "sndLine";td "\"\""
             tr $ do;td ! colspan "4" $ do
                      "* command args can be of any type"
                      br
