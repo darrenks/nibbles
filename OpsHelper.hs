@@ -101,6 +101,10 @@ instance OpImpl ([VT] -> ParseState (VT,String)) where
    toImpl implMonad ts = do
       (t,hs) <- implMonad ts
       return ([t], toUntypedImpl hs)
+instance OpImpl ([VT] -> ParseState ([VT],String)) where
+   toImpl implMonad ts = do
+      (t,hs) <- implMonad ts
+      return (t, toUntypedImpl hs)
 
 instance OpImpl () where toImpl _ ts = return $ (ts, toUntypedImpl "id")
 

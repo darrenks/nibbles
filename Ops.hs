@@ -273,9 +273,10 @@ rawOps = [
    op(('/',10), [nonTupleList, BinCode 3, LitCode '$'], \[a1] -> "head" ~> head (elemT a1)),
    -- Desc: hidden foldr1 EOF
    -- hidden Example: / | `,~ - ~ $ -> 0
-   op(('/',10), [nonTupleList, EOF], \[a1] -> do
-      argn 1 -- for setting things like pdImplicitArgsUsed
-      return $ "head" ~> head (elemT a1)),
+   -- Test tuple: / |`.~1 0 \a b - a ~ b \a b a -> 1
+   op(('/',10), [list, EOF], \[a1] -> do
+      modify $ \s -> s { pdImplicitArgUsed = True }
+      return $ "head" ~> elemT a1),
 
    -- Desc: foldr1
    -- Example: /,3+@$ -> 6
