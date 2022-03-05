@@ -80,16 +80,18 @@ flattenTuples :: Int -> Int -> [Char]
 flattenTuples t1 t2 = "(\\(~"++varsFrom 1 t1++", ~"++varsFrom (1+t1) (t1+t2)++")->("++varsFrom 1 (t1+t2)++"))"
    where varsFrom a b = toTuple $ map (\tn->"a"++show tn) [a..b]
 
-finish :: VT -> Bool -> String
-finish (VList tt) isLast
+finish :: VT -> (String, Bool {-lastWasList-})
+finish t@(VList tt) = (finishH t, sdim tt >= 1)
+finish t = (finishH t, False)
+
+finishH (VList tt)
    | d >= 3 = joinC "[]"
    | d == 2 = joinC "firstSep"
-   -- consider not adding space after thing? grand scheme?
-   | d == 1 = (if isLast then id else compose1 "(++secondSep)") $ joinC "secondSep" -- todo might not want that newline for empty list? like unlines
+   | d == 1 = joinC "secondSep" -- todo might not want that newline for empty list? like unlines
    where
       d = sdim tt
-      joinC s = compose1 (finish jt isLast) $ app1 js s where (jt,js) = join (VList tt)
-finish t _ = toStr t
+      joinC s = compose1 (finishH jt) $ app1 js s where (jt,js) = join (VList tt)
+finishH t = toStr t
 
 compose1 a b = "(" ++ a ++ "." ++ b ++ ")"
 app1 a b = "(" ++ a ++ b ++ ")"

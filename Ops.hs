@@ -427,7 +427,7 @@ rawOps = [
    -- Desc: hidden take drop
    -- hidden Example: `< 2 ,5 $ -> [1,2],[3,4,5]
    -- Test negative: `< -2 ,3 $ -> [1],[2,3]
-   opM("`<", [14], [num, BinCode 11, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
+   extendOp "`<" [reverseRep, addRep] equivalentOrderReason ([num, list], "\\n a->genericSplitAt (if n<0 then genericLength a+n else n) a" ~> \[_,a2]->[a2::VT,a2]),
    -- Desc: hidden drop take
    -- hidden Example: `> 2 ,5 $ -> [3,4,5],[1,2]
    -- Test negative: `> -2 ,3 $ -> [2,3],[1]
@@ -618,7 +618,7 @@ rawOps = [
    -- Desc: permutations
    -- Example: ``p "ab" -> ["ab","ba"]
    -- Test: ``p "abc" -> ["abc","acb","bac","bca","cab","cba"]
-   extendOp "``p" [repRep,intRep,('1',9)] (shorterReason"replicate 1 is a no op") ([list], "permutationsSaneOrder"~>vList1.a1),
+   extendOp "``p" [reverseRep, addRep, tildaRep] equivalentOrderReason ([list], "permutationsSaneOrder"~>vList1.a1),
    -- Desc: list of 2 lists
    -- Example: `: ,2 ,1 -> [[1,2],[1]]
    extendOpHelper ["`-"] (shorterReason"just use -") ("`:", [14], [listToBeReferenced, BinCode 8, sameAsA1], "\\a b->[a,b]" ~> vList1.a1),
@@ -865,7 +865,7 @@ rawOps = [
    opM("testCoerceToListListInt", [], [any1], testCoerceTo [VList [VList [VInt]]]),
    opM("testCoerceToListStr", [], [any1], testCoerceTo [VList [vstr]]),
    opM("testCoerceToX", [], [AnyS, AnyS], \ts -> "\\a b->" ++ snd (testCoerceTo (ret $ a1 ts) (ret $ a2 ts)) ++ "(b())" ~> (ret $ a1 ts)),
-   opM("testFinish", [], [any1], flip finish False . a1 ~> vstr),
+   opM("testFinish", [], [any1], fst . finish . a1 ~> vstr),
 
    --- Desc: old zip
    -- Test old examp: old_zip_,3"abc" -> [(1,'a'),(2,'b'),(3,'c')]

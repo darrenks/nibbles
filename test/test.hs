@@ -50,7 +50,7 @@ toTest(origLit, stdin, expect, size, isRaw) =
       flatHs (implCode implFromNib), testHs))
    else errorWithoutStackTrace $ intercalate "\n" litWarnings
    where
-      cc = if isRaw then compile finish "" [] else compile (\t _->inspect t)  "," []
+      cc = if isRaw then compile finish "" [] else compile (\t->(inspect t,False))  "," []
       (implFromLit, nib, outLit, litWarnings) =  cc $ Lit origLit origLit 0
       testHs = flatHs (implCode implFromLit)
       (implFromNib, _, _, _) = cc $ Nib (padToEvenNibbles nib) 0

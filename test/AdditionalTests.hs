@@ -108,12 +108,12 @@
 -- Test: testFinish 123 -> "123"
 -- Test: testFinish 'c' -> "c"
 -- Test: testFinish "abc" -> "abc"
--- Test: testFinish ,3 -> "1\n2\n3\n"
--- Test: testFinish ^3:,3~ -> "1 2 3\n1 2 3\n1 2 3\n"
--- Test: testFinish ^3:"abc"~ -> "abc\nabc\nabc\n"
--- Test: testFinish ^2:^2:,2~~ -> "12 12\n12 12\n"
--- Test: testFinish ^2:^2:"ab"~~ -> "ab ab\nab ab\n"
--- Test: testFinish old_zip_ ,3 "abc" -> "1 a\n2 b\n3 c\n"
+-- Test: testFinish ,3 -> "1\n2\n3"
+-- Test: testFinish ^3:,3~ -> "1 2 3\n1 2 3\n1 2 3"
+-- Test: testFinish ^3:"abc"~ -> "abc\nabc\nabc"
+-- Test: testFinish ^2:^2:,2~~ -> "12 12\n12 12"
+-- Test: testFinish ^2:^2:"ab"~~ -> "ab ab\nab ab"
+-- Test: testFinish old_zip_ ,3 "abc" -> "1 a\n2 b\n3 c"
 
 -- Test "hi\n": \@ -> "ih"
 -- RawTest: 1 2 -> "12\n"
@@ -139,7 +139,24 @@
 -- RawTest: old_zip_,3"abc" 5 -> "1 a\n2 b\n3 c\n5\n"
 -- RawTest: 3~$"c" -> "1 c\n2 c\n3 c\n"
 
----- Test input types
+---- Test auto formatting output appends ---------
+-- RawTest: 1 2 -> "12\n"
+-- RawTest: "1" 2 -> "12\n"
+-- RawTest: ,3 -> "1\n2\n3\n"
+-- RawTest: ,3 5 -> "1\n2\n3\n5\n"
+
+--- test auto formatting in auto map (since spaces will be the separator)
+-- RawTest "1\n2": $ 3 -> "13\n23\n"
+-- RawTest "1\n2": @ 3 -> "13\n23\n"
+-- RawTest "1\n2": ,$ -> "1\n1 2\n"
+-- RawTest "1\n2": ,$ 5 -> "1 5\n1 2 5\n"
+
+--- test that data doesn't trick code into thinking there is something after
+-- RawTest "A\nB": `: @ `p $ ~ 100 -> "A 256\nB 256\n"
+-- RawTest "A\nB": "asdf" `: @ `p $ ~ 100 -> "asdfA 256\nasdfB 256\n"
+
+
+---- Test input types -------------
 -- RawTest "12a": $ -> "12\n"
 -- RawTest "12a": @ -> "12a\n"
 -- RawTest "1 2 3": p_ -> "[1,2,3]\n"

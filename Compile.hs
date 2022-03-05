@@ -19,7 +19,7 @@ import SmartList
 padToEvenNibbles :: [Int] -> [Int]
 padToEvenNibbles s = s ++ replicate (length s `mod` 2) uselessOp
 
-compile :: (?isSimple::Bool) => (VT -> Bool -> String) -> String -> [(String, VT, String)] -> Code -> (Impl, [Int], String, [String])
+compile :: (?isSimple::Bool) => (VT -> (String, Bool)) -> String -> [(String, VT, String)] -> Code -> (Impl, [Int], String, [String])
 compile finishFn separator cArgs input = evalState doCompile $ blankRep (consumeWhitespace input) args 0 where
 
    args =
@@ -42,8 +42,8 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
 
    doCompile = do
       impl1 <- get1Value
-      (dat,body) <- if separator == "" then mainCombiner impl1
-         else testCombiner $ finishIt impl1 False
+      (dat,body) <- if separator == "" then mainCombiner (impl1,False)
+         else testCombiner $ fst $ finishIt impl1
       context <- gets pdContext
       impl <- popArg 0 body
       nib <- gets getNib
@@ -77,13 +77,23 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
       warnings <- gets pdLitWarnings
       return (finalImpl, nib, lit, warnings)
 
-   finishIt impl isLast = (app1Hs (finishFn (implType impl) isLast) impl) { implType = vstr }
-   join2 impl1 impl2 = applyImpl (app1Hs ("(\\a b->a++sToA"++show separator++"++b)") impl1) impl2
+   finishIt impl = let (finishF,isLastList) = finishFn (implType impl) in
+      ((app1Hs finishF impl) { implType = vstr }, isLastList)
 
-   mainCombiner :: Impl -> ParseState (Maybe Integer, Impl)
-   mainCombiner prev = do
+   join2 extraSep impl1 impl2 = let
+         (finished, isList) = finishIt impl2
+         -- for non test (when separator == ""), we may want to insert an extra separator after lists when using implicit appends
+         sep = if extraSep && separator == "" then "secondSep" else "sToA" ++show separator
+      in (applyImpl (app1Hs ("(\\a b->a++"++sep++"++b)") impl1) finished, isList)
+
+
+
+   mainCombiner :: (Impl,Bool) -> ParseState (Maybe Integer, Impl)
+   -- The bool indicates if last was known to be a list and needed another separator when joined again
+   mainCombiner (prev,isLastList) = do
       code <- gets pdCode
-      let finishedPrev = finishIt prev (empty code)
+      let (finishedPrev,isPrevList) = finishIt prev
+      let extraSep = isLastList || isPrevList -- we don't know if the first prev is a list or not until it is "finished" doing an implicit op could have changed it
       if empty code then return (Nothing, finishedPrev)
       else do
          context <- gets pdContext
@@ -98,23 +108,24 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
             dat <- parseDataExpr
             return (Just dat,finishedPrev)
          else do
-            result <- case implType prev of
+            case implType prev of
                VInt | not ?isSimple -> do
                   (impl1,argsUsed) <- getLambdaValue 1 [VInt,VInt] OptionalArg "implicit op int" False
                   if last argsUsed then do
-                     return $ (applyImpl (app1Hs ("("++foldr1Fn "(foldl1.flip)" "id" [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }
+                     mainCombiner ((applyImpl (app1Hs ("("++foldr1Fn "(foldl1.flip)" "id" [VList [VInt], implType impl1]++")") (app1Hs "(\\x->[1..x])" prev)) impl1) { implType = VInt }, False)
                   else if argsUsed == [True,False] then do
-                     return $ (applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }
+                     mainCombiner ((applyImpl (app1Hs "(\\a f -> map (\\y->f (y,())) [1..a])" prev) impl1) { implType = VList $ ret $ implType impl1 }, False)
                   else do
                      rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums 2 0) impl1) (ret $ implType impl1) "tuple in possible implicit op"
                      afterCode <- gets pdCode
-                     return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
+                     mainCombiner $ join2 extraSep finishedPrev rhsImpl
                VList e | not ?isSimple && e /= [VChr] -> do
                   (impl1,argsUsed) <- getLambdaValue 1 (e++e) OptionalArg "implicit op list" False
                   if or $ drop (length e) argsUsed then do
-                     convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn "(foldl1.flip)" "id" [implType prev, implType impl1] }) prev) impl1) e "tuple in implicit op foldl"
+                     impl <- convertPairToLet UnusedArg (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ foldr1Fn "(foldl1.flip)" "id" [implType prev, implType impl1] }) prev) impl1) e "tuple in implicit op foldl"
+                     mainCombiner (impl,False)
                   else if or $ take (length e) argsUsed then do
-                     return $ (applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }
+                     mainCombiner $ ((applyImpl (applyImpl (noArgsUsed { implCode=hsParen $ hsAtom $ mapFn [implType prev, implType impl1] }) prev) (app1Hs (fillAccums (length e) (2*length e)) impl1)) { implType = VList $ ret $ implType impl1 }, False)
                   -- this is moderately annoying
 --                   else if ret (implType impl1) == [vstr] then do
 --                      let jstr = app1Hs (fillAccums (2*length e) (2*length e)) impl1
@@ -123,12 +134,11 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
                   else do
                      rhsImpl <- convertPairToLet UnusedArg (app1Hs (fillAccums (2*length e) (2*length e)) impl1) (ret $ implType impl1) "tuple in possible implicit op"
                      afterCode <- gets pdCode
-                     return $ join2 finishedPrev (finishIt rhsImpl (empty afterCode))
+                     mainCombiner $ join2 extraSep finishedPrev rhsImpl
                otherwise -> do
                   impl1 <- get1Value
                   afterCode <- gets pdCode
-                  return $ join2 finishedPrev (finishIt impl1 (empty afterCode))
-            mainCombiner result
+                  mainCombiner $ join2 extraSep finishedPrev impl1
 
    testCombiner prev = do
       code <- gets pdCode
@@ -136,7 +146,7 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
       else do
          impl1 <- get1Value
          case impl1 of -- stupid work around because laziness causes infinite loop on error if
-            (Impl _ _ _ _ _) -> testCombiner (join2 prev (finishIt impl1 False))
+            (Impl _ _ _ _ _) -> testCombiner $ fst (join2 False prev impl1)
 
    getInputsUsedness context = tail $ map ((==UsedArg).implUsed) $ argsImpls $ last context
 

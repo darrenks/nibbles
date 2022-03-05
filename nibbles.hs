@@ -155,5 +155,5 @@ runHs filename args = do
    (_, _, _, p) <- createProcess (proc "ghc" ["-O", filename]){ std_out = CreatePipe }
    ex <- waitForProcess p
    case ex of
-      ExitSuccess -> callProcess "out" args
+      ExitSuccess -> callProcess "./out" args
       ExitFailure _ -> error "failed to compile hs (likely an internal nibbles bug, please report it!)"
