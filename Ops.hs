@@ -270,13 +270,15 @@ rawOps = [
    -- Desc: hidden foldr1 $, needed because normally foldr1 needs to know if size 1 or 1+ to determine if f will be called on anything, but in this case, it doesn't matter, so this is lazier... The best way to actually fix this would be to call foldr with an initial value of "identity" which is a special value that when used in a binary op always returns the other value.
    -- hidden Example: / | `,~ - ~ $ $ -> 0
    -- Test: /,1 +5$ -> 1
-   op(('/',10), [nonTupleList, BinCode 3, LitCode '$'], \[a1] -> "head" ~> head (elemT a1)),
+   -- Test: /,0$ -> 0
+   op(('/',10), [nonTupleList, BinCode 3, LitCode '$'], \[a1] -> "\\a -> if null a then "++defaultValue (elemT a1)++" else head a" ~> head (elemT a1)),
    -- Desc: hidden foldr1 EOF
    -- hidden Example: / | `,~ - ~ $ -> 0
    -- Test tuple: / |`.~1 0 \a b - a ~ b \a b a -> 1
+   -- Test: /,0 -> 0
    op(('/',10), [list, EOF], \[a1] -> do
       modify $ \s -> s { pdImplicitArgUsed = True }
-      return $ "head" ~> elemT a1),
+      return $ "\\a -> if null a then "++defaultValue (elemT a1)++" else head a" ~> elemT a1),
 
    -- Desc: foldr1
    -- Example: /,3+@$ -> 6
