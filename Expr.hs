@@ -10,7 +10,7 @@ import qualified Data.Set as Set
 
 
 -- if change, change downloads.md and install.md
-version = "nibbles 1.00"
+version = "nibbles 1.00+ (unstable)"
 webpage = "http://golfscript.com/nibbles"
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)

@@ -755,8 +755,9 @@ rawOps = [
    -- Example: `@ 2 :1 :0 :1 0 -> 10
    -- Test: `@ 2 ,0 -> 0
    -- Test: `@ ~ :8 9 -> 89
+   -- Test: `@ ~ `' :8 9 -> 89
    -- Test: `@ -27 "fizzbuzz" -> 66635848070
-   opM("`@",[11,0], [AutoDefault num 10,list {-todo 1d-}], "\\base a->fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) a else a)"~>a1),
+   opM("`@",[11,0], [AutoDefault num 10,list {-todo 1d-}], \[a1,a2]->"\\base a->let aflat = ("++flatten a2++") a in fromBase (abs base) (if base < 0 then map (\\c->fromIntegral $ fromMaybe (fromIntegral c) $ elemIndex c printables) aflat else aflat)"~>a1),
    -- Desc: iterate while uniq
    -- Example: `. 10 %+1$3 -> [10,2,0,1]
    -- Test never stop: <5 `. 10 ~1 -> [10,1,1,1,1]
