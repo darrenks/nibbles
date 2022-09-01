@@ -610,7 +610,7 @@ rawOps = [
    -- Test: `_ ~ "abc" -> ["ab","ac","bc"]
    -- Test: `_ 0 "abc" -> ["","a","b","ab","c","ac","bc","abc"]
    -- Test: `_ -2 "abc" -> ["aa","ab","ac","bb","bc","cc"]
-   extendOp "`_" [dropRep, mapRep] equivalentOrderReason ([AutoDefault int 2, list],"\\n a->\
+   extendOp "`_" [mapRep, dropRep] equivalentOrderReason ([AutoDefault int 2, list],"\\n a->\
       \if n>0 then subsequencesN n a \
       \else if n==0 then subsequences a \
       \else repeatedSubsequencesN (-n) a"~>vList1.a2),
