@@ -4,7 +4,7 @@
 You will need **GHC 8.0.2 - 8.10.7**. I recommend using [ghcup](https://www.haskell.org/ghcup/) to get it.
 
 ### Install Nibbles
-Download the [most recent stable version](nibbles-1.00.tgz) ([or old](downloads.html)), unpack it then compile it.
+Download the [latest version](nibbles-latest.tgz) ([or old](downloads.html)), unpack it then compile it.
 
    > cd nibbles
    > ghc -O -package ghc *.hs

@@ -9,8 +9,8 @@ import SmartList
 import qualified Data.Set as Set
 
 
--- if change, change downloads.md and install.md
-version = "nibbles 1.00+ (unstable)"
+-- if change, change downloads.md
+version = "nibbles 1.00+ (unnumbered release)"
 webpage = "http://golfscript.com/nibbles"
 
 data ArgUsedness = UnusedArg | OptionalArg | UsedArg | UsednessDoesntMatter deriving (Show, Eq)
