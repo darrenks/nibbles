@@ -34,6 +34,7 @@ usage = "\
 \  -c = compactify into bytes (2 nibbles each), save to base filename.nbb\n\
 \  -e = expand and print the literate form\n\
 \  -hs = only generate out.hs\n\
+\  -r = run out.hs unoptimized\n\
 \  -v = version\n\
 \\n\
 \Other options:\n\
@@ -71,7 +72,7 @@ main=do
             _ -> errorWithoutStackTrace "file extension must be .nbb or .nbl"
             where (base, ext) = splitExtension f
          e -> errorWithoutStackTrace $ "too many filename args:" ++ (show e) ++ "\n" ++ usage
-   let ?isSimple = isSimple args
+   let ?isSimple = elem "-simple" args
    let (cargs, reader) = toLetArgs progArgs
    let compileFn = compile finish "" cargs
    let (impl, bRaw, lit, litWarnings)  = compileFn $ case parseMode of
@@ -83,7 +84,7 @@ main=do
 
    case opts of
       -- if no c/e/v option specified then assume it means run
-      ops | null $ filter (\opt -> not (isOtherOption opt) && opt /= "-hs") ops -> do
+      ops | all isOtherOption ops -> do
          errored <- litErrorHandle "Warning" bRaw litWarnings
          maybeNibBytes <- if errored then return []
          else do
@@ -94,7 +95,9 @@ main=do
             return nibBytes
          fullHs <- toFullHs impl maybeNibBytes reader
          writeFile "out.hs" fullHs
-         when (ops /= ["-hs"]) $ runHs "out.hs" progArgs
+         when (not $ elem "-hs" ops) $
+            if elem "-r" ops then runHsUnoptimized "out.hs" progArgs
+            else runHs "out.hs" progArgs
       ["-c"] -> do
          checkWouldExtractCorrectly binLit lit
          errored <- litErrorHandle "Error" bRaw litWarnings
@@ -133,8 +136,7 @@ checkWouldExtractCorrectly binLit lit = do
 
 isOpt arg = isPrefixOf "-" arg
 toBytes = map toByte . chunksOf 2
-isOtherOption = flip elem ["-simple"]
-isSimple = elem "-simple"
+isOtherOption = flip elem ["-simple", "-hs", "-r"]
 
 toFullHs impl nibBytes reader = do
    let header = unlines $ tail $ lines headerRaw -- remove "module Header"
@@ -159,3 +161,13 @@ runHs filename args = do
    case ex of
       ExitSuccess -> callProcess "./out" args
       ExitFailure _ -> error "failed to compile hs (likely an internal nibbles bug, please report it!)"
+
+-- Programs like + .,1000 +,100000000 need -O for full laziness otherwise they actually calculate the inner loop value 1000 times instead of once. But https://ato.pxeger.com/ doesn't work with using ghc from inside nibbles yet. So give it an option to work like Husk.
+runHsUnoptimized :: String -> [String] -> IO ()
+runHsUnoptimized filename args = do
+   setLocaleEncoding initLocaleEncoding
+   (_, Just hout, _, _) <- createProcess (proc "runhaskell" (filename : args)){ std_out = CreatePipe }
+   result <- hGetContents hout
+   hSetBuffering stdout NoBuffering
+   putStr result
+   return ()
