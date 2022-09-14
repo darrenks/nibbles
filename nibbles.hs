@@ -11,6 +11,7 @@ import System.Exit
 import Control.Monad
 import Data.List(intercalate)
 import Data.List.Split (chunksOf,splitOn) -- needs cabal install --lib split
+import GHC.IO.Handle(hDuplicate)
 
 import FileQuoter
 import Compile
@@ -57,7 +58,8 @@ main=do
    (contents, basename, parseMode) <- case fileArgs of
          [] -> do
             when (not$null progArgs) (hPutStrLn stderr "Warning: args are being treated as input args and nibbles code is being read from stdin")
-            contents <- getContents
+            mystdin <- hDuplicate stdin
+            contents <- hGetContents mystdin
             return (contents, "a", FromLit)
          [f] -> case ext of
             ".nbb" -> do
