@@ -9,7 +9,7 @@ Download the [most recent stable version](nibbles-1.00.tgz) ([or old](downloads.
    > cd nibbles
    > ghc -O -package ghc *.hs
 
-This creates the `nibbles` binary. Do whatever you do to put binaries in your path.
+This creates the `nibbles` binary. You will need to run nibbles code from this directory unless you install the libraries below.
 
 ### Note on libraries
 
