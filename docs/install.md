@@ -13,7 +13,7 @@ This creates the `nibbles` binary. You will need to run nibbles code from this d
 
 ### Note on libraries
 
-The .tgz file contains the source of the libraries it depends on. If you prefer to instead download them do so as follows (but note that the Data.Function.Memoize included in my tar ball contains a fix not yet in hackage).
+The .tgz file contains the source of the libraries it depends on. If you prefer to instead download them do so as follows.
 
    > rm -r Data # (removes the predownloaded libraries)
    > cabal install --lib dlist split murmur-hash memoize

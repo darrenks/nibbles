@@ -7,4 +7,4 @@
 -  [nibbles 0.24](nibbles-0.24.tgz) (Feb 22, 2022)
 -  [nibbles 0.25](nibbles-0.25.tgz) (March 4, 2022)
 -  [nibbles 1.00](nibbles-1.00.tgz) (June 19, 2022)
--  [nibbles latest](nibbles-latest.tgz) (unstable)
+-  [nibbles latest](nibbles-latest.tgz) (unnumbered)

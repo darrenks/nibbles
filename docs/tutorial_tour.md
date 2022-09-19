@@ -80,7 +80,7 @@ If 2nd arg is a fn then find all element indices that make that fn truthy. If 2n
 -  2nd arg fn means to take a 3rd arg and do the operation by mapping by the 2nd arg first. `BT&"asdf" /$12 "aa"` -> `"ad"`
 
 ## Split By
-This is a quirky op intended to do things like gsub (but as sophisticated as with regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original list but with some modification to the true and/or false parts.
+This is a quirky op intended to do things like gsub (but not as sophisticated as with regexes). It splits a list by consecutive truthy fn returns. But rather than just splitting, it returns a tuple for each match containing the parts that consecutively matched and didn't. This is so that you could reconstruct the original list but with some modification to the true and/or false parts.
 
 Note that false matches precede the truth matches, so in the case it starts with a truth, then there will be an empty list in that first tuple.
 
