@@ -1,3 +1,12 @@
+==================================
+invalid extensions (todo find a new extension for them)
+==================================
+subscript of range, this performs mod but wrapped at 1 instead of 0
+   it is currently remapped to divmod.
+   I don't know of any available num num extensions, but things like -a+bc = --abc, but this would need to be aligned with a num list extension (which there are some available), because need to work for any type c. This would also probably break a lot of existing code (it could all be refactored though).
+
+==================================
+
 enhanced range creation, by overloading ops like take, drop, reverse, step, etc. nice defaults to consider, 0-n-1, 1-n, -n-n, step 1. need to be able to specify 3 of (from,to,step,count).
 	ideally don't need vectorized + and * to facilitate this
 
@@ -35,7 +44,7 @@ fix coerce tuple with : and if/else
 
 combine fns to clean up ops table (scan/fold, l1)
 	can have multiple reps for same thing (i.e. string has shorter rep for join)
-	
+
 want non wrapped subscript auto option
 
 cleaner compile.hs using a template file for the main
