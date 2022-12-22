@@ -931,9 +931,8 @@ addHigherValueDeBruijnOps ops = concat (zipWith (\(nib,lit) n->
    deBruijnArgReps [1..])
       ++ map convertNullNib ops
 
--- use OrChr for scalar, otherwise first type (this will only happen in special folds)
-unvecOrChr [a1,a2] | a1==a2 = a1
-unvecOrChr [a1,a2] | a1/=a2 = error "unhandled, should be impossible 28"
+-- use OrChr for scalar, otherwise first type (this will only happen in special folds/zips)
+unvecOrChr [VList e1,_] = VList e1
 unvecOrChr a = orChr a
 
 -- todo replace code in ops table
