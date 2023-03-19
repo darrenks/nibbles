@@ -10,7 +10,7 @@ Code to generate data is on [github](https://github.com/darrenks/nibbles/tree/ma
 -  [ops.txt](ops.txt) - op use frequency based on the types of its arguments
 -  [combos.txt](combos.txt) - counts of ops/atoms used together (not just in the first argument)
 
-## Analsysis on March 4, 2022
+## Analsysis on March 19, 2023
 
 It is difficult to draw many sound conclusions because even though the data set contains 200 solutions, many are short, and when you break binary ops down by both argument types, the counts aren't that high. They could easily be biased by which types of problems have been solved. None-the-less, a few things to note:
 
@@ -62,6 +62,9 @@ For problems where both Nibbles and GS2 were used
 -  Tie: 37
 -  GS2 shorter: 34
 
-One possible bias is that Jelly was created mostly to use command args instead of stdin (although stdin is supported too, but I'm not sure how well) (all input is via stdin on this server). From random problems I have done on [codegolf.stackexchange.com](https://codegolf.stackexchange.com) nibbles won 7, tied 2, and lost 2 (versus Jelly) so it isn't too far fetched. One note about jelly on golf.shinh is that it is converted to code page indicies to be represented as bytes, so there are no issues there with its unicode chars taking more than 1 byte.
+One possible bias is that Jelly was created mostly to use command args instead of stdin (although stdin is supported too, but I'm not sure how well) (all input is via stdin on this server).
 
-Reading too much into this data would a mistake as it could be gamed, but at face value it is promising.
+As of Dec 2022 on
+[codegolf.stackexchange.com](https://codegolf.stackexchange.com) Nibbles won 44, tied 9, and lost 23 to Jelly. So it seems it is the #1 language on that site as well! Thanks to Dominic van Essen for the many great Nibbles solutions to give more data here.
+
+Reading too much into this data would a mistake as it could be gamed (for instance if people only submitted solutions to problems their favorite language would win), but at face value it is promising.

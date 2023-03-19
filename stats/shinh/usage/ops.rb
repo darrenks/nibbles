@@ -28,7 +28,7 @@ end
 
 
 `ls problems`.split.each{|f|
-   next if f == "0_5+broken+keyboard.html"
+   next if f == "0_5+broken+keyboard.html" || f == "b+ab.html"
    s=File.read('./problems/'+f)
    j=JSON.parse(s)
 
