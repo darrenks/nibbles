@@ -1,4 +1,10 @@
-# Install
+# Try it
+
+## Run Online
+
+[Attempt This Online](https://ato.pxeger.com/run?1=m708LzMpKSe1eMGCpaUlaboW65U8UnNy8nUUyvOLclIUlSCiUEmYIgA)
+
+## Install Locally
 
 ### Install Haskell
 You will need **GHC 8.0.2 - 8.10.7**. I recommend using [ghcup](https://www.haskell.org/ghcup/) to get it.

@@ -131,6 +131,8 @@ Good places to use Nibbles for competing online are:
 $Feedback
 
 ## News
+- **May 9, 2023**: Now you can use Nibbles online, thanks to the work of pxeger over at [Attempt This Online](https://ato.pxeger.com/run?1=m708LzMpKSe1eMGCpaUlaboW65U8UnNy8nUUyvOLclIUlSCiUEmYIgA)!
+
 - **June 19, 2022**: Version 1.00 release. There are only bug changes since last version. Incrementing to 1.00 because I have no immediate plans to add features or make changes and the language as been stable for a few months. However there is still improvement possible and room for future extensions, I am certainly up for accepting changes from others.
 
 - **March 4, 2022**: Add [Stats](stats.html) page which analyzes Nibbles ops use and win rate.
