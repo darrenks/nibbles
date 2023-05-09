@@ -92,6 +92,8 @@ rawOps = [
    -- Desc: 3rd arg
    -- Example: ;1;2;3 _ -> 1,2,3,1
    op(('_', 5), [], argn 3),
+   -- Desc: hidden save before EOF
+   op(setRep, [EOF], parseError "Programs may not end with a save op (;), that would be useless, but also is the character used to pad odd nibble length programs in the binary form" :: ParseState Impl),
    -- Desc: save
    -- Example: + ;3 $ -> 6
    -- Test: ++; 3 ; 2 $ -> 7
