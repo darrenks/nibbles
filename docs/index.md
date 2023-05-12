@@ -124,13 +124,15 @@ Also check out the [Why page](why.html) if you're interested in the ideas behind
 Good places to use Nibbles for competing online are:
 
 -  [Anarchy Golf](http://golf.shinh.org/) (my old favorite and still good)
--  [Code Golf Stack Exchange](https://codegolf.stackexchange.com) (most active)
+-  [Code Golf Stack Exchange](https://codegolf.stackexchange.com) (most active) (see [chat](https://chat.stackexchange.com/rooms/145966/nibbles))
 
 ### Feedback?
 
 $Feedback
 
 ## News
+- **May 12, 2023**: Created [nibbles chatroom](https://chat.stackexchange.com/rooms/145966/nibbles).
+
 - **May 9, 2023**: Now you can use Nibbles online, thanks to the work of pxeger over at [Attempt This Online](https://ato.pxeger.com/run?1=m708LzMpKSe1eMGCpaUlaboW65U8UnNy8nUUyvOLclIUlSCiUEmYIgA)!
 
 - **June 19, 2022**: Version 1.00 release. There are only bug changes since last version. Incrementing to 1.00 because I have no immediate plans to add features or make changes and the language as been stable for a few months. However there is still improvement possible and room for future extensions, I am certainly up for accepting changes from others.
