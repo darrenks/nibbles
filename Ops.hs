@@ -447,8 +447,10 @@ rawOps = [
    -- Test empty: `r"" -> 0
    -- Test invalids: `r"z12z2" -> 12
    opM(["`r"], [15], [str, BinCode 1], "parseNum 10" ~> VInt),
-   -- Desc: hidden if nonnull (lazy) todo alias to regular if/else
-   -- hidden Example: ?,>+0 0:5 5 1 0 -> 1
+   -- Desc: if/else (lazy list)
+   -- todo FYI extension not detected for ?, :1 2  0 1 (uses failsafe)
+   -- untested example: ?, "cond"  1 0 -> 1
+   -- Test: ?,>+0 0:5 5 1 0 -> 1
    -- Test: ?,>+0 0:"" "" 1 0 -> 0
    -- Test: ?,>+0 0:5 5 $ 0 -> [5,5]
    lowPriorityOp([fst ifRep,fst lengthRep], [snd ifRep,snd lengthRep], list:ifBodyArgs, ifImpl),
