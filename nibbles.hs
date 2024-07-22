@@ -100,8 +100,10 @@ main=do
             else runHs "out.hs" progArgs
       ["-c"] -> do
          checkWouldExtractCorrectly binLit lit
-         errored <- litErrorHandle "Error" bRaw litWarnings
-         when errored $ errorWithoutStackTrace "aborting"
+         errored <- litErrorHandle "Warning (check that .nbb extracts properly)" bRaw litWarnings
+-- Let's not abort since warning could be from something that looks like a lambda but isn't (e.g. ,|`@128$\ch$P ).
+-- Better would be to distinguish between fatal and unfatal problems in literal notation for compiling purposes only.
+--          when errored $ errorWithoutStackTrace "aborting"
          let outname = (basename ++ ".nbb")
          hPutStrLn stderr $ "wrote " ++ (show $ length nibBytes) ++ " bytes to " ++ outname
          writeFile outname nibBytes

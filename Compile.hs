@@ -487,7 +487,7 @@ pushLambdaArg argType argUsedness from f = do
                return $ Just $ name : rest
             Right reason | reason == inUseAlreadyMsg -> do
                -- They might have meant to use a lambda
-               parseLitWarning $ "You may have meant to use a lambda failed because " ++ reason
+               parseLitWarning $ "You may have meant to use a lambda, but it failed because " ++ reason
                return Nothing
             Right reason -> return Nothing -- not an identifier
       otherwise -> return Nothing -- no \ lambda

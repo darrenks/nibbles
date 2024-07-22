@@ -6,7 +6,7 @@ require 'open-uri'
 
 s=File.read("index.pl").split("golf.shinh.org")[2..-3]
 s.map{|prob|
-   dats = prob.scan(/(commenter.pl\?(.*?)\/.*?\&)nbb\">.*?<\/a><\/td><td>(.*?)<\/td>/)
+   dats = prob.scan(/(commenter.pl\?(.*?)\/.*?\&)nbb\">.*?<\/a><\/td><td>(.*?)<\/td>/).reverse
    prob=nil
    link = dats.map.with_index{|dat,index|
       link,probx,size=dat
@@ -16,8 +16,9 @@ s.map{|prob|
    puts prob
 
    f = "problems/#{prob}.html"
+   next if !prob
 	next if File.exist?(f)
-   url = "http://www.tailsteam.com/cgi-bin/nbbdag/"+link+"format=json&codever=024"
+   url = "http://www.tailsteam.com/cgi-bin/nbbdag/"+link+"format=json" #&codever=024"
    puts url
 	page = URI.open(url).read
 	File.open(f,"w") {|file| file << page }
