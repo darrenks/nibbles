@@ -67,8 +67,8 @@ compile finishFn separator cArgs input = evalState doCompile $ blankRep (consume
             else if sndIntUsed then "let autoMapList = (listOr [[]] (chunksOf 2 intList)) "++autoMapCode++"intList -> "
             else if fstIntUsed && not useDataInsteadOfFirstIntInput then "let autoMapList = (listOr [[]] (chunksOf 1 intList)) "++autoMapCode++"intList -> "
             else ""
-      let finalImpl = app1Hs ("let intMatrix_=filter (not . null) (map (asInts.sToA) (lines $ aToS input));\
-            \strLines=map sToA $ lines $ aToS input;\
+      let finalImpl = app1Hs ("let strLines=if null rawProgArgs then map sToA $ lines $ aToS input else rawProgArgs;\
+            \intMatrix_=filter (not . null) (map asInts strLines);\
             \intList=concat intMatrix_;\
             \datOverride="++show useDataInsteadOfFirstIntInput ++ ";\
             \dat="++show (fromMaybe 0 dat) ++";\

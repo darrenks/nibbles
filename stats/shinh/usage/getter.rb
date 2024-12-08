@@ -6,7 +6,8 @@ require 'open-uri'
 
 s=File.read("index.pl").split("golf.shinh.org")[2..-3]
 s.map{|prob|
-   dats = prob.scan(/(commenter.pl\?(.*?)\/.*?\&)nbb\">.*?<\/a><\/td><td>(.*?)<\/td>/).reverse
+   dats = prob.scan(/(commenter.pl\?(.*?)\/.*?\&)amp;nbb\">.*?<\/a><\/td><td>(.*?)<\/td>/).reverse
+
    prob=nil
    link = dats.map.with_index{|dat,index|
       link,probx,size=dat

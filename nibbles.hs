@@ -1,7 +1,7 @@
 {-# LANGUAGE QuasiQuotes #-} -- for loading header.hs
 {-# LANGUAGE ImplicitParams #-} -- for tracking isSimple option
 
-import Data.List(isPrefixOf,partition)
+import Data.List(isPrefixOf,partition,elemIndex)
 import System.Environment
 import System.IO
 import GHC.IO.Encoding
@@ -23,7 +23,7 @@ import Hs(flatHs)
 import ParseArgs
 
 usage = "\
-\Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]*\n\
+\Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]* [-- rawargs*]\n\
 \\n\
 \Nibbles - a functional code golf language for mortals.\n\
 \\n\
@@ -53,8 +53,12 @@ headerRaw = [litFile|Header.hs|]
 
 main=do
    setLocaleEncoding latin1 -- use raw bytes for .nbl, .nbb, and .hs files
-   args <- getArgs
+   allArgs <- getArgs
+   let (args,rawProgArgs) = case (elemIndex "--" allArgs) of
+                               Nothing -> (allArgs,[])
+                               Just i -> (take i allArgs, drop (i+1) allArgs)
    let (progArgs, nonProgArgs) = partition isNibblesArg args
+   let allProgArgs = (progArgs ++ ["--"] ++ rawProgArgs)
    let (opts,fileArgs) = partition isOpt nonProgArgs
    (contents, basename, parseMode) <- case fileArgs of
          [] -> do
@@ -96,8 +100,8 @@ main=do
          fullHs <- toFullHs impl maybeNibBytes reader
          writeFile "out.hs" fullHs
          when (not $ elem "-hs" ops) $
-            if elem "-r" ops then runHsUnoptimized "out.hs" progArgs
-            else runHs "out.hs" progArgs
+            if elem "-r" ops then runHsUnoptimized "out.hs" allProgArgs
+            else runHs "out.hs" allProgArgs
       ["-c"] -> do
          checkWouldExtractCorrectly binLit lit
          errored <- litErrorHandle "Warning (check that .nbb extracts properly)" bRaw litWarnings
@@ -147,7 +151,10 @@ toFullHs impl nibBytes reader = do
    \main=do\n\
    \ hSetEncoding stdin char8\n\
    \ hSetEncoding stdout char8\n\
-   \ args <- getArgs \n\
+   \ allArgs <- getArgs \n\
+   \ let (args,rawProgArgs) = case (elemIndex \"--\" allArgs) of\n\
+   \                            Nothing -> (allArgs,[])\n\
+   \                            Just i -> (take i allArgs, map sToA $ drop (i+1) allArgs)\n\
    \ "++reader++"\n\
    \ interact ((\\input->let output=" ++ flatHs (implCode impl) ++ "\n\
    \  -- don't print a newline to a quine! \n\

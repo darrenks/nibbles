@@ -215,6 +215,10 @@ A caveat is that if you wish to use args, you must pass these args when generati
 
 This is super handy if the problem allows it as you won't need to do any parsing even for complex input types.
 
+## Raw args
+
+You may also replace STDIN with args by passing `--` to nibbles, each arg after `--` will now be like a line of input from STDIN.
+
 ### Exercise
 Input a number n, then repeat the second line n times.
 
