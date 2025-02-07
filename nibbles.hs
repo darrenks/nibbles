@@ -23,7 +23,7 @@ import Hs(flatHs)
 import ParseArgs
 
 usage = "\
-\Usage: nibbles [-c|-e|-v|-hs] [-simple] [filename] [args]* [-- rawargs*]\n\
+\Usage: nibbles [-c|-e|-v|-hs|-lit] [-simple] [filename] [args]* [-- rawargs*]\n\
 \\n\
 \Nibbles - a functional code golf language for mortals.\n\
 \\n\
@@ -36,6 +36,7 @@ usage = "\
 \  -hs = only generate out.hs\n\
 \  -r = run out.hs unoptimized\n\
 \  -v = version\n\
+\  -lit = just run literate code without checking size/if it would extract\n\
 \\n\
 \Other options:\n\
 \  -simple = disable extensions and implicit things\n\
@@ -93,9 +94,10 @@ main=do
          maybeNibBytes <- if errored then return []
          else do
             when (parseMode == FromLit) $ do
-               checkWouldExtractCorrectly binLit lit
-               hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $
-                  "size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ fromIntegral (length bRaw) / 2) ++ " bytes)"
+               when (notElem "-lit" ops) $ do
+                  checkWouldExtractCorrectly binLit lit
+                  hPutStrLn stderr $ reverse $ reverse {-make strict to print at same time-} $
+                     "size = " ++ (show $ length bRaw) ++ " nibbles ("++ (show $ fromIntegral (length bRaw) / 2) ++ " bytes)"
             return nibBytes
          fullHs <- toFullHs impl maybeNibBytes reader
          writeFile "out.hs" fullHs
@@ -142,7 +144,7 @@ checkWouldExtractCorrectly binLit lit = do
 
 isOpt arg = isPrefixOf "-" arg
 toBytes = map toByte . chunksOf 2
-isOtherOption = flip elem ["-simple", "-hs", "-r"]
+isOtherOption = flip elem ["-simple", "-hs", "-r", "-lit"]
 
 toFullHs impl nibBytes reader = do
    let header = unlines $ tail $ lines headerRaw -- remove "module Header"
