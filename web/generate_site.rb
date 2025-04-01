@@ -49,7 +49,7 @@ def convertMd(filename)
    md.gsub!(/^ {3,}/,' \&') # I use 3 space tabs but need 4 for blocks
    md.gsub!('$QuickRef','[Quick Ref](quickref.html)')
    md.gsub!('$Feedback','Bug reports, pain points, suggestions, and code reviews are appreciated (I\'m new to Haskell), make a push request or email me at ![image of email](email.png)')
-   md.gsub!('$Intro',File.read("README.md").lines.first)
+   md.gsub!('$Intro',File.read("README.md").lines[0..-2]*"\n")
    convertTests(md)
    File.open('t.md','w'){|f|f<<md}
    markdown = `markdown.pl < t.md`
