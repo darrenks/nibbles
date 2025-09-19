@@ -5,7 +5,7 @@ import Expr
 import Types
 import Polylib
 
-import System.Process
+import System.Process -- needs cabal install --lib process
 import System.IO
 import Control.Monad (when)
 import Data.Maybe

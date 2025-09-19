@@ -11,7 +11,7 @@ import Parse (parseError,onlyCheckMatchIdentifier)
 import Data.List
 import Data.Maybe
 import Control.Monad.State -- needs cabal install --lib mtl
-import qualified Data.Set as Set
+import qualified Data.Set as Set -- needs cabal install --lib containers
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
 letStr n tn = "larg" ++ show n ++ "t" ++ show tn

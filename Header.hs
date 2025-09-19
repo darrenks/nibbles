@@ -11,7 +11,7 @@ import Data.List.Split -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
-import qualified Data.Set as Set
+import qualified Data.Set as Set -- needs cabal install --lib containers
 import System.Environment
 import Control.Monad (when)
 import GHC.IO.Encoding

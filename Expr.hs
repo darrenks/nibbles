@@ -6,7 +6,7 @@ import qualified Data.DList as DList -- needs cabal install --lib dlist
 import Types
 import Hs
 import SmartList
-import qualified Data.Set as Set
+import qualified Data.Set as Set -- needs cabal install --lib containers
 
 
 -- if change, change downloads.md
