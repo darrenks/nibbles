@@ -5,8 +5,8 @@ import Data.List(isPrefixOf,partition,elemIndex)
 import System.Environment
 import System.IO
 import GHC.IO.Encoding
-import System.FilePath
-import System.Process
+import System.FilePath -- needs cabal install --lib filepath
+import System.Process -- needs cabal install --lib process
 import System.Exit
 import Control.Monad
 import Data.List(intercalate)

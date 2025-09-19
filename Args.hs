@@ -10,7 +10,7 @@ import Parse (parseError,onlyCheckMatchIdentifier)
 
 import Data.List
 import Data.Maybe
-import State
+import Control.Monad.State -- needs cabal install --lib mtl
 import qualified Data.Set as Set
 
 argStr n tn = "arg" ++ show n ++ "t" ++ show tn
