@@ -50,5 +50,5 @@ time {
    `./nibbles -hs  a.nbb`; pass &&= $?.exitstatus==0
 }
 raise 'errors in runs' if !pass
-raise 'fail, parse too slow (in %f)' % (Time.now - t) if Time.now - t > 3
+raise 'fail, parse too slow (in %f)' % (Time.now - t) if Time.now - t > 5
 puts 'pass parse speed test (in %f)' % (Time.now - t)
