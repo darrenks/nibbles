@@ -35,7 +35,7 @@ import Header (at,fromBase,toBase)
 import Data.Char
 import Numeric (showOct,showHex)
 import Data.Maybe (fromMaybe)
-import State
+import Control.Monad.State -- needs cabal install --lib mtl
 
 import Text.ParserCombinators.ReadP (gather, readP_to_S)
 import Text.Read.Lex as Lex (readDecP, readHexP, lex, Lexeme(String), Lexeme(Char))

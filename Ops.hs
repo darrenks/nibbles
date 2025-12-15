@@ -9,7 +9,7 @@ import Args
 import Hs
 import OpsHelper
 
-import State
+import Control.Monad.State -- needs cabal install --lib mtl
 import Data.List(concat,sortOn)
 import Data.Maybe
 
@@ -278,9 +278,7 @@ rawOps = [
    -- hidden Example: / | `,~ - ~ $ -> 0
    -- Test tuple: / |`.~1 0 \a b - a ~ b \a b a -> 1
    -- Test: /,0 -> 0
-   op(('/',10), [list, EOF], \[a1] -> do
-      modify $ \s -> s { pdImplicitArgUsed = True }
-      return $ "\\a -> if null a then "++defaultValue (elemT a1)++" else head a" ~> elemT a1),
+   op(('/',10), [list, EOF], \[a1] -> "\\a -> if null a then "++defaultValue (elemT a1)++" else head a" ~> elemT a1),
 
    -- Desc: foldr1
    -- Example: /,3+@$ -> 6

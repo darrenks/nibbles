@@ -11,13 +11,13 @@ import Data.List.Split -- needs cabal install --lib split
 import Text.Read (readMaybe)
 import Data.Function (fix)
 import System.IO
-import qualified Data.Set as Set
+import qualified Data.Set as Set -- needs cabal install --lib containers
 import System.Environment
 import Control.Monad (when)
 import GHC.IO.Encoding
 
 -- for Hash
-import qualified Data.ByteString as B8
+import qualified Data.ByteString as B8 -- needs cabal install --lib bytestring
 import qualified Data.Digest.Murmur64 as Murmur -- needs cabal install --lib murmur-hash
 
 newli = myOrd '\n'

@@ -4,8 +4,8 @@ module Compile(compile,padToEvenNibbles,charClassesDefs) where
 
 import Data.List(inits,intercalate,nub)
 import Data.Maybe
-import State
-import qualified Data.Set as Set
+import Control.Monad.State -- needs cabal install --lib mtl
+import qualified Data.Set as Set -- needs cabal install --lib containers
 
 import Polylib(coerceTo,fillAccums,join,truthy,curryN,rotateTuple,flattenTuples,fullVectorize,baseElem,cidim,promoteListRepeat,promoteList,coerce,minForType,maxForType,defaultValue)
 import Ops

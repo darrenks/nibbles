@@ -7,7 +7,7 @@ import Text.Blaze.Html5 as H hiding (main, map)
 import Text.Blaze.Html5.Attributes as A
 import Control.Monad (forM_, mapM_)
 import Text.Blaze.Html.Renderer.Utf8 (renderHtml)
-import qualified Data.ByteString.Lazy.Char8 as Char8
+import qualified Data.ByteString.Lazy.Char8 as Char8 -- needs cabal install --lib bytestring
 import Data.List (intercalate)
 
 import Ops
